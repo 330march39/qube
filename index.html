@@ -91,8 +91,11 @@
         .main-container { display: flex; height: 100vh; width: 100%; overflow: hidden; }
         #sidebar { width: 280px; background-color: var(--bg-secondary); border-right: 1px solid var(--border-color); padding: 20px; display: flex; flex-direction: column; transition: transform 0.3s ease, box-shadow 0.3s ease; transform: translateX(-100%); position: fixed; top: 0; left: 0; height: 100%; z-index: 1000; }
         #sidebar.open { transform: translateX(0); box-shadow: 0 0 40px rgba(0,0,0,0.2); }
+        body.sidebar-open-desktop #mainContent { margin-left: 280px; }
         #mainContent { flex-grow: 1; padding: 20px; overflow-y: auto; transition: margin-left 0.3s ease; }
-        @media (min-width: 768px) { #sidebar { position: static; transform: translateX(0); box-shadow: none; } #mainContent { margin-left: 0; } #hamburgerButton { display: none; } }
+        @media (max-width: 767px) { 
+            body.sidebar-open-desktop #mainContent { margin-left: 0; }
+        }
         .sidebar-overlay { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.5); z-index: 999; }
         .sidebar-overlay.active { display: block; }
         .screen { display: none; flex-direction: column; }
@@ -221,7 +224,7 @@
         <!-- Main Content -->
         <main id="mainContent">
             <header class="flex items-center justify-between mb-8">
-                <button id="hamburgerButton" class="p-2 rounded-md md:hidden">
+                <button id="hamburgerButton" class="p-2 rounded-md">
                     <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16M4 18h16" /></svg>
                 </button>
                 <h1 id="projectTitle" class="text-3xl font-bold text-center flex-grow" style="color: var(--text-primary);">プロジェクトへようこそ</h1>
@@ -233,8 +236,8 @@
             <!-- Welcome Screen -->
             <div id="welcomeScreen" class="screen active text-center p-8 bg-white dark:bg-gray-800 rounded-lg shadow-lg">
                 <h2 class="text-4xl font-bold mb-4" style="color: var(--accent-primary);">Qubeへようこそ！</h2>
-                <p class="text-xl mb-8 text-gray-600 dark:text-gray-300">AIの力で、あなたの学習を次のレベルへ。</p>
-                <p class="mb-8">左のメニューから「新しいプロジェクトを作成」して、<br>あなただけのオリジナルクイズ作りを始めましょう。</p>
+                <p class="text-xl mb-8" style="color: var(--text-secondary);">AIの力で、あなたの学習を次のレベルへ。</p>
+                <p class="mb-8" style="color: var(--text-primary);">左のメニューから「新しいプロジェクトを作成」して、<br>あなただけのオリジナルクイズ作りを始めましょう。</p>
                 <button id="getStartedButton" class="btn btn-primary text-lg px-8 py-3">さっそく始める</button>
             </div>
 
@@ -275,11 +278,11 @@
                     
                     <div class="grid md:grid-cols-2 gap-4 mt-8">
                         <div class="form-group">
-                            <label for="aiMode">AI生成モード</label>
-                            <select id="aiMode">
-                                <option value="generate_new">AIが問題を生成する</option>
-                                <option value="from_text">入力内容からそのまま作る</option>
-                                <option value="predictive">AIが予想問題を生成する</option>
+                            <label for="genQuestionCount">生成する問題数</label>
+                            <select id="genQuestionCount">
+                                <option value="5">5問</option>
+                                <option value="10">10問</option>
+                                <option value="all">全て</option>
                             </select>
                         </div>
                         <div class="form-group">
@@ -291,6 +294,10 @@
                                 <option value="multiple_select">複数選択</option>
                             </select>
                         </div>
+                    </div>
+                     <div class="form-group flex items-center gap-2">
+                        <input type="checkbox" id="autoGenreCheckbox" class="w-4 h-4">
+                        <label for="autoGenreCheckbox" class="mb-0">AIによる自動ジャンル分け</label>
                     </div>
                     <button id="generateQuizButton" class="btn btn-primary w-full mt-4 py-3 text-lg flex items-center justify-center">
                         <span class="button-text">クイズを生成する</span>
@@ -481,6 +488,8 @@
             const promptLabel = document.getElementById('promptLabel');
             const aiMode = document.getElementById('aiMode');
             const questionType = document.getElementById('questionType');
+            const genQuestionCount = document.getElementById('genQuestionCount');
+            const autoGenreCheckbox = document.getElementById('autoGenreCheckbox');
             const generationError = document.getElementById('generationError');
             const quizSelect = document.getElementById('quizSelect');
             const startSelectedQuizButton = document.getElementById('startSelectedQuizButton');
@@ -587,8 +596,12 @@
             };
 
             const toggleSidebar = () => {
-                sidebar.classList.toggle('open');
-                sidebarOverlay.classList.toggle('active', sidebar.classList.contains('open'));
+                const isOpen = sidebar.classList.toggle('open');
+                if (window.innerWidth < 768) {
+                    sidebarOverlay.classList.toggle('active', isOpen);
+                } else {
+                    document.body.classList.toggle('sidebar-open-desktop', isOpen);
+                }
             };
             
             const showNewProjectModal = () => {
@@ -611,7 +624,7 @@
                     name: projectName, 
                     quizzes: []
                 };
-                projects.push(newProject);
+                projects.unshift(newProject); // Add to the top
                 saveProjects();
                 renderProjectList();
                 activeProjectId = newProject.id;
@@ -697,8 +710,10 @@
                 generateQuizButton.disabled = true;
 
                 try {
+                    const isAutoGenre = autoGenreCheckbox.checked;
                     const selectedType = questionType.value;
-                    let modelPrompt = `以下の情報に基づいて、高品質な${questionType.options[questionType.selectedIndex].text}形式のクイズを${questionCount}問作成してください。`;
+                    const numQuestions = genQuestionCount.value === 'all' ? '可能な限り多く' : `${genQuestionCount.value}問`;
+                    let modelPrompt = `以下の情報に基づいて、高品質な${questionType.options[questionType.selectedIndex].text}形式のクイズを${numQuestions}作成してください。`;
                     
                     if (selectedType === 'fill_in_the_blank') {
                         modelPrompt += `答え(answer)は、単語や短い語句だけにしてください。文末の句点(。)や「です」「ます」を含めないでください。`;
@@ -713,13 +728,7 @@
                     
                     const payload = {
                         contents: [{ role: "user", parts: [] }],
-                        generationConfig: {
-                            responseMimeType: "application/json",
-                            responseSchema: {
-                                type: "OBJECT",
-                                properties: { "quizzes": { "type": "ARRAY", "items": {} } }
-                            }
-                        }
+                        generationConfig: { responseMimeType: "application/json" }
                     };
                     
                     let itemSchema = {
@@ -733,27 +742,45 @@
                     };
 
                     switch(selectedType) {
-                        case 'fill_in_the_blank':
-                            itemSchema.properties.answer = { type: "STRING" };
-                            itemSchema.required.push("answer");
-                            break;
-                        case 'sorting':
-                            itemSchema.properties.items = { type: "ARRAY", items: { type: "STRING" } };
-                            itemSchema.required.push("items");
-                            break;
+                        case 'fill_in_the_blank': itemSchema.properties.answer = { type: "STRING" }; itemSchema.required.push("answer"); break;
+                        case 'sorting': itemSchema.properties.items = { type: "ARRAY", items: { type: "STRING" } }; itemSchema.required.push("items"); break;
                         case 'multiple_select':
                             itemSchema.properties.options = { type: "ARRAY", items: { type: "STRING" } };
                             itemSchema.properties.answer = { type: "ARRAY", items: { type: "STRING" } };
                             itemSchema.required.push("options", "answer");
                             break;
-                        case 'multiple_choice':
                         default:
                             itemSchema.properties.options = { type: "ARRAY", items: { type: "STRING" } };
                             itemSchema.properties.answer = { type: "STRING" };
                             itemSchema.required.push("options", "answer");
                             break;
                     }
-                    payload.generationConfig.responseSchema.properties.quizzes.items = itemSchema;
+
+                    if (isAutoGenre) {
+                        modelPrompt = `提供された情報を分析し、内容を複数のジャンルやトピックに分類してください。その後、各ジャンルごとに、指定された形式（${questionType.options[questionType.selectedIndex].text}）でクイズを${numQuestions}作成してください。` + modelPrompt;
+                        payload.generationConfig.responseSchema = {
+                            type: "OBJECT",
+                            properties: {
+                                "genres": {
+                                    type: "ARRAY",
+                                    items: {
+                                        type: "OBJECT",
+                                        properties: {
+                                            "genre_name": { type: "STRING" },
+                                            "quizzes": { type: "ARRAY", items: itemSchema }
+                                        },
+                                        required: ["genre_name", "quizzes"]
+                                    }
+                                }
+                            }
+                        };
+                    } else {
+                        payload.generationConfig.responseSchema = {
+                            type: "OBJECT",
+                            properties: { "quizzes": { "type": "ARRAY", "items": itemSchema } }
+                        };
+                    }
+
 
                     payload.contents[0].parts.push({ text: modelPrompt });
                     
@@ -786,8 +813,12 @@
                     
                     if (result.candidates?.[0]?.content?.parts?.[0]?.text) {
                         const generatedData = JSON.parse(result.candidates[0].content.parts[0].text);
-                        tempGeneratedQuestions = generatedData.quizzes.map(q => ({ ...q, type: selectedType }));
-                        showNameQuizModal();
+                        if (isAutoGenre) {
+                            handleAutoGenreResponse(generatedData.genres, selectedType);
+                        } else {
+                            tempGeneratedQuestions = generatedData.quizzes.map(q => ({ ...q, type: selectedType }));
+                            showNameQuizModal();
+                        }
                     } else {
                         throw new Error("AIからの応答が無効です。");
                     }
@@ -800,6 +831,26 @@
                     spinner.classList.add('hidden');
                     generateQuizButton.disabled = false;
                 }
+            };
+            
+            const handleAutoGenreResponse = (genres, questionType) => {
+                const project = projects.find(p => p.id === activeProjectId);
+                if (!project || !genres) return;
+
+                genres.forEach(genre => {
+                    if (genre.quizzes && genre.quizzes.length > 0) {
+                        const newQuiz = {
+                            id: `quiz_${Date.now()}_${Math.random()}`,
+                            name: genre.genre_name,
+                            createdAt: new Date().toISOString(),
+                            questions: genre.quizzes.map(q => ({ ...q, type: questionType })),
+                            images: uploadedFiles.filter(f => f.type === 'image')
+                        };
+                        project.quizzes.push(newQuiz);
+                    }
+                });
+                saveProjects();
+                setActiveProject(activeProjectId);
             };
 
             const showNameQuizModal = () => {
@@ -826,7 +877,6 @@
                         name: quizName,
                         createdAt: new Date().toISOString(),
                         questions: tempGeneratedQuestions,
-                        // Store image data with the quiz if it was used
                         images: uploadedFiles.filter(f => f.type === 'image')
                     };
                     project.quizzes.push(newQuiz);
