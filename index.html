@@ -962,14 +962,15 @@
                         };
                     }
                     
-                    const apiUrl = '/api/generate'; // サーバーレス関数への相対パス
+                    const apiKey = "AIzaSyAmL3qPv1Zr0URta9hE0a4QCveWOfonBHc"; 
+
+                    const apiUrl = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash-preview-05-20:generateContent`;
                     
-                    // 修正後のhandleGenerateQuiz関数のfetch部分
-const response = await fetch(apiUrl, {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ contents: [{ parts: payload.contents[0].parts, generationConfig: payload.generationConfig }] })
-});
+                    const response = await fetch(apiUrl, {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify(payload)
+                    });
 
                     if (!response.ok) {
                          const errorBody = await response.text();
