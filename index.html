@@ -16,7 +16,7 @@
     <script src="https://cdn.tailwindcss.com"></script>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=Noto+Sans+JP:wght@400;500;700&display=swap" rel="stylesheet">
     <script src="https://cdnjs.cloudflare.com/ajax/libs/tone/14.8.49/Tone.min.js"></script>
-    <!-- PDF.js for PDF processing -->
+    <!-- PDF.js for PDF processing (Only for thumbnail generation, not text extraction) -->
     <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/2.11.338/pdf.min.js"></script>
     <style>
         /* --- Base Variables from Qube --- */
@@ -156,8 +156,8 @@
         #fileDropArea { border-color: var(--border-color); }
         #fileDropArea.dragover { border-color: var(--accent-primary); background-color: var(--bg-tertiary); }
         #filePreviewContainer { display: flex; flex-wrap: wrap; gap: 10px; margin-top: 1rem; }
-        .file-preview-item { position: relative; }
-        .file-preview-item img { max-height: 100px; border-radius: 8px; }
+        .file-preview-item { position: relative; display: flex; flex-direction: column; align-items: center; }
+        .file-preview-item img, .file-preview-item canvas { max-height: 100px; border-radius: 8px; }
         .file-preview-item .file-name { font-size: 0.8rem; color: var(--text-secondary); max-width: 100px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
         .remove-file-btn { position: absolute; top: -8px; right: -8px; background: #ef4444; color: white; border-radius: 50%; width: 20px; height: 20px; display: flex; align-items: center; justify-content: center; font-weight: bold; cursor: pointer; border: 2px solid var(--bg-secondary); }
         .divider { text-align: center; margin: 1.5rem 0; color: var(--text-secondary); display: flex; align-items: center; gap: 1rem; }
@@ -322,6 +322,7 @@
                         <span class="button-text">クイズを生成する</span>
                         <svg class="spinner hidden animate-spin ml-3 h-5 w-5 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24"><circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle><path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path></svg>
                     </button>
+                    <p id="generationWarning" class="text-red-500 text-sm mt-2 text-center hidden"></p>
                     <p id="generationError" class="text-red-500 text-sm mt-2 text-center hidden"></p>
                 </div>
             </div>
@@ -519,6 +520,7 @@
             const genQuestionCount = document.getElementById('genQuestionCount');
             const autoGenreCheckbox = document.getElementById('autoGenreCheckbox');
             const generationError = document.getElementById('generationError');
+            const generationWarning = document.getElementById('generationWarning');
             const quizSelect = document.getElementById('quizSelect');
             const startSelectedQuizButton = document.getElementById('startSelectedQuizButton');
             const fileDropArea = document.getElementById('fileDropArea');
@@ -580,7 +582,7 @@
             let currentQuiz = null; 
             let confettiAnimationId;
             let tempGeneratedQuestions = null;
-            let uploadedFiles = []; // Array of {name, type, content}
+            let uploadedFiles = []; // Array of {name, type, content (dataURL)}
             let projectToDeleteId = null;
             
             // Settings State
@@ -750,15 +752,15 @@
             const handleDeleteProject = () => {
                 if(!projectToDeleteId) return;
                 projects = projects.filter(p => p.id !== projectToDeleteId);
-                saveProjects();
                 
                 if(activeProjectId === projectToDeleteId) {
                     activeProjectId = null;
+                    localStorage.removeItem('qube_lastProjectId');
                     projectTitle.textContent = 'プロジェクトへようこそ';
                     projectSettingsButton.classList.add('invisible');
                     switchScreen('welcome');
                 }
-                
+                saveProjects();
                 renderProjectList();
                 closeDeleteProjectModal();
             };
@@ -811,6 +813,7 @@
 
             const setActiveProject = (projectId) => {
                 activeProjectId = projectId;
+                localStorage.setItem('qube_lastProjectId', projectId);
                 resetUploadUI();
                 promptText.value = '';
                 const project = projects.find(p => p.id === projectId);
@@ -850,13 +853,19 @@
             const handleGenerateQuiz = async () => {
                 const buttonText = generateQuizButton.querySelector('.button-text');
                 const spinner = generateQuizButton.querySelector('.spinner');
+                generationError.classList.add('hidden');
+                generationWarning.classList.add('hidden');
 
                 if (promptText.value.trim() === '' && uploadedFiles.length === 0) {
                     generationError.textContent = 'クイズの元になる内容を入力またはアップロードしてください。';
                     generationError.classList.remove('hidden');
                     return;
                 }
-                generationError.classList.add('hidden');
+
+                const warningTimeout = setTimeout(() => {
+                    generationWarning.textContent = '生成に時間がかかる可能性があります...';
+                    generationWarning.classList.remove('hidden');
+                }, 10000);
 
                 buttonText.textContent = '生成中...';
                 spinner.classList.remove('hidden');
@@ -866,39 +875,38 @@
                     const isAutoGenre = autoGenreCheckbox.checked;
                     const selectedType = questionType.value;
                     const numQuestions = genQuestionCount.value === 'all' ? '可能な限り多く' : `${genQuestionCount.value}問`;
-                    let modelPrompt = `以下の情報に基づいて、高品質な${questionType.options[questionType.selectedIndex].text}形式のクイズを${numQuestions}作成してください。各問題には必ず、詳細な解説(explanation)を付けてください。`;
                     
+                    let basePrompt = `以下の情報に基づいて、高品質な${questionType.options[questionType.selectedIndex].text}形式のクイズを${numQuestions}作成してください。各問題には必ず、詳細な解説(explanation)を付けてください。生成プロセスはできるだけ高速にお願いします。画像や図を直接参照して答える問題以外では、image_sourceプロパティをtrueに設定しないでください。`;
                     if (selectedType === 'fill_in_the_blank') {
-                        modelPrompt += `答え(answer)は、単語や短い語句だけにしてください。文末の句点(。)や「です」「ます」を含めないでください。`;
-                    }
-                    if (uploadedFiles.some(f => f.type === 'image')) {
-                        modelPrompt += `アップロードされた画像に直接関連する問題を作成する場合、その問題オブジェクトに "image_source": true というプロパティを追加してください。`;
-                    }
-
-                    let sourceContent = '';
-                    if (promptText.value.trim()) {
-                        sourceContent += `ユーザーからのテキスト入力:\n${promptText.value}\n\n`;
+                        basePrompt += `答え(answer)は、単語や短い語句だけにしてください。文末の句点(。)や「です」「ます」を含めないでください。`;
                     }
                     
-                    uploadedFiles.forEach(file => {
-                        if (file.type !== 'image') {
-                           sourceContent += `ファイル「${file.name}」の内容:\n${file.content}\n\n`;
-                        }
-                    });
+                    let finalPrompt = '';
+                    if (isAutoGenre) {
+                        finalPrompt = `提供された情報を分析し、内容を複数のジャンルやトピック(例: レッスン、ユニット、章など)に分類してください。各ジャンルの名前(genre_name)は、「Unit 1」や「レッスン2」のように、できるだけ短く簡潔な名前にしてください。その後、各ジャンルごとに、以下の指示に従ってクイズを作成してください。\n\n指示:\n${basePrompt}`;
+                    } else {
+                        finalPrompt = basePrompt;
+                    }
                     
                     const payload = {
                         contents: [{ role: "user", parts: [] }],
                         generationConfig: { responseMimeType: "application/json" }
                     };
                     
-                    let finalPrompt = modelPrompt;
-                    if (sourceContent) {
-                        finalPrompt += `\n\n--- クイズ生成の元になる情報 ---\n${sourceContent}`;
+                    let textContent = '';
+                    if (promptText.value.trim()) {
+                        textContent += `ユーザーからのテキスト指示: 「${promptText.value}」\n\n`;
                     }
-                    payload.contents[0].parts.push({ text: finalPrompt });
+                     uploadedFiles.forEach(file => {
+                        if (file.type === 'text') {
+                           textContent += `ファイル「${file.name}」の内容:\n${file.content}\n\n`;
+                        }
+                    });
+
+                    payload.contents[0].parts.push({ text: finalPrompt + '\n\n' + textContent });
 
                     uploadedFiles.forEach(file => {
-                        if (file.type === 'image') {
+                        if (file.type === 'image' || file.type === 'pdf') {
                             const mimeType = file.content.substring(5, file.content.indexOf(';'));
                             const base64Data = file.content.split(',')[1];
                             payload.contents[0].parts.push({ inlineData: { mimeType, data: base64Data } });
@@ -954,8 +962,7 @@
                         };
                     }
                     
-                    // APIキーは環境によって自動的に提供されるため、空のままにします。
-                    const apiKey = "AIzaSyAmL3qPv1Zr0URta9hE0a4QCveWOfonBHc"; 
+                    const apiKey = ""; 
 
                     const apiUrl = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash-preview-05-20:generateContent?key=${apiKey}`;
                     
@@ -989,6 +996,8 @@
                     generationError.textContent = `クイズの生成に失敗しました: ${error.message}`;
                     generationError.classList.remove('hidden');
                 } finally {
+                    clearTimeout(warningTimeout);
+                    generationWarning.classList.add('hidden');
                     buttonText.textContent = 'クイズを生成する';
                     spinner.classList.add('hidden');
                     generateQuizButton.disabled = false;
@@ -1006,7 +1015,7 @@
                             name: genre.genre_name,
                             createdAt: new Date().toISOString(),
                             questions: genre.quizzes.map(q => ({ ...q, type: questionType })),
-                            images: uploadedFiles.filter(f => f.type === 'image')
+                            images: uploadedFiles.filter(f => f.type === 'image' || f.type === 'pdf')
                         };
                         project.quizzes.push(newQuiz);
                     }
@@ -1039,7 +1048,7 @@
                         name: quizName,
                         createdAt: new Date().toISOString(),
                         questions: tempGeneratedQuestions,
-                        images: uploadedFiles.filter(f => f.type === 'image')
+                        images: uploadedFiles.filter(f => f.type === 'image' || f.type === 'pdf')
                     };
                     project.quizzes.push(newQuiz);
                     saveProjects();
@@ -1350,38 +1359,22 @@
 
             // --- File Upload Logic ---
             const handleFileSelect = async (files) => {
-                if (!files || files.length === 0) return;
-
+                fileUpload.disabled = true;
                 const filePromises = Array.from(files).map(file => {
                     return new Promise((resolve, reject) => {
-                        if (file.type.startsWith('image/')) {
-                            const reader = new FileReader();
-                            reader.onload = (e) => resolve({ name: file.name, type: 'image', content: e.target.result });
-                            reader.onerror = reject;
-                            reader.readAsDataURL(file);
-                        } else if (file.type === 'application/pdf') {
-                            const reader = new FileReader();
-                            reader.onload = (e) => {
-                                const loadingTask = pdfjsLib.getDocument(e.target.result);
-                                loadingTask.promise.then(async (pdf) => {
-                                    let text = '';
-                                    for (let i = 1; i <= pdf.numPages; i++) {
-                                        const page = await pdf.getPage(i);
-                                        const textContent = await page.getTextContent();
-                                        text += textContent.items.map(item => item.str).join(' ') + '\n';
-                                    }
-                                    resolve({ name: file.name, type: 'pdf', content: text });
-                                }).catch(reject);
-                            };
-                            reader.onerror = reject;
-                            reader.readAsArrayBuffer(file);
-                        } else if (file.type.startsWith('text/') || file.name.endsWith('.md')) {
-                            const reader = new FileReader();
-                            reader.onload = (e) => resolve({ name: file.name, type: 'text', content: e.target.result });
-                            reader.onerror = reject;
+                        const reader = new FileReader();
+                        reader.onload = (e) => {
+                            let fileType = 'text';
+                            if (file.type.startsWith('image/')) fileType = 'image';
+                            if (file.type === 'application/pdf') fileType = 'pdf';
+                            resolve({ name: file.name, type: fileType, content: e.target.result });
+                        };
+                        reader.onerror = reject;
+                        
+                        if (file.type.startsWith('text/') || file.name.endsWith('.md')) {
                             reader.readAsText(file);
                         } else {
-                            resolve(null); // Ignore unsupported files
+                            reader.readAsDataURL(file);
                         }
                     });
                 });
@@ -1389,16 +1382,18 @@
                 try {
                     const results = await Promise.all(filePromises);
                     uploadedFiles.push(...results.filter(r => r !== null));
-                    updateUIAfterFileUpload();
+                    await updateUIAfterFileUpload();
                 } catch (err) {
                     alert('ファイルの読み込みに失敗しました: ' + err.message);
-                    resetUploadUI();
+                } finally {
+                    fileUpload.value = ''; // Reset file input to allow re-uploading the same file
+                    fileUpload.disabled = false;
                 }
             };
 
-            const updateUIAfterFileUpload = () => {
+            const updateUIAfterFileUpload = async () => {
                 filePreviewContainer.innerHTML = '';
-                uploadedFiles.forEach((file, index) => {
+                for (const [index, file] of uploadedFiles.entries()) {
                     const itemDiv = document.createElement('div');
                     itemDiv.className = 'file-preview-item';
 
@@ -1406,7 +1401,23 @@
                         const img = document.createElement('img');
                         img.src = file.content;
                         itemDiv.appendChild(img);
+                    } else if (file.type === 'pdf') {
+                        const canvas = document.createElement('canvas');
+                        itemDiv.appendChild(canvas);
+                        try {
+                            const loadingTask = pdfjsLib.getDocument(file.content);
+                            const pdf = await loadingTask.promise;
+                            const page = await pdf.getPage(1);
+                            const viewport = page.getViewport({ scale: 0.5 });
+                            canvas.height = viewport.height;
+                            canvas.width = viewport.width;
+                            const renderContext = { canvasContext: canvas.getContext('2d'), viewport: viewport };
+                            await page.render(renderContext).promise;
+                        } catch (e) {
+                            console.error("PDF thumbnail rendering failed:", e);
+                        }
                     }
+
                     const p = document.createElement('p');
                     p.className = 'file-name';
                     p.textContent = file.name;
@@ -1415,13 +1426,14 @@
                     const removeBtn = document.createElement('button');
                     removeBtn.className = 'remove-file-btn';
                     removeBtn.innerHTML = '&times;';
-                    removeBtn.onclick = () => {
+                    removeBtn.onclick = (e) => {
+                        e.stopPropagation();
                         uploadedFiles.splice(index, 1);
                         updateUIAfterFileUpload();
                     };
                     itemDiv.appendChild(removeBtn);
                     filePreviewContainer.appendChild(itemDiv);
-                });
+                }
 
                 if (uploadedFiles.length > 0) {
                     promptLabel.textContent = 'アップロードしたファイルへの追加指示 (任意)';
@@ -1434,7 +1446,7 @@
             const resetUploadUI = () => {
                 uploadedFiles = [];
                 filePreviewContainer.innerHTML = '';
-                fileUpload.value = ''; // Reset file input
+                fileUpload.value = ''; 
                 promptLabel.textContent = 'クイズにしたい内容を入力または貼り付け';
                 promptText.placeholder = '例: 日本の首都は東京です。徳川家康は江戸幕府を開きました...';
             };
@@ -1525,8 +1537,6 @@
             const init = () => {
                 pdfjsLib.GlobalWorkerOptions.workerSrc = `https://cdnjs.cloudflare.com/ajax/libs/pdf.js/2.11.338/pdf.worker.min.js`;
                 loadProjects();
-                switchScreen('welcome');
-                renderProjectList();
                 
                 // Load Settings
                 const isDark = localStorage.getItem('qube_darkMode') === 'true';
@@ -1543,6 +1553,16 @@
                 showProgressToggle.checked = showProgress;
                 masteryMode = localStorage.getItem('qube_masteryMode') === 'true';
                 masteryModeToggle.checked = masteryMode;
+
+                // Restore last session
+                const lastProjectId = localStorage.getItem('qube_lastProjectId');
+                const projectExists = projects.some(p => p.id === lastProjectId);
+                if (lastProjectId && projectExists) {
+                    setActiveProject(lastProjectId);
+                } else {
+                    switchScreen('welcome');
+                }
+                renderProjectList();
             };
 
             init();
