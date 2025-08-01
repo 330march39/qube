@@ -17,6 +17,7 @@
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=Noto+Sans+JP:wght@400;500;700&display=swap" rel="stylesheet">
     <script src="https://cdnjs.cloudflare.com/ajax/libs/tone/14.8.49/Tone.min.js"></script>
     <style>
+        /* --- Base Variables from Qube --- */
         :root {
             --bg-primary: #f0f9ff;
             --bg-secondary: #ffffff;
@@ -28,10 +29,23 @@
             --accent-primary-shadow: rgba(14, 165, 233, 0.3);
             --border-color: #cbd5e1;
             --modal-bg: rgba(0, 0, 0, 0.5);
-            --correct-bg: #dcfce7;
-            --correct-border: #22c55e;
-            --incorrect-bg: #fee2e2;
-            --incorrect-border: #ef4444;
+            
+            /* --- Integrated Variables from BEI --- */
+            --button-bg-default: #f1f5f9;
+            --button-text-default: #334155;
+            --button-border-default: #cbd5e1;
+            --progress-bar-bg: var(--accent-primary);
+            --feedback-bg: #f8fafc;
+            --feedback-border: #e2e8f0;
+            --correct-feedback-text: #15803d;
+            --correct-feedback-border: #22c55e;
+            --incorrect-feedback-text: #b91c1c;
+            --incorrect-feedback-border: #ef4444;
+            --correct-option-bg: #dcfce7;
+            --incorrect-option-bg: #fee2e2;
+            --score-color: #0c4a6e;
+            --score-comment-color: #0369a1;
+            --themed-text-color: #0c4a6e;
         }
 
         body.dark-mode {
@@ -45,12 +59,25 @@
             --accent-primary-shadow: rgba(56, 189, 248, 0.3);
             --border-color: #475569;
             --modal-bg: rgba(0, 0, 0, 0.7);
-            --correct-bg: #166534;
-            --correct-border: #4ade80;
-            --incorrect-bg: #991b1b;
-            --incorrect-border: #f87171;
-        }
 
+            /* --- Integrated Dark Variables from BEI --- */
+            --button-bg-default: #334155;
+            --button-text-default: #e2e8f0;
+            --button-border-default: #475569;
+            --progress-bar-bg: var(--accent-primary);
+            --feedback-bg: #334155;
+            --feedback-border: #475569;
+            --correct-feedback-text: #a7f3d0;
+            --correct-feedback-border: #4ade80;
+            --incorrect-feedback-text: #fecaca;
+            --incorrect-feedback-border: #f87171;
+            --correct-option-bg: #14532d;
+            --incorrect-option-bg: #7f1d1d;
+            --score-color: #e0f2fe;
+            --score-comment-color: #7dd3fc;
+            --themed-text-color: #e0f2fe;
+        }
+        
         body {
             font-family: 'Noto Sans JP', 'Inter', sans-serif;
             background-color: var(--bg-primary);
@@ -58,6 +85,7 @@
             transition: background-color 0.3s ease, color 0.3s ease;
         }
 
+        /* --- Qube Base Layout --- */
         .main-container { display: flex; height: 100vh; width: 100%; overflow: hidden; }
         #sidebar { width: 280px; background-color: var(--bg-secondary); border-right: 1px solid var(--border-color); padding: 20px; display: flex; flex-direction: column; transition: transform 0.3s ease, box-shadow 0.3s ease; transform: translateX(-100%); position: fixed; top: 0; left: 0; height: 100%; z-index: 1000; }
         #sidebar.open { transform: translateX(0); box-shadow: 0 0 40px rgba(0,0,0,0.2); }
@@ -65,8 +93,10 @@
         @media (min-width: 768px) { #sidebar { position: static; transform: translateX(0); box-shadow: none; } #mainContent { margin-left: 0; } #hamburgerButton { display: none; } }
         .sidebar-overlay { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.5); z-index: 999; }
         .sidebar-overlay.active { display: block; }
-        .screen { display: none; }
-        .screen.active { display: block; }
+        .screen { display: none; flex-direction: column; }
+        .screen.active { display: flex; }
+
+        /* --- Qube Buttons & Forms --- */
         .btn { padding: 10px 20px; border-radius: 8px; font-weight: 600; cursor: pointer; transition: all 0.2s ease; border: none; }
         .btn-primary { background-color: var(--accent-primary); color: white; box-shadow: 0 4px 12px var(--accent-primary-shadow); }
         .btn-primary:hover:not(:disabled) { background-color: var(--accent-primary-hover); transform: translateY(-2px); }
@@ -75,6 +105,8 @@
         .form-group label { display: block; margin-bottom: 8px; font-weight: 600; color: var(--text-secondary); }
         .form-group input, .form-group select, .form-group textarea { width: 100%; padding: 12px; border-radius: 8px; border: 1px solid var(--border-color); background-color: var(--bg-secondary); color: var(--text-primary); font-size: 1rem; }
         .form-group textarea { min-height: 150px; resize: vertical; }
+        
+        /* --- Qube Modal --- */
         .modal { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background-color: var(--modal-bg); display: flex; justify-content: center; align-items: center; z-index: 2000; opacity: 0; visibility: hidden; transition: opacity 0.3s ease, visibility 0.3s ease; }
         .modal.show { opacity: 1; visibility: visible; }
         .modal-content { background-color: var(--bg-secondary); padding: 30px; border-radius: 16px; box-shadow: 0 10px 30px rgba(0, 0, 0, 0.2); max-width: 400px; width: 90%; transform: translateY(-20px) scale(0.95); transition: transform 0.3s ease, background-color 0.3s ease; }
@@ -87,26 +119,69 @@
         .modal-button.cancel { background-color: transparent; color: var(--text-secondary); border: 1px solid var(--border-color); }
         .modal-button.cancel:hover { background-color: var(--border-color); }
 
-        /* Quiz Screen Styles */
-        .quiz-option {
-            display: block; width: 100%; text-align: left;
-            padding: 1rem; margin-bottom: 0.75rem;
-            border: 2px solid var(--border-color);
-            border-radius: 0.75rem;
-            transition: all 0.2s ease;
-        }
-        .quiz-option:hover:not(:disabled) {
-            border-color: var(--accent-primary);
-            background-color: var(--bg-tertiary);
-        }
-        .quiz-option.correct { background-color: var(--correct-bg); border-color: var(--correct-border); }
-        .quiz-option.incorrect { background-color: var(--incorrect-bg); border-color: var(--incorrect-border); }
-        .quiz-option:disabled { cursor: not-allowed; }
+        /* --- Project Start Screen --- */
+        #projectStartScreen .quiz-list { margin-top: 2rem; display: grid; gap: 1rem; grid-template-columns: repeat(auto-fill, minmax(280px, 1fr)); }
+        .quiz-card { background-color: var(--bg-secondary); border: 1px solid var(--border-color); border-radius: 12px; padding: 1.5rem; cursor: pointer; transition: all 0.2s ease; box-shadow: 0 4px 6px -1px rgba(0,0,0,0.1), 0 2px 4px -2px rgba(0,0,0,0.1); }
+        .quiz-card:hover { transform: translateY(-4px); box-shadow: 0 10px 15px -3px rgba(0,0,0,0.1), 0 4px 6px -4px rgba(0,0,0,0.1); border-color: var(--accent-primary); }
+        .quiz-card h3 { font-size: 1.25rem; font-weight: 700; color: var(--accent-primary); margin-bottom: 0.5rem; }
+        .quiz-card p { font-size: 0.9rem; color: var(--text-secondary); }
 
+        /* --- Integrated Quiz Screen Styles --- */
+        .quiz-container { max-width: 800px; margin-left: auto; margin-right: auto; }
+        .quiz-header { position: relative; display: flex; align-items: center; justify-content: center; padding-bottom: 1rem; gap: 1rem; }
+        .quiz-header .main-title { font-size: 1.5rem; font-weight: 700; margin: 0; color: var(--themed-text-color); }
+        #interruptButton { position: absolute; top: 50%; right: 0; transform: translateY(-50%); padding: 8px 15px; font-size: 0.8rem; background-color: #ef4444; color:white; }
+        .progress-container { width: 100%; background-color: #e2e8f0; border-radius: 10px; height: 15px; margin-top: 10px; overflow: hidden; box-shadow: inset 0 1px 3px rgba(0,0,0,0.1); }
+        .progress-bar { height: 100%; width: 0%; background-color: var(--progress-bar-bg); border-radius: 10px; transition: width 0.3s ease-in-out, background-color 0.3s ease; }
+        .progress-text { font-size: 1rem; font-weight: 600; color: var(--text-primary); margin-top: 10px; transition: color 0.3s ease; text-align: center; }
+        .question-area { min-height: 100px; display: flex; flex-direction: column; justify-content: center; align-items: center; transition: background-color 0.3s ease; text-align: left; margin-top: 1.5rem;}
+        .question-text { font-size: 1.25rem; font-weight: 500; color: var(--themed-text-color); margin-bottom: 10px; transition: color 0.3s ease; width: 100%; text-align:center; }
+        .options-grid { display: grid; grid-template-columns: 1fr; gap: 12px; margin-top: 15px; }
+        .option-button { background-color: var(--button-bg-default); color: var(--button-text-default); padding: 14px 20px; border-radius: 12px; font-size: 1rem; font-weight: 500; cursor: pointer; transition: all 0.3s ease; border: 2px solid var(--button-border-default); text-align: left; box-shadow: 0 4px 8px rgba(0, 0, 0, 0.08); line-height: 1.5; }
+        .option-button:hover:not(:disabled) { background-color: var(--border-color); transform: translateY(-3px) scale(1.01); box-shadow: 0 6px 12px rgba(0, 0, 0, 0.12); }
+        .option-button.correct { background-color: var(--correct-option-bg); border-color: var(--correct-feedback-border); color: var(--correct-feedback-text); }
+        .option-button.incorrect { background-color: var(--incorrect-option-bg); border-color: var(--incorrect-feedback-border); color: var(--incorrect-feedback-text); }
+        .option-button:disabled { cursor: not-allowed; }
+        .feedback-message { margin-top: 1.5rem; font-size: 1rem; text-align: left; padding: 1rem 1.5rem; border-radius: 12px; background-color: var(--feedback-bg); border: 1px solid var(--feedback-border); box-shadow: inset 0 1px 3px rgba(0,0,0,0.05); line-height: 1.5; transition: all 0.3s ease; }
+        .feedback-message.correct-feedback { color: var(--correct-feedback-text); border-color: var(--correct-feedback-border); }
+        .feedback-message.incorrect-feedback { color: var(--incorrect-feedback-text); border-color: var(--incorrect-feedback-border); }
+        .feedback-header { display: flex; justify-content: space-between; align-items: center; gap: 15px; min-height: 24px; flex-wrap: wrap; }
+        .feedback-result strong { font-size: 1.1rem; }
+        .explanation-content { max-height: 0; overflow: hidden; transition: max-height 0.4s ease-out, padding-top 0.4s ease-out, margin-top 0.4s ease-out; padding-top: 0; margin-top: 0; }
+        .explanation-content.show { max-height: 200px; padding-top: 10px; margin-top: 10px; border-top: 1px solid var(--border-color); }
+        .explanation-text { font-weight: 400; font-size: 0.95rem; }
+        .toggle-explanation-button { background-color: var(--accent-primary); color: white; padding: 6px 12px; border-radius: 8px; font-size: 0.8rem; cursor: pointer; transition: background-color 0.3s ease, transform 0.2s ease; flex-shrink: 0; border: none; }
+        .navigation-buttons { display: flex; justify-content: flex-end; margin-top: 20px; flex-wrap: wrap; gap: 10px; }
+        
+        /* --- Integrated Result Screen Styles --- */
+        .result-container { text-align: center; max-width: 600px; margin: 2rem auto; }
+        .score-area { font-size: 1.8rem; font-weight: 800; color: var(--score-color); margin-top: 25px; }
+        .score-comment { font-size: 1.3rem; font-weight: 700; color: var(--score-comment-color); margin-top: 10px; }
+        .confetti-container { position: absolute; top: 0; left: 0; width: 100%; height: 100%; overflow: hidden; pointer-events: none; z-index: 0; }
+        .confetti { position: absolute; width: 10px; height: 10px; background-color: #f06; opacity: 1; }
+
+        /* --- Integrated Settings Screen Styles --- */
+        .settings-container { max-width: 700px; margin: 0 auto; }
+        .settings-option { display: flex; justify-content: space-between; align-items: center; padding: 16px 0; border-bottom: 1px solid var(--border-color); flex-wrap: nowrap; gap: 1rem;}
+        .settings-option:last-child { border-bottom: none; }
+        .settings-option-label { display: flex; flex-direction: column; align-items: flex-start; flex-grow: 1; min-width: 0; }
+        .settings-option-label label { font-size: 1.1rem; color: var(--text-primary); font-weight: 600; }
+        .settings-option-label p { font-size: 0.85rem; color: var(--text-secondary); margin: 4px 0 0 0; text-align: left; }
+        .theme-colors { display: flex; gap: 10px; }
+        .color-circle { width: 30px; height: 30px; border-radius: 50%; cursor: pointer; border: 2px solid transparent; transition: border-color 0.2s ease; }
+        .color-circle.selected { border-color: var(--accent-primary); }
+        .toggle-switch { position: relative; display: inline-block; width: 60px; height: 34px; flex-shrink: 0; margin-left: auto; }
+        .toggle-switch input { opacity: 0; width: 0; height: 0; }
+        .slider { position: absolute; cursor: pointer; top: 0; left: 0; right: 0; bottom: 0; background-color: #ccc; transition: .4s; border-radius: 34px; }
+        .slider:before { position: absolute; content: ""; height: 26px; width: 26px; left: 4px; bottom: 4px; background-color: white; transition: .4s; border-radius: 50%; }
+        input:checked + .slider { background-color: var(--accent-primary); }
+        input:checked + .slider:before { transform: translateX(26px); }
+
+        @media (min-width: 640px) { .options-grid { grid-template-columns: 1fr 1fr; } }
     </style>
 </head>
 <body>
-
+    <div id="confettiContainer" class="confetti-container"></div>
     <div class="main-container">
         <!-- Sidebar -->
         <aside id="sidebar">
@@ -138,6 +213,17 @@
                 <p class="mb-8">左のメニューから「新しいプロジェクトを作成」して、<br>あなただけのオリジナルクイズ作りを始めましょう。</p>
                 <button id="getStartedButton" class="btn btn-primary text-lg px-8 py-3">さっそく始める</button>
             </div>
+
+            <!-- Project Start Screen (New) -->
+            <div id="projectStartScreen" class="screen">
+                <div class="flex justify-between items-center mb-6">
+                    <h2 class="text-2xl font-bold">作成済みクイズ一覧</h2>
+                    <button id="generateNewQuizBtn" class="btn btn-primary">新しいクイズをAIで生成</button>
+                </div>
+                <div id="quizList" class="quiz-list">
+                    <!-- Quiz cards will be inserted here -->
+                </div>
+            </div>
             
             <!-- Quiz Generation Screen -->
             <div id="generationScreen" class="screen">
@@ -149,8 +235,8 @@
                     <div class="form-group">
                          <label>または、ファイルをアップロード</label>
                          <div class="w-full p-8 border-2 border-dashed rounded-lg text-center cursor-pointer hover:border-sky-500" style="border-color: var(--border-color);">
-                            <p class="text-gray-500">ここにファイルをドラッグ＆ドロップ<br>またはクリックして選択</p>
-                            <input type="file" class="hidden" id="fileUpload">
+                             <p class="text-gray-500">ここにファイルをドラッグ＆ドロップ<br>またはクリックして選択</p>
+                             <input type="file" class="hidden" id="fileUpload">
                          </div>
                     </div>
                     <div class="grid md:grid-cols-2 gap-4">
@@ -180,19 +266,89 @@
                 </div>
             </div>
 
-            <!-- Quiz Screen -->
+            <!-- Quiz Screen (New UI) -->
             <div id="quizScreen" class="screen">
-                <!-- Quiz content will be rendered here -->
+                <div class="quiz-container">
+                    <div class="quiz-header">
+                        <h1 id="quizTitle" class="main-title">クイズ</h1>
+                        <button id="interruptButton" class="btn">中断</button>
+                    </div>
+                    <div class="progress-container">
+                        <div id="progressBar" class="progress-bar"></div>
+                    </div>
+                    <div id="progressText" class="progress-text"></div>
+                    <div class="question-area">
+                        <div id="questionText" class="question-text"></div>
+                    </div>
+                    <div id="optionsGrid" class="options-grid"></div>
+                    <div id="feedbackMessage" class="feedback-message" style="display: none;">
+                        <div class="feedback-header">
+                            <div id="feedbackResult"></div>
+                            <button id="toggleExplanationButton" class="toggle-explanation-button hidden">解説▼</button>
+                        </div>
+                        <div id="explanationContent" class="explanation-content">
+                            <div class="explanation-text"></div>
+                        </div>
+                    </div>
+                    <div class="navigation-buttons">
+                        <button id="nextButton" class="btn btn-primary">次の問題</button>
+                    </div>
+                </div>
             </div>
 
-            <!-- Settings Screen (Placeholder) -->
+            <!-- Result Screen (New UI) -->
+            <div id="resultScreen" class="screen">
+                <div class="result-container">
+                    <h2 class="text-2xl font-bold mb-4" style="color: var(--score-color);">クイズ結果</h2>
+                    <div id="finalScore" class="score-area"></div>
+                    <div id="scoreComment" class="score-comment"></div>
+                    <div class="mt-6 flex flex-col items-center gap-3">
+                        <button id="restartQuizButton" class="btn btn-primary w-full max-w-xs">もう一度挑戦</button>
+                        <button id="backToProjectButton" class="btn w-full max-w-xs" style="background-color: var(--button-bg-default); color: var(--button-text-default); border: 1px solid var(--border-color);">プロジェクトに戻る</button>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Settings Screen (New UI) -->
             <div id="settingsScreen" class="screen">
-                 <p>設定画面はここに表示されます。</p>
+                 <div class="settings-container">
+                    <h2 class="text-2xl font-bold mb-4 text-center">設定</h2>
+                    <div class="settings-option">
+                        <div class="settings-option-label">
+                            <label for="darkModeToggle">ダークモード</label>
+                        </div>
+                        <label class="toggle-switch">
+                            <input type="checkbox" id="darkModeToggle">
+                            <span class="slider"></span>
+                        </label>
+                    </div>
+                    <div class="settings-option">
+                        <div class="settings-option-label">
+                            <label>テーマカラー</label>
+                        </div>
+                        <div class="theme-colors">
+                            <div class="color-circle" data-theme="default" style="background-color: #0ea5e9;"></div>
+                            <div class="color-circle" data-theme="red" style="background-color: #ef4444;"></div>
+                            <div class="color-circle" data-theme="green" style="background-color: #10b981;"></div>
+                            <div class="color-circle" data-theme="indigo" style="background-color: #6366f1;"></div>
+                        </div>
+                    </div>
+                    <div class="settings-option">
+                        <div class="settings-option-label">
+                            <label for="enableSoundToggle">効果音</label>
+                        </div>
+                        <label class="toggle-switch">
+                            <input type="checkbox" id="enableSoundToggle">
+                            <span class="slider"></span>
+                        </label>
+                    </div>
+                     <button id="backToProjectFromSettings" class="btn btn-primary mt-8 w-full">プロジェクトに戻る</button>
+                </div>
             </div>
         </main>
     </div>
 
-    <!-- New Project Modal -->
+    <!-- Modals -->
     <div id="newProjectModal" class="modal">
         <div class="modal-content">
             <h2 class="modal-title">新しいプロジェクトの作成</h2>
@@ -203,6 +359,19 @@
             <div class="modal-buttons">
                 <button id="modalCancelProjectButton" class="modal-button cancel">キャンセル</button>
                 <button id="modalCreateProjectButton" class="modal-button create">作成</button>
+            </div>
+        </div>
+    </div>
+    <div id="nameQuizModal" class="modal">
+        <div class="modal-content">
+            <h2 class="modal-title">クイズに名前を付ける</h2>
+            <div class="form-group">
+                <label for="newQuizNameInput">クイズ名</label>
+                <input type="text" id="newQuizNameInput" placeholder="例: 江戸時代クイズ">
+            </div>
+            <div class="modal-buttons">
+                <button id="modalCancelQuizButton" class="modal-button cancel">キャンセル</button>
+                <button id="modalCreateQuizButton" class="modal-button create">保存</button>
             </div>
         </div>
     </div>
@@ -218,35 +387,100 @@
             const getStartedButton = document.getElementById('getStartedButton');
             const projectTitle = document.getElementById('projectTitle');
             const projectSettingsButton = document.getElementById('projectSettingsButton');
+            const projectListEl = document.getElementById('projectList');
             
             const screens = {
                 welcome: document.getElementById('welcomeScreen'),
+                projectStart: document.getElementById('projectStartScreen'),
                 generate: document.getElementById('generationScreen'),
                 quiz: document.getElementById('quizScreen'),
+                result: document.getElementById('resultScreen'),
                 settings: document.getElementById('settingsScreen'),
             };
 
             const generateQuizButton = document.getElementById('generateQuizButton');
+            const generateNewQuizBtn = document.getElementById('generateNewQuizBtn');
             const promptText = document.getElementById('promptText');
             const aiMode = document.getElementById('aiMode');
             const questionType = document.getElementById('questionType');
             const generationError = document.getElementById('generationError');
+            const quizList = document.getElementById('quizList');
 
             const newProjectModal = document.getElementById('newProjectModal');
             const newProjectNameInput = document.getElementById('newProjectNameInput');
             const modalCreateProjectButton = document.getElementById('modalCreateProjectButton');
             const modalCancelProjectButton = document.getElementById('modalCancelProjectButton');
+            
+            const nameQuizModal = document.getElementById('nameQuizModal');
+            const newQuizNameInput = document.getElementById('newQuizNameInput');
+            const modalCreateQuizButton = document.getElementById('modalCreateQuizButton');
+            const modalCancelQuizButton = document.getElementById('modalCancelQuizButton');
+
+            const quizTitle = document.getElementById('quizTitle');
+            const questionTextElement = document.getElementById('questionText');
+            const optionsGridElement = document.getElementById('optionsGrid');
+            const feedbackMessageElement = document.getElementById('feedbackMessage');
+            const feedbackResultElement = document.getElementById('feedbackResult');
+            const explanationContentElement = document.getElementById('explanationContent');
+            const explanationTextElement = explanationContentElement.querySelector('.explanation-text');
+            const toggleExplanationButton = document.getElementById('toggleExplanationButton');
+            const nextButton = document.getElementById('nextButton');
+            const interruptButton = document.getElementById('interruptButton');
+            const progressBarContainer = document.querySelector('.progress-container');
+            const progressBar = document.getElementById('progressBar');
+            const progressText = document.getElementById('progressText');
+            const finalScore = document.getElementById('finalScore');
+            const scoreComment = document.getElementById('scoreComment');
+            const confettiContainer = document.getElementById('confettiContainer');
+            const restartQuizButton = document.getElementById('restartQuizButton');
+            const backToProjectButton = document.getElementById('backToProjectButton');
+            const darkModeToggle = document.getElementById('darkModeToggle');
+            const themeColorCircles = document.querySelectorAll('.color-circle');
+            const enableSoundToggle = document.getElementById('enableSoundToggle');
+            const backToProjectFromSettings = document.getElementById('backToProjectFromSettings');
 
             // --- App State ---
             let projects = [];
             let activeProjectId = null;
-            let currentQuizState = {
-                questions: [],
-                currentIndex: 0,
-                score: 0
+            let currentQuiz = null; // Holds the currently active quiz object { id, name, questions }
+            let confettiAnimationId;
+            let tempGeneratedQuestions = null; // Temporarily store questions from API before naming
+
+            // --- Sound Effects ---
+            let enableSound = true;
+            const sounds = {
+                correct: new Tone.Synth({ volume: -12, oscillator: { type: 'sine' }, envelope: { attack: 0.005, decay: 0.1, sustain: 0.3, release: 1 } }).toDestination(),
+                incorrect: new Tone.FMSynth({ volume: -8, harmonicity: 1.5, modulationIndex: 10, oscillator: { type: "sawtooth" }, envelope: { attack: 0.01, decay: 0.3, sustain: 0.01, release: 0.1 } }).toDestination(),
+                click: new Tone.Synth({ volume: -15, oscillator: { type: 'triangle' }, envelope: { attack: 0.005, decay: 0.1, sustain: 0.01, release: 0.1 } }).toDestination(),
+                fanfare: new Tone.PolySynth(Tone.Synth, { volume: -10 }).toDestination(),
+            };
+            async function playSound(type) {
+                if (!enableSound) return;
+                if (Tone.context.state !== 'running') await Tone.start();
+                const now = Tone.now();
+                try {
+                    switch (type) {
+                        case 'correct': sounds.correct.triggerAttackRelease("C5", "8n", now); break;
+                        case 'incorrect': sounds.incorrect.triggerAttackRelease("A2", "8n", now); break;
+                        case 'click': sounds.click.triggerAttackRelease("C6", "16n", now); break;
+                        case 'fanfare':
+                            ["C5", "E5", "G5", "C6"].forEach((note, i) => {
+                                sounds.fanfare.triggerAttackRelease(note, "8n", now + i * 0.15);
+                            });
+                            break;
+                    }
+                } catch (error) { console.error("Sound playback failed:", error); }
+            }
+            
+            // --- Data Persistence ---
+            const saveProjects = () => {
+                localStorage.setItem('qube_projects', JSON.stringify(projects));
+            };
+            const loadProjects = () => {
+                projects = JSON.parse(localStorage.getItem('qube_projects')) || [];
             };
 
-            // --- Functions ---
+            // --- UI & State Management Functions ---
             const switchScreen = (screenName) => {
                 Object.values(screens).forEach(s => s.classList.remove('active'));
                 if (screens[screenName]) screens[screenName].classList.add('active');
@@ -272,18 +506,20 @@
                     newProjectNameInput.focus();
                     return;
                 }
-                const newProject = { id: `proj_${Date.now()}`, name: projectName, quizzes: [] };
+                const newProject = { 
+                    id: `proj_${Date.now()}`, 
+                    name: projectName, 
+                    quizzes: [] // Now an array to hold multiple quizzes
+                };
                 projects.push(newProject);
-                activeProjectId = newProject.id;
+                saveProjects();
                 renderProjectList();
                 setActiveProject(newProject.id);
-                switchScreen('generate');
                 closeNewProjectModal();
                 if(window.innerWidth < 768 && sidebar.classList.contains('open')) toggleSidebar();
             };
 
             const renderProjectList = () => {
-                const projectListEl = document.getElementById('projectList');
                 projectListEl.innerHTML = '';
                 if (projects.length === 0) {
                     projectListEl.innerHTML = '<p class="text-gray-400">まだプロジェクトがありません。</p>';
@@ -308,16 +544,33 @@
                 if (project) {
                     projectTitle.textContent = project.name;
                     projectSettingsButton.classList.remove('invisible');
-                    if (project.quizzes.length === 0) {
-                        switchScreen('generate');
-                    } else {
-                        renderQuiz(project.quizzes);
-                        switchScreen('quiz');
-                    }
+                    renderQuizList(project);
+                    switchScreen('projectStart');
                 }
                 renderProjectList();
             };
+
+            const renderQuizList = (project) => {
+                quizList.innerHTML = '';
+                if (project.quizzes.length === 0) {
+                    quizList.innerHTML = '<p class="col-span-full text-center text-gray-500 mt-8">まだクイズがありません。「新しいクイズをAIで生成」ボタンから作成しましょう。</p>';
+                    return;
+                }
+
+                project.quizzes.forEach(quiz => {
+                    const card = document.createElement('div');
+                    card.className = 'quiz-card';
+                    card.innerHTML = `
+                        <h3>${quiz.name}</h3>
+                        <p>${quiz.questions.length}問</p>
+                        <p>作成日: ${new Date(quiz.createdAt).toLocaleDateString()}</p>
+                    `;
+                    card.addEventListener('click', () => startQuiz(quiz));
+                    quizList.appendChild(card);
+                });
+            };
             
+            // --- Quiz Generation (Qube Core) ---
             const handleGenerateQuiz = async () => {
                 const buttonText = generateQuizButton.querySelector('.button-text');
                 const spinner = generateQuizButton.querySelector('.spinner');
@@ -334,7 +587,7 @@
                 generateQuizButton.disabled = true;
 
                 try {
-                    const modelPrompt = `以下のテキストに基づいて、高品質な4択クイズを5問作成してください。各問題には、質問、4つの選択肢、正解、そして正解の簡単な解説を必ず含めてください。出力は指定されたJSON形式に従ってください。\n\nテキスト:\n---\n${promptText.value}\n---`;
+                    const modelPrompt = `以下のテキストに基づいて、高品質な4択クイズを5問作成してください。各問題には、質問(question)、4つの選択肢(options)、正解(answer)、そして正解の簡単な解説(explanation)を必ず含めてください。出力は指定されたJSON形式に従ってください。\n\nテキスト:\n---\n${promptText.value}\n---`;
                     
                     const payload = {
                         contents: [{ role: "user", parts: [{ text: modelPrompt }] }],
@@ -370,20 +623,14 @@
                         body: JSON.stringify(payload)
                     });
 
-                    if (!response.ok) {
-                        throw new Error(`API request failed with status ${response.status}`);
-                    }
+                    if (!response.ok) throw new Error(`API request failed with status ${response.status}`);
 
                     const result = await response.json();
                     
-                    if (result.candidates && result.candidates[0].content && result.candidates[0].content.parts && result.candidates[0].content.parts[0].text) {
+                    if (result.candidates?.[0]?.content?.parts?.[0]?.text) {
                         const generatedData = JSON.parse(result.candidates[0].content.parts[0].text);
-                        const project = projects.find(p => p.id === activeProjectId);
-                        if (project) {
-                            project.quizzes = generatedData.quizzes;
-                            renderQuiz(project.quizzes);
-                            switchScreen('quiz');
-                        }
+                        tempGeneratedQuestions = generatedData.quizzes;
+                        showNameQuizModal();
                     } else {
                         throw new Error("AIからの応答が無効です。");
                     }
@@ -398,69 +645,210 @@
                 }
             };
 
-            const renderQuiz = (questions) => {
-                if (!questions || questions.length === 0) {
-                    switchScreen('generate'); // or show a message
+            const showNameQuizModal = () => {
+                const project = projects.find(p => p.id === activeProjectId);
+                if (!project) return;
+                newQuizNameInput.value = `クイズ ${project.quizzes.length + 1}`;
+                nameQuizModal.classList.add('show');
+                newQuizNameInput.focus();
+                newQuizNameInput.select();
+            };
+            
+            const closeNameQuizModal = () => nameQuizModal.classList.remove('show');
+
+            const handleCreateQuiz = () => {
+                const quizName = newQuizNameInput.value.trim();
+                if (!quizName) {
+                    newQuizNameInput.focus();
                     return;
                 }
-                currentQuizState = { questions, currentIndex: 0, score: 0 };
-                renderCurrentQuestion();
+                const project = projects.find(p => p.id === activeProjectId);
+                if (project && tempGeneratedQuestions) {
+                    const newQuiz = {
+                        id: `quiz_${Date.now()}`,
+                        name: quizName,
+                        createdAt: new Date().toISOString(),
+                        questions: tempGeneratedQuestions
+                    };
+                    project.quizzes.push(newQuiz);
+                    saveProjects();
+                    tempGeneratedQuestions = null;
+                    closeNameQuizModal();
+                    setActiveProject(activeProjectId); // Refresh the project start screen
+                }
             };
 
-            const renderCurrentQuestion = () => {
-                const quizScreen = document.getElementById('quizScreen');
-                const question = currentQuizState.questions[currentQuizState.currentIndex];
-                quizScreen.innerHTML = `
-                    <div class="max-w-3xl mx-auto">
-                        <div class="mb-4">
-                            <p class="text-sm text-gray-500">問題 ${currentQuizState.currentIndex + 1} / ${currentQuizState.questions.length}</p>
-                            <h2 class="text-2xl font-bold mt-2">${question.question}</h2>
-                        </div>
-                        <div id="optionsContainer">
-                            ${question.options.map(opt => `<button class="quiz-option" data-option="${opt}">${opt}</button>`).join('')}
-                        </div>
-                        <div id="feedbackContainer" class="mt-4 p-4 rounded-lg hidden"></div>
-                        <div class="mt-6 text-right">
-                            <button id="nextQuestionButton" class="btn btn-primary hidden">次の問題へ</button>
-                        </div>
-                    </div>
-                `;
-                document.querySelectorAll('.quiz-option').forEach(btn => {
-                    btn.addEventListener('click', handleOptionSelect);
+            // --- Quiz Gameplay (Integrated from BEI) ---
+            const startQuiz = (quiz) => {
+                if (!quiz || !quiz.questions || quiz.questions.length === 0) {
+                    return;
+                }
+                currentQuiz = { 
+                    ...quiz, 
+                    currentIndex: 0, 
+                    score: 0, 
+                    answeredQuestions: new Set() 
+                };
+                quizTitle.textContent = quiz.name;
+                switchScreen('quiz');
+                loadQuestion();
+            };
+
+            const loadQuestion = () => {
+                if (currentQuiz.currentIndex >= currentQuiz.questions.length) {
+                    showQuizResult();
+                    return;
+                }
+                const question = currentQuiz.questions[currentQuiz.currentIndex];
+
+                questionTextElement.innerHTML = question.question;
+                optionsGridElement.innerHTML = '';
+                feedbackMessageElement.style.display = 'none';
+                feedbackMessageElement.classList.remove('correct-feedback', 'incorrect-feedback');
+                explanationContentElement.classList.remove('show');
+                toggleExplanationButton.classList.add('hidden');
+                toggleExplanationButton.textContent = '解説▼';
+
+                const shuffledOptions = [...question.options];
+                // shuffleArray(shuffledOptions); // Optional
+
+                shuffledOptions.forEach(option => {
+                    const button = document.createElement('button');
+                    button.innerHTML = option;
+                    button.classList.add('option-button');
+                    button.dataset.option = option;
+                    button.addEventListener('click', () => selectOption(option, question.answer, question));
+                    optionsGridElement.appendChild(button);
                 });
+                updateProgressBar();
+                updateNavigationButtons();
             };
 
-            const handleOptionSelect = (e) => {
-                const selectedButton = e.target;
-                const selectedOption = selectedButton.dataset.option;
-                const question = currentQuizState.questions[currentQuizState.currentIndex];
-                const feedbackContainer = document.getElementById('feedbackContainer');
+            const selectOption = (selectedOption, correctAnswer, question) => {
+                if (currentQuiz.answeredQuestions.has(question.question)) return;
                 
-                document.querySelectorAll('.quiz-option').forEach(btn => btn.disabled = true);
+                optionsGridElement.querySelectorAll('.option-button').forEach(b => b.disabled = true);
+                feedbackMessageElement.style.display = 'block';
 
-                if (selectedOption === question.answer) {
-                    selectedButton.classList.add('correct');
-                    feedbackContainer.innerHTML = `<strong class="text-green-700 dark:text-green-300">正解！</strong><p class="mt-2">${question.explanation}</p>`;
-                    feedbackContainer.className = 'mt-4 p-4 rounded-lg block bg-green-100 dark:bg-green-900';
+                if (selectedOption === correctAnswer) {
+                    playSound('correct');
+                    feedbackResultElement.innerHTML = `<strong>正解！</strong>`;
+                    feedbackMessageElement.classList.add('correct-feedback');
+                    currentQuiz.score++;
                 } else {
-                    selectedButton.classList.add('incorrect');
-                    feedbackContainer.innerHTML = `<strong class="text-red-700 dark:text-red-300">不正解...</strong><p class="mt-2">正解は「${question.answer}」でした。</p><p class="mt-2">${question.explanation}</p>`;
-                    feedbackContainer.className = 'mt-4 p-4 rounded-lg block bg-red-100 dark:bg-red-900';
-                    // Highlight the correct answer
-                    document.querySelector(`.quiz-option[data-option="${question.answer}"]`).classList.add('correct');
+                    playSound('incorrect');
+                    feedbackResultElement.innerHTML = `<strong>不正解...</strong> 正解は「${correctAnswer}」でした。`;
+                    feedbackMessageElement.classList.add('incorrect-feedback');
                 }
                 
-                const nextButton = document.getElementById('nextQuestionButton');
-                nextButton.classList.remove('hidden');
-                nextButton.addEventListener('click', () => {
-                    currentQuizState.currentIndex++;
-                    if (currentQuizState.currentIndex < currentQuizState.questions.length) {
-                        renderCurrentQuestion();
-                    } else {
-                        // Show results screen (to be implemented)
-                        document.getElementById('quizScreen').innerHTML = `<p class="text-center text-2xl">クイズ終了！お疲れ様でした。</p>`;
-                    }
+                currentQuiz.answeredQuestions.add(question.question);
+
+                optionsGridElement.querySelectorAll('.option-button').forEach(button => {
+                    if (button.dataset.option === correctAnswer) button.classList.add('correct');
+                    else if (button.dataset.option === selectedOption) button.classList.add('incorrect');
                 });
+
+                if (question.explanation) {
+                    explanationTextElement.textContent = question.explanation;
+                    toggleExplanationButton.classList.remove('hidden');
+                }
+                updateNavigationButtons();
+            };
+
+            const updateNavigationButtons = () => {
+                const question = currentQuiz.questions[currentQuiz.currentIndex];
+                if (!question) {
+                    nextButton.disabled = true;
+                    return;
+                }
+                nextButton.disabled = !currentQuiz.answeredQuestions.has(question.question);
+                nextButton.textContent = (currentQuiz.currentIndex === currentQuiz.questions.length - 1 && !nextButton.disabled) ? '結果を見る' : '次の問題';
+            };
+
+            const updateProgressBar = () => {
+                const total = currentQuiz.questions.length;
+                const progress = total > 0 ? (currentQuiz.currentIndex + 1) / total : 0;
+                progressBar.style.width = `${progress * 100}%`;
+                progressText.textContent = `${currentQuiz.currentIndex + 1} / ${total} 問目`;
+            };
+
+            const showQuizResult = () => {
+                switchScreen('result');
+                const total = currentQuiz.questions.length;
+                finalScore.textContent = `あなたのスコア: ${currentQuiz.score} / ${total}`;
+                const percentage = total === 0 ? 0 : (currentQuiz.score / total) * 100;
+                let comment = '';
+                if (currentQuiz.score === total && total > 0) {
+                    comment = '素晴らしい！全問正解です！🎉';
+                    playSound('fanfare');
+                    setTimeout(launchConfetti, 100);
+                } else if (percentage >= 80) {
+                    comment = 'よくできました！この調子で頑張りましょう！✨';
+                } else if (percentage >= 50) {
+                    comment = 'もう少しです！復習して、さらに上を目指しましょう！👍';
+                } else {
+                    comment = '頑張ろう！基礎をしっかり固めていきましょう！💪';
+                }
+                scoreComment.textContent = comment;
+            };
+
+            const launchConfetti = () => {
+                if (confettiAnimationId) cancelAnimationFrame(confettiAnimationId);
+                confettiContainer.innerHTML = '';
+                const confettiPieces = [];
+                const numConfetti = 100;
+                const colors = ['#f43f5e', '#38bdf8', '#fbbf24', '#34d399', '#8b5cf6'];
+                for (let i = 0; i < numConfetti; i++) {
+                    const confetti = document.createElement('div');
+                    confetti.classList.add('confetti');
+                    confetti.style.backgroundColor = colors[i % colors.length];
+                    confettiContainer.appendChild(confetti);
+                    const piece = { element: confetti, x: confettiContainer.clientWidth / 2, y: confettiContainer.clientHeight, vx: (Math.random() - 0.5) * 10, vy: -Math.random() * 15 - 5, rotation: Math.random() * 360, rotationSpeed: (Math.random() - 0.5) * 20 };
+                    confettiPieces.push(piece);
+                }
+                let startTime = null;
+                function animate(timestamp) {
+                    if (!startTime) startTime = timestamp;
+                    const progress = timestamp - startTime;
+                    let allOffScreen = true;
+                    confettiPieces.forEach(p => {
+                        p.x += p.vx; p.y += p.vy; p.vy += 0.2; p.vx *= 0.99; p.rotation += p.rotationSpeed;
+                        if (p.y < confettiContainer.clientHeight + 20) allOffScreen = false;
+                        p.element.style.transform = `translate(${p.x}px, ${p.y}px) rotate(${p.rotation}deg)`;
+                    });
+                    if (allOffScreen && progress > 1000) {
+                        cancelAnimationFrame(confettiAnimationId);
+                        confettiAnimationId = null;
+                    } else {
+                        confettiAnimationId = requestAnimationFrame(animate);
+                    }
+                }
+                confettiAnimationId = requestAnimationFrame(animate);
+            };
+
+            // --- Settings Functions ---
+            const applyColors = (themeName, isDark) => {
+                 const root = document.documentElement;
+                 const themes = {
+                    'default': { '--accent-primary': '#0ea5e9', '--accent-primary-hover': '#0284c7', '--accent-primary-shadow': 'rgba(14, 165, 233, 0.3)', '--themed-text-color': isDark ? '#e0f2fe' : '#0c4a6e' },
+                    'red': { '--accent-primary': '#ef4444', '--accent-primary-hover': '#dc2626', '--accent-primary-shadow': 'rgba(239, 68, 68, 0.3)', '--themed-text-color': isDark ? '#fca5a5' : '#991b1b' },
+                    'green': { '--accent-primary': '#10b981', '--accent-primary-hover': '#059669', '--accent-primary-shadow': 'rgba(16, 185, 129, 0.3)', '--themed-text-color': isDark ? '#a7f3d0' : '#065f46' },
+                    'indigo': { '--accent-primary': '#6366f1', '--accent-primary-hover': '#4f46e5', '--accent-primary-shadow': 'rgba(99, 102, 241, 0.3)', '--themed-text-color': isDark ? '#c7d2fe' : '#4338ca' }
+                 };
+                 const theme = themes[themeName] || themes.default;
+                 Object.entries(theme).forEach(([prop, value]) => root.style.setProperty(prop, value));
+                 root.style.setProperty('--progress-bar-bg', root.style.getPropertyValue('--accent-primary'));
+            };
+            
+            const setDarkMode = (isDark) => {
+                document.body.classList.toggle('dark-mode', isDark);
+                localStorage.setItem('qube_darkMode', isDark);
+                applyColors(localStorage.getItem('qube_themeColor') || 'default', isDark);
+            };
+
+            const setThemeColor = (themeName) => {
+                localStorage.setItem('qube_themeColor', themeName);
+                applyColors(themeName, document.body.classList.contains('dark-mode'));
             };
 
             // --- Event Listeners ---
@@ -472,12 +860,62 @@
             modalCancelProjectButton.addEventListener('click', closeNewProjectModal);
             newProjectModal.addEventListener('click', (e) => { if (e.target === newProjectModal) closeNewProjectModal(); });
             newProjectNameInput.addEventListener('keydown', (e) => { if (e.key === 'Enter') handleCreateProject(); });
+            
+            generateNewQuizBtn.addEventListener('click', () => switchScreen('generate'));
             generateQuizButton.addEventListener('click', handleGenerateQuiz);
 
+            modalCreateQuizButton.addEventListener('click', handleCreateQuiz);
+            modalCancelQuizButton.addEventListener('click', closeNameQuizModal);
+            nameQuizModal.addEventListener('click', (e) => { if (e.target === nameQuizModal) closeNameQuizModal(); });
+            newQuizNameInput.addEventListener('keydown', (e) => { if (e.key === 'Enter') handleCreateQuiz(); });
+
+            nextButton.addEventListener('click', () => {
+                playSound('click');
+                currentQuiz.currentIndex++;
+                loadQuestion();
+            });
+            interruptButton.addEventListener('click', () => setActiveProject(activeProjectId));
+            toggleExplanationButton.addEventListener('click', () => {
+                explanationContentElement.classList.toggle('show');
+                toggleExplanationButton.textContent = explanationContentElement.classList.contains('show') ? '解説▲' : '解説▼';
+            });
+            restartQuizButton.addEventListener('click', () => startQuiz(currentQuiz));
+            backToProjectButton.addEventListener('click', () => setActiveProject(activeProjectId));
+            projectSettingsButton.addEventListener('click', () => switchScreen('settings'));
+            backToProjectFromSettings.addEventListener('click', () => setActiveProject(activeProjectId));
+            
+            darkModeToggle.addEventListener('change', (e) => setDarkMode(e.target.checked));
+            themeColorCircles.forEach(circle => {
+                circle.addEventListener('click', () => {
+                    themeColorCircles.forEach(c => c.classList.remove('selected'));
+                    circle.classList.add('selected');
+                    setThemeColor(circle.dataset.theme);
+                });
+            });
+            enableSoundToggle.addEventListener('change', (e) => {
+                enableSound = e.target.checked;
+                localStorage.setItem('qube_enableSound', String(enableSound));
+            });
+
             // --- Initialization ---
-            switchScreen('welcome');
-            renderProjectList();
-            if (window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches) document.body.classList.add('dark-mode');
+            const init = () => {
+                loadProjects();
+                switchScreen('welcome');
+                renderProjectList();
+                
+                const isDark = localStorage.getItem('qube_darkMode') === 'true';
+                darkModeToggle.checked = isDark;
+                
+                const savedTheme = localStorage.getItem('qube_themeColor') || 'default';
+                document.querySelector(`.color-circle[data-theme="${savedTheme}"]`)?.classList.add('selected');
+                
+                setDarkMode(isDark);
+
+                enableSound = localStorage.getItem('qube_enableSound') !== 'false';
+                enableSoundToggle.checked = enableSound;
+            };
+
+            init();
         });
     </script>
 </body>
