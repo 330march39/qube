@@ -134,9 +134,11 @@
         }
         #fileDropArea { border-color: var(--border-color); }
         #fileDropArea.dragover { border-color: var(--accent-primary); background-color: var(--bg-tertiary); }
-        #filePreview { position: relative; }
-        #filePreview img { max-height: 150px; border-radius: 8px; margin: 0 auto; }
-        #removeFileBtn { position: absolute; top: -10px; right: -10px; background: #ef4444; color: white; border-radius: 50%; width: 24px; height: 24px; display: flex; align-items: center; justify-content: center; font-weight: bold; cursor: pointer; }
+        #filePreviewContainer { display: flex; flex-wrap: wrap; gap: 10px; margin-top: 1rem; }
+        .file-preview-item { position: relative; }
+        .file-preview-item img { max-height: 100px; border-radius: 8px; }
+        .file-preview-item .file-name { font-size: 0.8rem; color: var(--text-secondary); max-width: 100px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+        .remove-file-btn { position: absolute; top: -8px; right: -8px; background: #ef4444; color: white; border-radius: 50%; width: 20px; height: 20px; display: flex; align-items: center; justify-content: center; font-weight: bold; cursor: pointer; border: 2px solid var(--bg-secondary); }
         .divider { text-align: center; margin: 1.5rem 0; color: var(--text-secondary); display: flex; align-items: center; gap: 1rem; }
         .divider::before, .divider::after { content: ''; height: 1px; background-color: var(--border-color); flex-grow: 1; }
 
@@ -158,6 +160,8 @@
         .option-button.selected { border-color: var(--accent-primary); background-color: var(--bg-tertiary); }
         .option-button:disabled { cursor: not-allowed; }
         .sorting-item.dragging { opacity: 0.5; }
+        .sorting-container { display: grid; grid-template-columns: 1fr; gap: 1rem; }
+        .sorting-box { padding: 1rem; border-radius: 12px; border: 2px dashed var(--border-color); min-height: 100px; }
         .feedback-message { margin-top: 1.5rem; font-size: 1rem; text-align: left; padding: 1rem 1.5rem; border-radius: 12px; background-color: var(--feedback-bg); border: 1px solid var(--feedback-border); box-shadow: inset 0 1px 3px rgba(0,0,0,0.05); line-height: 1.5; transition: all 0.3s ease; }
         .feedback-message.correct-feedback { color: var(--correct-feedback-text); border-color: var(--correct-feedback-border); }
         .feedback-message.incorrect-feedback { color: var(--incorrect-feedback-text); border-color: var(--incorrect-feedback-border); }
@@ -193,7 +197,10 @@
         input:checked + .slider { background-color: var(--accent-primary); }
         input:checked + .slider:before { transform: translateX(26px); }
 
-        @media (min-width: 640px) { .options-grid { grid-template-columns: 1fr 1fr; } }
+        @media (min-width: 640px) { 
+            .options-grid { grid-template-columns: 1fr 1fr; }
+            .sorting-container { grid-template-columns: 1fr 1fr; }
+        }
     </style>
 </head>
 <body>
@@ -253,9 +260,9 @@
                          <label>ファイルをアップロード</label>
                          <div id="fileDropArea" class="w-full p-8 border-2 border-dashed rounded-lg text-center cursor-pointer hover:border-sky-500">
                              <p class="text-gray-500">ここにファイルをドラッグ＆ドロップ<br>またはクリックして選択</p>
-                             <input type="file" class="hidden" id="fileUpload" accept=".txt,.md,.text,.pdf,image/*">
+                             <input type="file" class="hidden" id="fileUpload" accept=".txt,.md,.text,.pdf,image/*" multiple>
                          </div>
-                         <div id="filePreview" class="mt-4"></div>
+                         <div id="filePreviewContainer"></div>
                     </div>
 
                     <div class="divider">または</div>
@@ -437,7 +444,7 @@
             const startSelectedQuizButton = document.getElementById('startSelectedQuizButton');
             const fileDropArea = document.getElementById('fileDropArea');
             const fileUpload = document.getElementById('fileUpload');
-            const filePreview = document.getElementById('filePreview');
+            const filePreviewContainer = document.getElementById('filePreviewContainer');
 
             const newProjectModal = document.getElementById('newProjectModal');
             const newProjectNameInput = document.getElementById('newProjectNameInput');
@@ -479,8 +486,7 @@
             let currentQuiz = null; 
             let confettiAnimationId;
             let tempGeneratedQuestions = null;
-            let uploadedFileContent = null; 
-            let uploadedFileType = null; 
+            let uploadedFiles = []; // Array of {name, type, content}
 
             // --- Sound Effects ---
             let enableSound = true;
@@ -617,7 +623,7 @@
                 const buttonText = generateQuizButton.querySelector('.button-text');
                 const spinner = generateQuizButton.querySelector('.spinner');
 
-                if (promptText.value.trim() === '' && !uploadedFileContent) {
+                if (promptText.value.trim() === '' && uploadedFiles.length === 0) {
                     generationError.textContent = 'クイズの元になる内容を入力またはアップロードしてください。';
                     generationError.classList.remove('hidden');
                     return;
@@ -632,6 +638,10 @@
                     const selectedType = questionType.value;
                     let modelPrompt = `以下の情報に基づいて、高品質な${questionType.options[questionType.selectedIndex].text}形式のクイズを5問作成してください。`;
                     
+                    if (selectedType === 'fill_in_the_blank') {
+                        modelPrompt += `答え(answer)は、単語や短い語句だけにしてください。文末の句点(。)や「です」「ます」を含めないでください。`;
+                    }
+
                     if (promptText.value.trim()) {
                         modelPrompt += `\nユーザーからの追加指示: 「${promptText.value}」`;
                     }
@@ -666,13 +676,20 @@
                     payload.generationConfig.responseSchema.properties.quizzes.items = itemSchema;
 
                     payload.contents[0].parts.push({ text: modelPrompt });
+                    
+                    let textContent = '';
+                    uploadedFiles.forEach(file => {
+                        if (file.type === 'image') {
+                            const mimeType = file.content.substring(5, file.content.indexOf(';'));
+                            const base64Data = file.content.split(',')[1];
+                            payload.contents[0].parts.push({ inlineData: { mimeType, data: base64Data } });
+                        } else { // text or pdf
+                            textContent += file.content + '\n\n';
+                        }
+                    });
 
-                    if (uploadedFileType === 'image') {
-                        const mimeType = uploadedFileContent.substring(5, uploadedFileContent.indexOf(';'));
-                        const base64Data = uploadedFileContent.split(',')[1];
-                        payload.contents[0].parts.push({ inlineData: { mimeType, data: base64Data } });
-                    } else if (uploadedFileType === 'text' || uploadedFileType === 'pdf') {
-                         payload.contents[0].parts[0].text += `\n\nクイズ生成の元になるテキスト:\n---\n${uploadedFileContent}\n---`;
+                    if (textContent) {
+                        payload.contents[0].parts[0].text += `\n\nクイズ生成の元になるテキスト:\n---\n${textContent}\n---`;
                     }
                     
                     const apiKey = ""; // Provided by the environment
@@ -740,7 +757,7 @@
 
             // --- Quiz Gameplay ---
             const startQuiz = (quiz) => {
-                if (!quiz || !quiz.questions || !quiz.questions.length === 0) return;
+                if (!quiz || !quiz.questions || quiz.questions.length === 0) return;
                 currentQuiz = { ...quiz, currentIndex: 0, score: 0, answeredQuestions: new Set() };
                 quizTitle.textContent = quiz.name;
                 switchScreen('quiz');
@@ -784,13 +801,25 @@
                         createSubmitButton();
                         break;
                     case 'sorting':
+                        optionsGridElement.innerHTML = `
+                            <div class="sorting-container">
+                                <div>
+                                    <h4 class="font-semibold mb-2 text-center">選択肢</h4>
+                                    <div id="sortingSource" class="sorting-box"></div>
+                                </div>
+                                <div>
+                                    <h4 class="font-semibold mb-2 text-center">解答欄</h4>
+                                    <div id="sortingTarget" class="sorting-box"></div>
+                                </div>
+                            </div>`;
+                        const sourceContainer = document.getElementById('sortingSource');
                         const shuffledItems = [...question.items].sort(() => Math.random() - 0.5);
                         shuffledItems.forEach(item => {
                             const div = document.createElement('div');
                             div.innerHTML = item;
                             div.classList.add('option-button', 'sorting-item');
                             div.draggable = true;
-                            optionsGridElement.appendChild(div);
+                            sourceContainer.appendChild(div);
                         });
                         addDragAndDropListeners();
                         createSubmitButton();
@@ -828,14 +857,14 @@
                         break;
                     case 'multiple_select':
                         userAnswer = Array.from(optionsGridElement.querySelectorAll('.option-button.selected')).map(btn => btn.dataset.option);
-                        isCorrect = userAnswer.length === question.answer.length && userAnswer.every(val => question.answer.includes(val));
+                        isCorrect = userAnswer.length === question.answer.length && userAnswer.every(val => question.answer.includes(val)) && question.answer.every(val => userAnswer.includes(val));
                         break;
                     case 'fill_in_the_blank':
                         userAnswer = document.getElementById('fillInBlankInput').value;
                         isCorrect = userAnswer.toLowerCase().trim() === question.answer.toLowerCase().trim();
                         break;
                     case 'sorting':
-                        userAnswer = Array.from(optionsGridElement.querySelectorAll('.sorting-item')).map(item => item.textContent);
+                        userAnswer = Array.from(document.getElementById('sortingTarget').querySelectorAll('.sorting-item')).map(item => item.textContent);
                         isCorrect = JSON.stringify(userAnswer) === JSON.stringify(question.items);
                         break;
                 }
@@ -858,14 +887,16 @@
                     currentQuiz.score++;
                 } else {
                     playSound('incorrect');
-                    const correctAnswerText = Array.isArray(question.answer) ? question.answer.join(', ') : question.answer;
+                    let correctAnswerText = question.answer;
+                    if (Array.isArray(question.answer)) correctAnswerText = question.answer.join(', ');
+                    if (question.type === 'sorting') correctAnswerText = question.items.join(' → ');
+                    
                     feedbackResultElement.innerHTML = `<strong>不正解...</strong> 正解は「${correctAnswerText}」でした。`;
                     feedbackMessageElement.classList.add('incorrect-feedback');
                 }
                 
                 currentQuiz.answeredQuestions.add(question.question);
 
-                // Highlight correct/incorrect answers visually
                 if (question.type === 'multiple_choice' || question.type === 'multiple_select') {
                     optionsGridElement.querySelectorAll('.option-button').forEach(button => {
                         const isAnswer = Array.isArray(question.answer) ? question.answer.includes(button.dataset.option) : button.dataset.option === question.answer;
@@ -884,7 +915,8 @@
             };
             
             const addDragAndDropListeners = () => {
-                const items = optionsGridElement.querySelectorAll('.sorting-item');
+                const items = document.querySelectorAll('.sorting-item');
+                const containers = [document.getElementById('sortingSource'), document.getElementById('sortingTarget')];
                 let draggedItem = null;
 
                 items.forEach(item => {
@@ -894,18 +926,19 @@
                     });
                     item.addEventListener('dragend', () => {
                         draggedItem.classList.remove('dragging');
-                        draggedItem = null;
                     });
                 });
 
-                optionsGridElement.addEventListener('dragover', e => {
-                    e.preventDefault();
-                    const afterElement = getDragAfterElement(optionsGridElement, e.clientY);
-                    if (afterElement == null) {
-                        optionsGridElement.appendChild(draggedItem);
-                    } else {
-                        optionsGridElement.insertBefore(draggedItem, afterElement);
-                    }
+                containers.forEach(container => {
+                    container.addEventListener('dragover', e => {
+                        e.preventDefault();
+                        const afterElement = getDragAfterElement(container, e.clientY);
+                        if (afterElement == null) {
+                            container.appendChild(draggedItem);
+                        } else {
+                            container.insertBefore(draggedItem, afterElement);
+                        }
+                    });
                 });
             };
 
@@ -1018,73 +1051,86 @@
             };
 
             // --- File Upload Logic ---
-            const handleFileSelect = async (file) => {
-                if (!file) return;
+            const handleFileSelect = async (files) => {
+                if (!files || files.length === 0) return;
 
-                if (file.type.startsWith('image/')) {
-                    uploadedFileType = 'image';
-                    const reader = new FileReader();
-                    reader.onload = (e) => {
-                        uploadedFileContent = e.target.result; // base64 string
-                        updateUIAfterFileUpload(file);
-                    };
-                    reader.readAsDataURL(file);
-                } else if (file.type === 'application/pdf') {
-                    uploadedFileType = 'pdf';
-                    try {
-                        const loadingTask = pdfjsLib.getDocument(URL.createObjectURL(file));
-                        const pdf = await loadingTask.promise;
-                        let text = '';
-                        for (let i = 1; i <= pdf.numPages; i++) {
-                            const page = await pdf.getPage(i);
-                            const textContent = await page.getTextContent();
-                            text += textContent.items.map(item => item.str).join(' ');
+                const filePromises = Array.from(files).map(file => {
+                    return new Promise((resolve, reject) => {
+                        if (file.type.startsWith('image/')) {
+                            const reader = new FileReader();
+                            reader.onload = (e) => resolve({ name: file.name, type: 'image', content: e.target.result });
+                            reader.onerror = reject;
+                            reader.readAsDataURL(file);
+                        } else if (file.type === 'application/pdf') {
+                            const loadingTask = pdfjsLib.getDocument(URL.createObjectURL(file));
+                            loadingTask.promise.then(async (pdf) => {
+                                let text = '';
+                                for (let i = 1; i <= pdf.numPages; i++) {
+                                    const page = await pdf.getPage(i);
+                                    const textContent = await page.getTextContent();
+                                    text += textContent.items.map(item => item.str).join(' ');
+                                }
+                                resolve({ name: file.name, type: 'pdf', content: text });
+                            }).catch(reject);
+                        } else if (file.type.startsWith('text/')) {
+                            const reader = new FileReader();
+                            reader.onload = (e) => resolve({ name: file.name, type: 'text', content: e.target.result });
+                            reader.onerror = reject;
+                            reader.readAsText(file);
+                        } else {
+                            resolve(null); // Ignore unsupported files
                         }
-                        uploadedFileContent = text;
-                        updateUIAfterFileUpload(file);
-                    } catch (err) {
-                        alert('PDFの読み込みに失敗しました: ' + err.message);
-                        resetUploadUI();
-                    }
-                } else if (file.type.startsWith('text/')) {
-                    uploadedFileType = 'text';
-                    const reader = new FileReader();
-                    reader.onload = (e) => {
-                        uploadedFileContent = e.target.result;
-                        updateUIAfterFileUpload(file);
-                    };
-                    reader.readAsText(file);
-                } else {
-                    alert('サポートされていないファイル形式です。');
+                    });
+                });
+
+                try {
+                    const results = await Promise.all(filePromises);
+                    uploadedFiles.push(...results.filter(r => r !== null));
+                    updateUIAfterFileUpload();
+                } catch (err) {
+                    alert('ファイルの読み込みに失敗しました: ' + err.message);
+                    resetUploadUI();
                 }
             };
 
-            const updateUIAfterFileUpload = (file) => {
-                filePreview.innerHTML = '';
-                if (uploadedFileType === 'image') {
-                    const img = document.createElement('img');
-                    img.src = uploadedFileContent;
-                    filePreview.appendChild(img);
-                } else {
-                    const p = document.createElement('p');
-                    p.textContent = `ファイル名: ${file.name}`;
-                    filePreview.appendChild(p);
-                }
-                const removeBtn = document.createElement('button');
-                removeBtn.id = 'removeFileBtn';
-                removeBtn.innerHTML = '&times;';
-                removeBtn.onclick = resetUploadUI;
-                filePreview.appendChild(removeBtn);
+            const updateUIAfterFileUpload = () => {
+                filePreviewContainer.innerHTML = '';
+                uploadedFiles.forEach((file, index) => {
+                    const itemDiv = document.createElement('div');
+                    itemDiv.className = 'file-preview-item';
 
-                promptLabel.textContent = 'アップロードしたファイルへの追加指示 (任意)';
-                promptText.placeholder = '例: この画像について5問作成してください。';
-                promptText.value = ''; // Clear text area for new instructions
+                    if (file.type === 'image') {
+                        const img = document.createElement('img');
+                        img.src = file.content;
+                        itemDiv.appendChild(img);
+                    }
+                    const p = document.createElement('p');
+                    p.className = 'file-name';
+                    p.textContent = file.name;
+                    itemDiv.appendChild(p);
+                    
+                    const removeBtn = document.createElement('button');
+                    removeBtn.className = 'remove-file-btn';
+                    removeBtn.innerHTML = '&times;';
+                    removeBtn.onclick = () => {
+                        uploadedFiles.splice(index, 1);
+                        updateUIAfterFileUpload();
+                    };
+                    itemDiv.appendChild(removeBtn);
+                    filePreviewContainer.appendChild(itemDiv);
+                });
+
+                if (uploadedFiles.length > 0) {
+                    promptLabel.textContent = 'アップロードしたファイルへの追加指示 (任意)';
+                    promptText.placeholder = '例: この内容について5問作成してください。';
+                } else {
+                    resetUploadUI();
+                }
             };
 
             const resetUploadUI = () => {
-                uploadedFileContent = null;
-                uploadedFileType = null;
-                filePreview.innerHTML = '';
+                uploadedFiles = [];
+                filePreviewContainer.innerHTML = '';
                 fileUpload.value = ''; // Reset file input
                 promptLabel.textContent = 'クイズにしたい内容を入力または貼り付け';
                 promptText.placeholder = '例: 日本の首都は東京です。徳川家康は江戸幕府を開きました...';
@@ -1119,10 +1165,10 @@
 
             // File Drop Area Listeners
             fileDropArea.addEventListener('click', () => fileUpload.click());
-            fileUpload.addEventListener('change', (e) => handleFileSelect(e.target.files[0]));
+            fileUpload.addEventListener('change', (e) => handleFileSelect(e.target.files));
             fileDropArea.addEventListener('dragover', (e) => { e.preventDefault(); fileDropArea.classList.add('dragover'); });
             fileDropArea.addEventListener('dragleave', () => fileDropArea.classList.remove('dragover'));
-            fileDropArea.addEventListener('drop', (e) => { e.preventDefault(); fileDropArea.classList.remove('dragover'); handleFileSelect(e.dataTransfer.files[0]); });
+            fileDropArea.addEventListener('drop', (e) => { e.preventDefault(); fileDropArea.classList.remove('dragover'); handleFileSelect(e.dataTransfer.files); });
 
             modalCreateQuizButton.addEventListener('click', handleCreateQuiz);
             modalCancelQuizButton.addEventListener('click', closeNameQuizModal);
