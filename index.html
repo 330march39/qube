@@ -16,6 +16,8 @@
     <script src="https://cdn.tailwindcss.com"></script>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=Noto+Sans+JP:wght@400;500;700&display=swap" rel="stylesheet">
     <script src="https://cdnjs.cloudflare.com/ajax/libs/tone/14.8.49/Tone.min.js"></script>
+    <!-- PDF.js for PDF processing -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/2.11.338/pdf.min.js"></script>
     <style>
         /* --- Base Variables from Qube --- */
         :root {
@@ -100,11 +102,12 @@
         .btn { padding: 10px 20px; border-radius: 8px; font-weight: 600; cursor: pointer; transition: all 0.2s ease; border: none; }
         .btn-primary { background-color: var(--accent-primary); color: white; box-shadow: 0 4px 12px var(--accent-primary-shadow); }
         .btn-primary:hover:not(:disabled) { background-color: var(--accent-primary-hover); transform: translateY(-2px); }
+        .btn-lg { padding: 15px 30px; font-size: 1.1rem; }
         .btn:disabled { opacity: 0.7; cursor: not-allowed; }
         .form-group { margin-bottom: 20px; }
         .form-group label { display: block; margin-bottom: 8px; font-weight: 600; color: var(--text-secondary); }
         .form-group input, .form-group select, .form-group textarea { width: 100%; padding: 12px; border-radius: 8px; border: 1px solid var(--border-color); background-color: var(--bg-secondary); color: var(--text-primary); font-size: 1rem; }
-        .form-group textarea { min-height: 150px; resize: vertical; }
+        .form-group textarea { min-height: 120px; resize: vertical; }
         
         /* --- Qube Modal --- */
         .modal { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background-color: var(--modal-bg); display: flex; justify-content: center; align-items: center; z-index: 2000; opacity: 0; visibility: hidden; transition: opacity 0.3s ease, visibility 0.3s ease; }
@@ -120,11 +123,22 @@
         .modal-button.cancel:hover { background-color: var(--border-color); }
 
         /* --- Project Start Screen --- */
-        #projectStartScreen .quiz-list { margin-top: 2rem; display: grid; gap: 1rem; grid-template-columns: repeat(auto-fill, minmax(280px, 1fr)); }
-        .quiz-card { background-color: var(--bg-secondary); border: 1px solid var(--border-color); border-radius: 12px; padding: 1.5rem; cursor: pointer; transition: all 0.2s ease; box-shadow: 0 4px 6px -1px rgba(0,0,0,0.1), 0 2px 4px -2px rgba(0,0,0,0.1); }
-        .quiz-card:hover { transform: translateY(-4px); box-shadow: 0 10px 15px -3px rgba(0,0,0,0.1), 0 4px 6px -4px rgba(0,0,0,0.1); border-color: var(--accent-primary); }
-        .quiz-card h3 { font-size: 1.25rem; font-weight: 700; color: var(--accent-primary); margin-bottom: 0.5rem; }
-        .quiz-card p { font-size: 0.9rem; color: var(--text-secondary); }
+        .start-screen-container { max-width: 600px; margin: auto; text-align: center; }
+        .start-screen-container h2 { color: var(--themed-text-color); }
+        .start-screen-container .form-group select {
+            appearance: none;
+            background-image: url('data:image/svg+xml;charset=US-ASCII,%3Csvg%20xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%22%20viewBox%3D%220%200%2020%2020%22%20fill%3D%22%2364748b%22%3E%3Cpath%20fill-rule%3D%22evenodd%22%20d%3D%22M5.293%207.293a1%201%200%20011.414%200L10%2010.586l3.293-3.293a1%201%200%20111.414%201.414l-4%204a1%201%200%2001-1.414%200l-4-4a1%201%200%20010-1.414z%22%20clip-rule%3D%22evenodd%22%2F%3E%3C%2Fsvg%3E');
+            background-repeat: no-repeat;
+            background-position: right 1rem center;
+            background-size: 1.2em;
+        }
+        #fileDropArea { border-color: var(--border-color); }
+        #fileDropArea.dragover { border-color: var(--accent-primary); background-color: var(--bg-tertiary); }
+        #filePreview { position: relative; }
+        #filePreview img { max-height: 150px; border-radius: 8px; margin: 0 auto; }
+        #removeFileBtn { position: absolute; top: -10px; right: -10px; background: #ef4444; color: white; border-radius: 50%; width: 24px; height: 24px; display: flex; align-items: center; justify-content: center; font-weight: bold; cursor: pointer; }
+        .divider { text-align: center; margin: 1.5rem 0; color: var(--text-secondary); display: flex; align-items: center; gap: 1rem; }
+        .divider::before, .divider::after { content: ''; height: 1px; background-color: var(--border-color); flex-grow: 1; }
 
         /* --- Integrated Quiz Screen Styles --- */
         .quiz-container { max-width: 800px; margin-left: auto; margin-right: auto; }
@@ -216,30 +230,40 @@
 
             <!-- Project Start Screen (New) -->
             <div id="projectStartScreen" class="screen">
-                <div class="flex justify-between items-center mb-6">
-                    <h2 class="text-2xl font-bold">作成済みクイズ一覧</h2>
-                    <button id="generateNewQuizBtn" class="btn btn-primary">新しいクイズをAIで生成</button>
-                </div>
-                <div id="quizList" class="quiz-list">
-                    <!-- Quiz cards will be inserted here -->
+                <div class="start-screen-container">
+                    <h2 class="text-3xl font-bold mb-6">学習を開始</h2>
+                    <div class="form-group">
+                        <label for="quizSelect" class="text-left">作成済みクイズから選ぶ</label>
+                        <select id="quizSelect"></select>
+                    </div>
+                    <button id="startSelectedQuizButton" class="btn btn-primary btn-lg w-full">選択したクイズを開始</button>
+                    <div class="divider">または</div>
+                    <button id="generateNewQuizBtn" class="btn btn-lg w-full" style="background-color: var(--button-bg-default); color: var(--button-text-default); border: 1px solid var(--border-color);">新しいクイズをAIで生成</button>
                 </div>
             </div>
             
             <!-- Quiz Generation Screen -->
             <div id="generationScreen" class="screen">
-                <div class="max-w-3xl mx-auto">
+                <div class="max-w-3xl mx-auto w-full">
+                    <button id="backToProjectStartBtn" class="btn mb-4 text-sm" style="background-color: transparent; color: var(--text-secondary); padding: 4px 8px;">← プロジェクトに戻る</button>
+                    
                     <div class="form-group">
-                        <label for="promptText">クイズにしたい内容を入力または貼り付け</label>
+                         <label>ファイルをアップロード</label>
+                         <div id="fileDropArea" class="w-full p-8 border-2 border-dashed rounded-lg text-center cursor-pointer hover:border-sky-500">
+                             <p class="text-gray-500">ここにファイルをドラッグ＆ドロップ<br>またはクリックして選択</p>
+                             <input type="file" class="hidden" id="fileUpload" accept=".txt,.md,.text,.pdf,image/*">
+                         </div>
+                         <div id="filePreview" class="mt-4"></div>
+                    </div>
+
+                    <div class="divider">または</div>
+
+                    <div class="form-group">
+                        <label id="promptLabel" for="promptText">クイズにしたい内容を入力または貼り付け</label>
                         <textarea id="promptText" placeholder="例: 日本の首都は東京です。徳川家康は江戸幕府を開きました..."></textarea>
                     </div>
-                    <div class="form-group">
-                         <label>または、ファイルをアップロード</label>
-                         <div class="w-full p-8 border-2 border-dashed rounded-lg text-center cursor-pointer hover:border-sky-500" style="border-color: var(--border-color);">
-                             <p class="text-gray-500">ここにファイルをドラッグ＆ドロップ<br>またはクリックして選択</p>
-                             <input type="file" class="hidden" id="fileUpload">
-                         </div>
-                    </div>
-                    <div class="grid md:grid-cols-2 gap-4">
+                    
+                    <div class="grid md:grid-cols-2 gap-4 mt-8">
                         <div class="form-group">
                             <label for="aiMode">AI生成モード</label>
                             <select id="aiMode">
@@ -252,9 +276,9 @@
                             <label for="questionType">問題形式</label>
                             <select id="questionType">
                                 <option value="multiple_choice">選択肢</option>
-                                <option value="fill_in_the_blank" disabled>記述式 (開発中)</option>
-                                <option value="sorting" disabled>並び替え (開発中)</option>
-                                <option value="multiple_select" disabled>複数選択 (開発中)</option>
+                                <option value="fill_in_the_blank">記述式</option>
+                                <option value="sorting">並び替え</option>
+                                <option value="multiple_select">複数選択</option>
                             </select>
                         </div>
                     </div>
@@ -400,11 +424,17 @@
 
             const generateQuizButton = document.getElementById('generateQuizButton');
             const generateNewQuizBtn = document.getElementById('generateNewQuizBtn');
+            const backToProjectStartBtn = document.getElementById('backToProjectStartBtn');
             const promptText = document.getElementById('promptText');
+            const promptLabel = document.getElementById('promptLabel');
             const aiMode = document.getElementById('aiMode');
             const questionType = document.getElementById('questionType');
             const generationError = document.getElementById('generationError');
-            const quizList = document.getElementById('quizList');
+            const quizSelect = document.getElementById('quizSelect');
+            const startSelectedQuizButton = document.getElementById('startSelectedQuizButton');
+            const fileDropArea = document.getElementById('fileDropArea');
+            const fileUpload = document.getElementById('fileUpload');
+            const filePreview = document.getElementById('filePreview');
 
             const newProjectModal = document.getElementById('newProjectModal');
             const newProjectNameInput = document.getElementById('newProjectNameInput');
@@ -442,9 +472,11 @@
             // --- App State ---
             let projects = [];
             let activeProjectId = null;
-            let currentQuiz = null; // Holds the currently active quiz object { id, name, questions }
+            let currentQuiz = null; 
             let confettiAnimationId;
-            let tempGeneratedQuestions = null; // Temporarily store questions from API before naming
+            let tempGeneratedQuestions = null;
+            let uploadedFileContent = null; // Will hold text or base64 data
+            let uploadedFileType = null; // 'text', 'image', 'pdf'
 
             // --- Sound Effects ---
             let enableSound = true;
@@ -509,13 +541,16 @@
                 const newProject = { 
                     id: `proj_${Date.now()}`, 
                     name: projectName, 
-                    quizzes: [] // Now an array to hold multiple quizzes
+                    quizzes: []
                 };
                 projects.push(newProject);
                 saveProjects();
                 renderProjectList();
-                setActiveProject(newProject.id);
+                activeProjectId = newProject.id;
+                projectTitle.textContent = newProject.name;
+                projectSettingsButton.classList.remove('invisible');
                 closeNewProjectModal();
+                switchScreen('generate'); 
                 if(window.innerWidth < 768 && sidebar.classList.contains('open')) toggleSidebar();
             };
 
@@ -544,30 +579,33 @@
                 if (project) {
                     projectTitle.textContent = project.name;
                     projectSettingsButton.classList.remove('invisible');
-                    renderQuizList(project);
-                    switchScreen('projectStart');
+                    if (project.quizzes.length === 0) {
+                        switchScreen('generate'); 
+                    } else {
+                        populateQuizSelect(project);
+                        switchScreen('projectStart');
+                    }
                 }
                 renderProjectList();
             };
 
-            const renderQuizList = (project) => {
-                quizList.innerHTML = '';
+            const populateQuizSelect = (project) => {
+                quizSelect.innerHTML = '';
                 if (project.quizzes.length === 0) {
-                    quizList.innerHTML = '<p class="col-span-full text-center text-gray-500 mt-8">まだクイズがありません。「新しいクイズをAIで生成」ボタンから作成しましょう。</p>';
-                    return;
+                    const option = document.createElement('option');
+                    option.textContent = '利用可能なクイズがありません';
+                    option.disabled = true;
+                    quizSelect.appendChild(option);
+                    startSelectedQuizButton.disabled = true;
+                } else {
+                    project.quizzes.forEach(quiz => {
+                        const option = document.createElement('option');
+                        option.value = quiz.id;
+                        option.textContent = quiz.name;
+                        quizSelect.appendChild(option);
+                    });
+                    startSelectedQuizButton.disabled = false;
                 }
-
-                project.quizzes.forEach(quiz => {
-                    const card = document.createElement('div');
-                    card.className = 'quiz-card';
-                    card.innerHTML = `
-                        <h3>${quiz.name}</h3>
-                        <p>${quiz.questions.length}問</p>
-                        <p>作成日: ${new Date(quiz.createdAt).toLocaleDateString()}</p>
-                    `;
-                    card.addEventListener('click', () => startQuiz(quiz));
-                    quizList.appendChild(card);
-                });
             };
             
             // --- Quiz Generation (Qube Core) ---
@@ -575,8 +613,8 @@
                 const buttonText = generateQuizButton.querySelector('.button-text');
                 const spinner = generateQuizButton.querySelector('.spinner');
 
-                if (promptText.value.trim() === '') {
-                    generationError.textContent = 'クイズにしたい内容を入力してください。';
+                if (promptText.value.trim() === '' && !uploadedFileContent) {
+                    generationError.textContent = 'クイズの元になる内容を入力またはアップロードしてください。';
                     generationError.classList.remove('hidden');
                     return;
                 }
@@ -587,33 +625,56 @@
                 generateQuizButton.disabled = true;
 
                 try {
-                    const modelPrompt = `以下のテキストに基づいて、高品質な4択クイズを5問作成してください。各問題には、質問(question)、4つの選択肢(options)、正解(answer)、そして正解の簡単な解説(explanation)を必ず含めてください。出力は指定されたJSON形式に従ってください。\n\nテキスト:\n---\n${promptText.value}\n---`;
+                    const selectedType = questionType.value;
+                    let modelPrompt = `以下の情報に基づいて、高品質な${questionType.options[questionType.selectedIndex].text}形式のクイズを5問作成してください。`;
+                    
+                    if (promptText.value.trim()) {
+                        modelPrompt += `\nユーザーからの追加指示: 「${promptText.value}」`;
+                    }
                     
                     const payload = {
-                        contents: [{ role: "user", parts: [{ text: modelPrompt }] }],
+                        contents: [{ role: "user", parts: [] }],
                         generationConfig: {
                             responseMimeType: "application/json",
                             responseSchema: {
                                 type: "OBJECT",
-                                properties: {
-                                    "quizzes": {
-                                        "type": "ARRAY",
-                                        "items": {
-                                            "type": "OBJECT",
-                                            "properties": {
-                                                "question": { "type": "STRING" },
-                                                "options": { "type": "ARRAY", "items": { "type": "STRING" } },
-                                                "answer": { "type": "STRING" },
-                                                "explanation": { "type": "STRING" }
-                                            },
-                                            "required": ["question", "options", "answer", "explanation"]
-                                        }
-                                    }
-                                }
+                                properties: { "quizzes": { "type": "ARRAY", "items": {} } }
                             }
                         }
                     };
+                    
+                    // Dynamically set schema based on question type
+                    let itemSchema = {};
+                    switch(selectedType) {
+                        case 'fill_in_the_blank':
+                            itemSchema = { type: "OBJECT", properties: { question: { type: "STRING" }, answer: { type: "STRING" }, explanation: { type: "STRING" } }, required: ["question", "answer", "explanation"] };
+                            break;
+                        case 'sorting':
+                            itemSchema = { type: "OBJECT", properties: { question: { type: "STRING" }, items: { type: "ARRAY", items: { type: "STRING" } }, explanation: { type: "STRING" } }, required: ["question", "items", "explanation"] };
+                            break;
+                        case 'multiple_select':
+                            itemSchema = { type: "OBJECT", properties: { question: { type: "STRING" }, options: { type: "ARRAY", items: { type: "STRING" } }, answer: { type: "ARRAY", items: { type: "STRING" } }, explanation: { type: "STRING" } }, required: ["question", "options", "answer", "explanation"] };
+                            break;
+                        case 'multiple_choice':
+                        default:
+                            itemSchema = { type: "OBJECT", properties: { question: { type: "STRING" }, options: { type: "ARRAY", items: { type: "STRING" } }, answer: { type: "STRING" }, explanation: { type: "STRING" } }, required: ["question", "options", "answer", "explanation"] };
+                            break;
+                    }
+                    payload.generationConfig.responseSchema.properties.quizzes.items = itemSchema;
 
+
+                    // Add text prompt part
+                    payload.contents[0].parts.push({ text: modelPrompt });
+
+                    // Add file content part
+                    if (uploadedFileType === 'image') {
+                        const mimeType = uploadedFileContent.substring(5, uploadedFileContent.indexOf(';'));
+                        const base64Data = uploadedFileContent.split(',')[1];
+                        payload.contents[0].parts.push({ inlineData: { mimeType, data: base64Data } });
+                    } else if (uploadedFileType === 'text' || uploadedFileType === 'pdf') {
+                         payload.contents[0].parts[0].text += `\n\nクイズ生成の元になるテキスト:\n---\n${uploadedFileContent}\n---`;
+                    }
+                    
                     const apiKey = ""; // Provided by the environment
                     const apiUrl = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash-preview-05-20:generateContent?key=${apiKey}`;
                     
@@ -624,12 +685,12 @@
                     });
 
                     if (!response.ok) throw new Error(`API request failed with status ${response.status}`);
-
                     const result = await response.json();
                     
                     if (result.candidates?.[0]?.content?.parts?.[0]?.text) {
                         const generatedData = JSON.parse(result.candidates[0].content.parts[0].text);
-                        tempGeneratedQuestions = generatedData.quizzes;
+                        // Add question type to each question object
+                        tempGeneratedQuestions = generatedData.quizzes.map(q => ({ ...q, type: selectedType }));
                         showNameQuizModal();
                     } else {
                         throw new Error("AIからの応答が無効です。");
@@ -674,21 +735,14 @@
                     saveProjects();
                     tempGeneratedQuestions = null;
                     closeNameQuizModal();
-                    setActiveProject(activeProjectId); // Refresh the project start screen
+                    setActiveProject(activeProjectId); 
                 }
             };
 
-            // --- Quiz Gameplay (Integrated from BEI) ---
+            // --- Quiz Gameplay ---
             const startQuiz = (quiz) => {
-                if (!quiz || !quiz.questions || quiz.questions.length === 0) {
-                    return;
-                }
-                currentQuiz = { 
-                    ...quiz, 
-                    currentIndex: 0, 
-                    score: 0, 
-                    answeredQuestions: new Set() 
-                };
+                if (!quiz || !quiz.questions || quiz.questions.length === 0) return;
+                currentQuiz = { ...quiz, currentIndex: 0, score: 0, answeredQuestions: new Set() };
                 quizTitle.textContent = quiz.name;
                 switchScreen('quiz');
                 loadQuestion();
@@ -700,52 +754,91 @@
                     return;
                 }
                 const question = currentQuiz.questions[currentQuiz.currentIndex];
-
                 questionTextElement.innerHTML = question.question;
                 optionsGridElement.innerHTML = '';
+
+                switch(question.type) {
+                    case 'multiple_choice':
+                    case 'multiple_select':
+                        if (question.options && Array.isArray(question.options)) {
+                            question.options.forEach(option => {
+                                const button = document.createElement('button');
+                                button.innerHTML = option;
+                                button.classList.add('option-button');
+                                button.dataset.option = option;
+                                button.addEventListener('click', () => selectOption(option, question.answer, question));
+                                optionsGridElement.appendChild(button);
+                            });
+                        } else {
+                             optionsGridElement.innerHTML = `<p class="text-red-500">問題の選択肢がありません。</p>`;
+                        }
+                        break;
+                    case 'fill_in_the_blank':
+                        optionsGridElement.innerHTML = `<input type="text" class="form-group input" placeholder="答えを入力..."><button class="btn btn-primary mt-2">回答</button>`;
+                        // This is a placeholder; full functionality would require more logic
+                        currentQuiz.answeredQuestions.add(question.question);
+                        break;
+                    case 'sorting':
+                        if (question.items && Array.isArray(question.items)) {
+                             optionsGridElement.innerHTML = question.items.map(item => `<div class="option-button">${item}</div>`).join('');
+                        }
+                        // This is a placeholder; full functionality would require more logic
+                        currentQuiz.answeredQuestions.add(question.question);
+                        break;
+                    default: 
+                        if (question.options && Array.isArray(question.options)) {
+                            question.options.forEach(option => {
+                                const button = document.createElement('button');
+                                button.innerHTML = option;
+                                button.classList.add('option-button');
+                                button.dataset.option = option;
+                                button.addEventListener('click', () => selectOption(option, question.answer, question));
+                                optionsGridElement.appendChild(button);
+                            });
+                        } else {
+                             optionsGridElement.innerHTML = `<p class="text-red-500">不明な問題形式です。</p>`;
+                             currentQuiz.answeredQuestions.add(question.question);
+                        }
+                        break;
+                }
+
                 feedbackMessageElement.style.display = 'none';
-                feedbackMessageElement.classList.remove('correct-feedback', 'incorrect-feedback');
-                explanationContentElement.classList.remove('show');
-                toggleExplanationButton.classList.add('hidden');
-                toggleExplanationButton.textContent = '解説▼';
-
-                const shuffledOptions = [...question.options];
-                // shuffleArray(shuffledOptions); // Optional
-
-                shuffledOptions.forEach(option => {
-                    const button = document.createElement('button');
-                    button.innerHTML = option;
-                    button.classList.add('option-button');
-                    button.dataset.option = option;
-                    button.addEventListener('click', () => selectOption(option, question.answer, question));
-                    optionsGridElement.appendChild(button);
-                });
                 updateProgressBar();
                 updateNavigationButtons();
             };
 
             const selectOption = (selectedOption, correctAnswer, question) => {
-                if (currentQuiz.answeredQuestions.has(question.question)) return;
+                 if (currentQuiz.answeredQuestions.has(question.question)) return;
                 
                 optionsGridElement.querySelectorAll('.option-button').forEach(b => b.disabled = true);
                 feedbackMessageElement.style.display = 'block';
 
-                if (selectedOption === correctAnswer) {
+                let isCorrect = selectedOption === correctAnswer;
+                 if (Array.isArray(correctAnswer)) { // For multiple_select
+                    isCorrect = correctAnswer.includes(selectedOption);
+                 }
+
+
+                if (isCorrect) {
                     playSound('correct');
                     feedbackResultElement.innerHTML = `<strong>正解！</strong>`;
                     feedbackMessageElement.classList.add('correct-feedback');
                     currentQuiz.score++;
                 } else {
                     playSound('incorrect');
-                    feedbackResultElement.innerHTML = `<strong>不正解...</strong> 正解は「${correctAnswer}」でした。`;
+                    feedbackResultElement.innerHTML = `<strong>不正解...</strong> 正解は「${Array.isArray(correctAnswer) ? correctAnswer.join(', ') : correctAnswer}」でした。`;
                     feedbackMessageElement.classList.add('incorrect-feedback');
                 }
                 
                 currentQuiz.answeredQuestions.add(question.question);
 
                 optionsGridElement.querySelectorAll('.option-button').forEach(button => {
-                    if (button.dataset.option === correctAnswer) button.classList.add('correct');
-                    else if (button.dataset.option === selectedOption) button.classList.add('incorrect');
+                    const isAnswer = Array.isArray(correctAnswer) ? correctAnswer.includes(button.dataset.option) : button.dataset.option === correctAnswer;
+                    if (isAnswer) {
+                        button.classList.add('correct');
+                    } else if (button.dataset.option === selectedOption) {
+                        button.classList.add('incorrect');
+                    }
                 });
 
                 if (question.explanation) {
@@ -809,16 +902,14 @@
                 let startTime = null;
                 function animate(timestamp) {
                     if (!startTime) startTime = timestamp;
-                    const progress = timestamp - startTime;
                     let allOffScreen = true;
                     confettiPieces.forEach(p => {
                         p.x += p.vx; p.y += p.vy; p.vy += 0.2; p.vx *= 0.99; p.rotation += p.rotationSpeed;
                         if (p.y < confettiContainer.clientHeight + 20) allOffScreen = false;
                         p.element.style.transform = `translate(${p.x}px, ${p.y}px) rotate(${p.rotation}deg)`;
                     });
-                    if (allOffScreen && progress > 1000) {
+                    if (allOffScreen && (timestamp - startTime) > 1000) {
                         cancelAnimationFrame(confettiAnimationId);
-                        confettiAnimationId = null;
                     } else {
                         confettiAnimationId = requestAnimationFrame(animate);
                     }
@@ -851,6 +942,79 @@
                 applyColors(themeName, document.body.classList.contains('dark-mode'));
             };
 
+            // --- File Upload Logic ---
+            const handleFileSelect = async (file) => {
+                if (!file) return;
+
+                if (file.type.startsWith('image/')) {
+                    uploadedFileType = 'image';
+                    const reader = new FileReader();
+                    reader.onload = (e) => {
+                        uploadedFileContent = e.target.result; // base64 string
+                        updateUIAfterFileUpload(file);
+                    };
+                    reader.readAsDataURL(file);
+                } else if (file.type === 'application/pdf') {
+                    uploadedFileType = 'pdf';
+                    try {
+                        const loadingTask = pdfjsLib.getDocument(URL.createObjectURL(file));
+                        const pdf = await loadingTask.promise;
+                        let text = '';
+                        for (let i = 1; i <= pdf.numPages; i++) {
+                            const page = await pdf.getPage(i);
+                            const textContent = await page.getTextContent();
+                            text += textContent.items.map(item => item.str).join(' ');
+                        }
+                        uploadedFileContent = text;
+                        updateUIAfterFileUpload(file);
+                    } catch (err) {
+                        alert('PDFの読み込みに失敗しました: ' + err.message);
+                        resetUploadUI();
+                    }
+                } else if (file.type.startsWith('text/')) {
+                    uploadedFileType = 'text';
+                    const reader = new FileReader();
+                    reader.onload = (e) => {
+                        uploadedFileContent = e.target.result;
+                        updateUIAfterFileUpload(file);
+                    };
+                    reader.readAsText(file);
+                } else {
+                    alert('サポートされていないファイル形式です。');
+                }
+            };
+
+            const updateUIAfterFileUpload = (file) => {
+                filePreview.innerHTML = '';
+                if (uploadedFileType === 'image') {
+                    const img = document.createElement('img');
+                    img.src = uploadedFileContent;
+                    filePreview.appendChild(img);
+                } else {
+                    const p = document.createElement('p');
+                    p.textContent = `ファイル名: ${file.name}`;
+                    filePreview.appendChild(p);
+                }
+                const removeBtn = document.createElement('button');
+                removeBtn.id = 'removeFileBtn';
+                removeBtn.innerHTML = '&times;';
+                removeBtn.onclick = resetUploadUI;
+                filePreview.appendChild(removeBtn);
+
+                promptLabel.textContent = 'アップロードしたファイルへの追加指示 (任意)';
+                promptText.placeholder = '例: この画像について5問作成してください。';
+                promptText.value = ''; // Clear text area for new instructions
+            };
+
+            const resetUploadUI = () => {
+                uploadedFileContent = null;
+                uploadedFileType = null;
+                filePreview.innerHTML = '';
+                fileUpload.value = ''; // Reset file input
+                promptLabel.textContent = 'クイズにしたい内容を入力または貼り付け';
+                promptText.placeholder = '例: 日本の首都は東京です。徳川家康は江戸幕府を開きました...';
+            };
+
             // --- Event Listeners ---
             hamburgerButton.addEventListener('click', toggleSidebar);
             sidebarOverlay.addEventListener('click', toggleSidebar);
@@ -861,24 +1025,38 @@
             newProjectModal.addEventListener('click', (e) => { if (e.target === newProjectModal) closeNewProjectModal(); });
             newProjectNameInput.addEventListener('keydown', (e) => { if (e.key === 'Enter') handleCreateProject(); });
             
-            generateNewQuizBtn.addEventListener('click', () => switchScreen('generate'));
+            generateNewQuizBtn.addEventListener('click', () => {
+                resetUploadUI();
+                promptText.value = '';
+                switchScreen('generate');
+            });
+            backToProjectStartBtn.addEventListener('click', () => setActiveProject(activeProjectId));
             generateQuizButton.addEventListener('click', handleGenerateQuiz);
+
+            startSelectedQuizButton.addEventListener('click', () => {
+                const selectedQuizId = quizSelect.value;
+                const project = projects.find(p => p.id === activeProjectId);
+                if (project) {
+                    const quizToStart = project.quizzes.find(q => q.id === selectedQuizId);
+                    if (quizToStart) startQuiz(quizToStart);
+                }
+            });
+
+            // File Drop Area Listeners
+            fileDropArea.addEventListener('click', () => fileUpload.click());
+            fileUpload.addEventListener('change', (e) => handleFileSelect(e.target.files[0]));
+            fileDropArea.addEventListener('dragover', (e) => { e.preventDefault(); fileDropArea.classList.add('dragover'); });
+            fileDropArea.addEventListener('dragleave', () => fileDropArea.classList.remove('dragover'));
+            fileDropArea.addEventListener('drop', (e) => { e.preventDefault(); fileDropArea.classList.remove('dragover'); handleFileSelect(e.dataTransfer.files[0]); });
 
             modalCreateQuizButton.addEventListener('click', handleCreateQuiz);
             modalCancelQuizButton.addEventListener('click', closeNameQuizModal);
             nameQuizModal.addEventListener('click', (e) => { if (e.target === nameQuizModal) closeNameQuizModal(); });
             newQuizNameInput.addEventListener('keydown', (e) => { if (e.key === 'Enter') handleCreateQuiz(); });
 
-            nextButton.addEventListener('click', () => {
-                playSound('click');
-                currentQuiz.currentIndex++;
-                loadQuestion();
-            });
+            nextButton.addEventListener('click', () => { playSound('click'); currentQuiz.currentIndex++; loadQuestion(); });
             interruptButton.addEventListener('click', () => setActiveProject(activeProjectId));
-            toggleExplanationButton.addEventListener('click', () => {
-                explanationContentElement.classList.toggle('show');
-                toggleExplanationButton.textContent = explanationContentElement.classList.contains('show') ? '解説▲' : '解説▼';
-            });
+            toggleExplanationButton.addEventListener('click', () => { explanationContentElement.classList.toggle('show'); toggleExplanationButton.textContent = explanationContentElement.classList.contains('show') ? '解説▲' : '解説▼'; });
             restartQuizButton.addEventListener('click', () => startQuiz(currentQuiz));
             backToProjectButton.addEventListener('click', () => setActiveProject(activeProjectId));
             projectSettingsButton.addEventListener('click', () => switchScreen('settings'));
@@ -899,6 +1077,9 @@
 
             // --- Initialization ---
             const init = () => {
+                // Set PDF.js worker source
+                pdfjsLib.GlobalWorkerOptions.workerSrc = `https://cdnjs.cloudflare.com/ajax/libs/pdf.js/2.11.338/pdf.worker.min.js`;
+
                 loadProjects();
                 switchScreen('welcome');
                 renderProjectList();
