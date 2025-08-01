@@ -155,7 +155,9 @@
         .option-button:hover:not(:disabled) { background-color: var(--border-color); transform: translateY(-3px) scale(1.01); box-shadow: 0 6px 12px rgba(0, 0, 0, 0.12); }
         .option-button.correct { background-color: var(--correct-option-bg); border-color: var(--correct-feedback-border); color: var(--correct-feedback-text); }
         .option-button.incorrect { background-color: var(--incorrect-option-bg); border-color: var(--incorrect-feedback-border); color: var(--incorrect-feedback-text); }
+        .option-button.selected { border-color: var(--accent-primary); background-color: var(--bg-tertiary); }
         .option-button:disabled { cursor: not-allowed; }
+        .sorting-item.dragging { opacity: 0.5; }
         .feedback-message { margin-top: 1.5rem; font-size: 1rem; text-align: left; padding: 1rem 1.5rem; border-radius: 12px; background-color: var(--feedback-bg); border: 1px solid var(--feedback-border); box-shadow: inset 0 1px 3px rgba(0,0,0,0.05); line-height: 1.5; transition: all 0.3s ease; }
         .feedback-message.correct-feedback { color: var(--correct-feedback-text); border-color: var(--correct-feedback-border); }
         .feedback-message.incorrect-feedback { color: var(--incorrect-feedback-text); border-color: var(--incorrect-feedback-border); }
@@ -305,6 +307,7 @@
                         <div id="questionText" class="question-text"></div>
                     </div>
                     <div id="optionsGrid" class="options-grid"></div>
+                    <div id="submissionArea" class="mt-4 text-right"></div>
                     <div id="feedbackMessage" class="feedback-message" style="display: none;">
                         <div class="feedback-header">
                             <div id="feedbackResult"></div>
@@ -449,6 +452,7 @@
             const quizTitle = document.getElementById('quizTitle');
             const questionTextElement = document.getElementById('questionText');
             const optionsGridElement = document.getElementById('optionsGrid');
+            const submissionArea = document.getElementById('submissionArea');
             const feedbackMessageElement = document.getElementById('feedbackMessage');
             const feedbackResultElement = document.getElementById('feedbackResult');
             const explanationContentElement = document.getElementById('explanationContent');
@@ -475,8 +479,8 @@
             let currentQuiz = null; 
             let confettiAnimationId;
             let tempGeneratedQuestions = null;
-            let uploadedFileContent = null; // Will hold text or base64 data
-            let uploadedFileType = null; // 'text', 'image', 'pdf'
+            let uploadedFileContent = null; 
+            let uploadedFileType = null; 
 
             // --- Sound Effects ---
             let enableSound = true;
@@ -643,7 +647,6 @@
                         }
                     };
                     
-                    // Dynamically set schema based on question type
                     let itemSchema = {};
                     switch(selectedType) {
                         case 'fill_in_the_blank':
@@ -662,11 +665,8 @@
                     }
                     payload.generationConfig.responseSchema.properties.quizzes.items = itemSchema;
 
-
-                    // Add text prompt part
                     payload.contents[0].parts.push({ text: modelPrompt });
 
-                    // Add file content part
                     if (uploadedFileType === 'image') {
                         const mimeType = uploadedFileContent.substring(5, uploadedFileContent.indexOf(';'));
                         const base64Data = uploadedFileContent.split(',')[1];
@@ -689,7 +689,6 @@
                     
                     if (result.candidates?.[0]?.content?.parts?.[0]?.text) {
                         const generatedData = JSON.parse(result.candidates[0].content.parts[0].text);
-                        // Add question type to each question object
                         tempGeneratedQuestions = generatedData.quizzes.map(q => ({ ...q, type: selectedType }));
                         showNameQuizModal();
                     } else {
@@ -741,7 +740,7 @@
 
             // --- Quiz Gameplay ---
             const startQuiz = (quiz) => {
-                if (!quiz || !quiz.questions || quiz.questions.length === 0) return;
+                if (!quiz || !quiz.questions || !quiz.questions.length === 0) return;
                 currentQuiz = { ...quiz, currentIndex: 0, score: 0, answeredQuestions: new Set() };
                 quizTitle.textContent = quiz.name;
                 switchScreen('quiz');
@@ -756,49 +755,49 @@
                 const question = currentQuiz.questions[currentQuiz.currentIndex];
                 questionTextElement.innerHTML = question.question;
                 optionsGridElement.innerHTML = '';
+                submissionArea.innerHTML = '';
 
                 switch(question.type) {
                     case 'multiple_choice':
+                        question.options.forEach(option => {
+                            const button = document.createElement('button');
+                            button.innerHTML = option;
+                            button.classList.add('option-button');
+                            button.dataset.option = option;
+                            button.addEventListener('click', () => submitAnswer(option));
+                            optionsGridElement.appendChild(button);
+                        });
+                        break;
                     case 'multiple_select':
-                        if (question.options && Array.isArray(question.options)) {
-                            question.options.forEach(option => {
-                                const button = document.createElement('button');
-                                button.innerHTML = option;
-                                button.classList.add('option-button');
-                                button.dataset.option = option;
-                                button.addEventListener('click', () => selectOption(option, question.answer, question));
-                                optionsGridElement.appendChild(button);
-                            });
-                        } else {
-                             optionsGridElement.innerHTML = `<p class="text-red-500">問題の選択肢がありません。</p>`;
-                        }
+                        question.options.forEach(option => {
+                            const button = document.createElement('button');
+                            button.innerHTML = option;
+                            button.classList.add('option-button');
+                            button.dataset.option = option;
+                            button.addEventListener('click', () => button.classList.toggle('selected'));
+                            optionsGridElement.appendChild(button);
+                        });
+                        createSubmitButton();
                         break;
                     case 'fill_in_the_blank':
-                        optionsGridElement.innerHTML = `<input type="text" class="form-group input" placeholder="答えを入力..."><button class="btn btn-primary mt-2">回答</button>`;
-                        // This is a placeholder; full functionality would require more logic
-                        currentQuiz.answeredQuestions.add(question.question);
+                        optionsGridElement.innerHTML = `<input type="text" id="fillInBlankInput" class="form-group" placeholder="答えを入力...">`;
+                        createSubmitButton();
                         break;
                     case 'sorting':
-                        if (question.items && Array.isArray(question.items)) {
-                             optionsGridElement.innerHTML = question.items.map(item => `<div class="option-button">${item}</div>`).join('');
-                        }
-                        // This is a placeholder; full functionality would require more logic
-                        currentQuiz.answeredQuestions.add(question.question);
+                        const shuffledItems = [...question.items].sort(() => Math.random() - 0.5);
+                        shuffledItems.forEach(item => {
+                            const div = document.createElement('div');
+                            div.innerHTML = item;
+                            div.classList.add('option-button', 'sorting-item');
+                            div.draggable = true;
+                            optionsGridElement.appendChild(div);
+                        });
+                        addDragAndDropListeners();
+                        createSubmitButton();
                         break;
                     default: 
-                        if (question.options && Array.isArray(question.options)) {
-                            question.options.forEach(option => {
-                                const button = document.createElement('button');
-                                button.innerHTML = option;
-                                button.classList.add('option-button');
-                                button.dataset.option = option;
-                                button.addEventListener('click', () => selectOption(option, question.answer, question));
-                                optionsGridElement.appendChild(button);
-                            });
-                        } else {
-                             optionsGridElement.innerHTML = `<p class="text-red-500">不明な問題形式です。</p>`;
-                             currentQuiz.answeredQuestions.add(question.question);
-                        }
+                         optionsGridElement.innerHTML = `<p class="text-red-500">不明な問題形式です。</p>`;
+                         currentQuiz.answeredQuestions.add(question.question);
                         break;
                 }
 
@@ -806,18 +805,51 @@
                 updateProgressBar();
                 updateNavigationButtons();
             };
+            
+            const createSubmitButton = () => {
+                const submitBtn = document.createElement('button');
+                submitBtn.textContent = '回答';
+                submitBtn.classList.add('btn', 'btn-primary');
+                submitBtn.addEventListener('click', () => submitAnswer());
+                submissionArea.appendChild(submitBtn);
+            }
 
-            const selectOption = (selectedOption, correctAnswer, question) => {
-                 if (currentQuiz.answeredQuestions.has(question.question)) return;
+            const submitAnswer = (selectedOption = null) => {
+                const question = currentQuiz.questions[currentQuiz.currentIndex];
+                if (currentQuiz.answeredQuestions.has(question.question)) return;
+
+                let userAnswer;
+                let isCorrect = false;
+
+                switch(question.type) {
+                    case 'multiple_choice':
+                        userAnswer = selectedOption;
+                        isCorrect = userAnswer.toLowerCase().trim() === question.answer.toLowerCase().trim();
+                        break;
+                    case 'multiple_select':
+                        userAnswer = Array.from(optionsGridElement.querySelectorAll('.option-button.selected')).map(btn => btn.dataset.option);
+                        isCorrect = userAnswer.length === question.answer.length && userAnswer.every(val => question.answer.includes(val));
+                        break;
+                    case 'fill_in_the_blank':
+                        userAnswer = document.getElementById('fillInBlankInput').value;
+                        isCorrect = userAnswer.toLowerCase().trim() === question.answer.toLowerCase().trim();
+                        break;
+                    case 'sorting':
+                        userAnswer = Array.from(optionsGridElement.querySelectorAll('.sorting-item')).map(item => item.textContent);
+                        isCorrect = JSON.stringify(userAnswer) === JSON.stringify(question.items);
+                        break;
+                }
                 
-                optionsGridElement.querySelectorAll('.option-button').forEach(b => b.disabled = true);
+                showFeedback(isCorrect, question);
+            };
+
+            const showFeedback = (isCorrect, question) => {
+                optionsGridElement.querySelectorAll('button, input, .sorting-item').forEach(el => {
+                    el.disabled = true;
+                    if (el.classList.contains('sorting-item')) el.draggable = false;
+                });
+                submissionArea.innerHTML = '';
                 feedbackMessageElement.style.display = 'block';
-
-                let isCorrect = selectedOption === correctAnswer;
-                 if (Array.isArray(correctAnswer)) { // For multiple_select
-                    isCorrect = correctAnswer.includes(selectedOption);
-                 }
-
 
                 if (isCorrect) {
                     playSound('correct');
@@ -826,20 +858,23 @@
                     currentQuiz.score++;
                 } else {
                     playSound('incorrect');
-                    feedbackResultElement.innerHTML = `<strong>不正解...</strong> 正解は「${Array.isArray(correctAnswer) ? correctAnswer.join(', ') : correctAnswer}」でした。`;
+                    const correctAnswerText = Array.isArray(question.answer) ? question.answer.join(', ') : question.answer;
+                    feedbackResultElement.innerHTML = `<strong>不正解...</strong> 正解は「${correctAnswerText}」でした。`;
                     feedbackMessageElement.classList.add('incorrect-feedback');
                 }
                 
                 currentQuiz.answeredQuestions.add(question.question);
 
-                optionsGridElement.querySelectorAll('.option-button').forEach(button => {
-                    const isAnswer = Array.isArray(correctAnswer) ? correctAnswer.includes(button.dataset.option) : button.dataset.option === correctAnswer;
-                    if (isAnswer) {
-                        button.classList.add('correct');
-                    } else if (button.dataset.option === selectedOption) {
-                        button.classList.add('incorrect');
-                    }
-                });
+                // Highlight correct/incorrect answers visually
+                if (question.type === 'multiple_choice' || question.type === 'multiple_select') {
+                    optionsGridElement.querySelectorAll('.option-button').forEach(button => {
+                        const isAnswer = Array.isArray(question.answer) ? question.answer.includes(button.dataset.option) : button.dataset.option === question.answer;
+                        if (isAnswer) button.classList.add('correct');
+                        if (button.classList.contains('selected') && !isAnswer) button.classList.add('incorrect');
+                    });
+                } else if(question.type === 'fill_in_the_blank') {
+                    document.getElementById('fillInBlankInput').classList.add(isCorrect ? 'correct' : 'incorrect');
+                }
 
                 if (question.explanation) {
                     explanationTextElement.textContent = question.explanation;
@@ -847,6 +882,46 @@
                 }
                 updateNavigationButtons();
             };
+            
+            const addDragAndDropListeners = () => {
+                const items = optionsGridElement.querySelectorAll('.sorting-item');
+                let draggedItem = null;
+
+                items.forEach(item => {
+                    item.addEventListener('dragstart', () => {
+                        draggedItem = item;
+                        setTimeout(() => item.classList.add('dragging'), 0);
+                    });
+                    item.addEventListener('dragend', () => {
+                        draggedItem.classList.remove('dragging');
+                        draggedItem = null;
+                    });
+                });
+
+                optionsGridElement.addEventListener('dragover', e => {
+                    e.preventDefault();
+                    const afterElement = getDragAfterElement(optionsGridElement, e.clientY);
+                    if (afterElement == null) {
+                        optionsGridElement.appendChild(draggedItem);
+                    } else {
+                        optionsGridElement.insertBefore(draggedItem, afterElement);
+                    }
+                });
+            };
+
+            const getDragAfterElement = (container, y) => {
+                const draggableElements = [...container.querySelectorAll('.sorting-item:not(.dragging)')];
+                return draggableElements.reduce((closest, child) => {
+                    const box = child.getBoundingClientRect();
+                    const offset = y - box.top - box.height / 2;
+                    if (offset < 0 && offset > closest.offset) {
+                        return { offset: offset, element: child };
+                    } else {
+                        return closest;
+                    }
+                }, { offset: Number.NEGATIVE_INFINITY }).element;
+            };
+
 
             const updateNavigationButtons = () => {
                 const question = currentQuiz.questions[currentQuiz.currentIndex];
