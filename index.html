@@ -108,6 +108,7 @@
         .form-group label { display: block; margin-bottom: 8px; font-weight: 600; color: var(--text-secondary); }
         .form-group input, .form-group select, .form-group textarea { width: 100%; padding: 12px; border-radius: 8px; border: 1px solid var(--border-color); background-color: var(--bg-secondary); color: var(--text-primary); font-size: 1rem; }
         .form-group textarea { min-height: 120px; resize: vertical; }
+        #fillInBlankInput { font-size: 1.2rem; padding: 16px; text-align: center; }
         
         /* --- Qube Modal --- */
         .modal { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background-color: var(--modal-bg); display: flex; justify-content: center; align-items: center; z-index: 2000; opacity: 0; visibility: hidden; transition: opacity 0.3s ease, visibility 0.3s ease; }
@@ -151,6 +152,7 @@
         .progress-bar { height: 100%; width: 0%; background-color: var(--progress-bar-bg); border-radius: 10px; transition: width 0.3s ease-in-out, background-color 0.3s ease; }
         .progress-text { font-size: 1rem; font-weight: 600; color: var(--text-primary); margin-top: 10px; transition: color 0.3s ease; text-align: center; }
         .question-area { min-height: 100px; display: flex; flex-direction: column; justify-content: center; align-items: center; transition: background-color 0.3s ease; text-align: left; margin-top: 1.5rem;}
+        #questionImage { max-height: 200px; border-radius: 8px; margin-bottom: 1rem; }
         .question-text { font-size: 1.25rem; font-weight: 500; color: var(--themed-text-color); margin-bottom: 10px; transition: color 0.3s ease; width: 100%; text-align:center; }
         .options-grid { display: grid; grid-template-columns: 1fr; gap: 12px; margin-top: 15px; }
         .option-button { background-color: var(--button-bg-default); color: var(--button-text-default); padding: 14px 20px; border-radius: 12px; font-size: 1rem; font-weight: 500; cursor: pointer; transition: all 0.3s ease; border: 2px solid var(--button-border-default); text-align: left; box-shadow: 0 4px 8px rgba(0, 0, 0, 0.08); line-height: 1.5; }
@@ -160,8 +162,8 @@
         .option-button.selected { border-color: var(--accent-primary); background-color: var(--bg-tertiary); }
         .option-button:disabled { cursor: not-allowed; }
         .sorting-item.dragging { opacity: 0.5; }
-        .sorting-container { display: grid; grid-template-columns: 1fr; gap: 1rem; }
-        .sorting-box { padding: 1rem; border-radius: 12px; border: 2px dashed var(--border-color); min-height: 100px; }
+        .sorting-container { display: flex; flex-direction: column; gap: 1rem; }
+        .sorting-box { display: flex; flex-wrap: wrap; gap: 10px; padding: 1rem; border-radius: 12px; border: 2px dashed var(--border-color); min-height: 70px; }
         .feedback-message { margin-top: 1.5rem; font-size: 1rem; text-align: left; padding: 1rem 1.5rem; border-radius: 12px; background-color: var(--feedback-bg); border: 1px solid var(--feedback-border); box-shadow: inset 0 1px 3px rgba(0,0,0,0.05); line-height: 1.5; transition: all 0.3s ease; }
         .feedback-message.correct-feedback { color: var(--correct-feedback-text); border-color: var(--correct-feedback-border); }
         .feedback-message.incorrect-feedback { color: var(--incorrect-feedback-text); border-color: var(--incorrect-feedback-border); }
@@ -199,7 +201,6 @@
 
         @media (min-width: 640px) { 
             .options-grid { grid-template-columns: 1fr 1fr; }
-            .sorting-container { grid-template-columns: 1fr 1fr; }
         }
     </style>
 </head>
@@ -311,6 +312,7 @@
                     </div>
                     <div id="progressText" class="progress-text"></div>
                     <div class="question-area">
+                        <img id="questionImage" class="hidden"/>
                         <div id="questionText" class="question-text"></div>
                     </div>
                     <div id="optionsGrid" class="options-grid"></div>
@@ -376,6 +378,36 @@
                             <span class="slider"></span>
                         </label>
                     </div>
+                     <div class="settings-option">
+                        <div class="settings-option-label">
+                            <label for="questionCountSelect">問題数</label>
+                        </div>
+                        <select id="questionCountSelect" class="w-24 p-2 border rounded">
+                            <option value="5">5問</option>
+                            <option value="10">10問</option>
+                            <option value="15">15問</option>
+                            <option value="20">20問</option>
+                        </select>
+                    </div>
+                    <div class="settings-option">
+                        <div class="settings-option-label">
+                            <label for="showProgressToggle">進捗状況を表示</label>
+                        </div>
+                        <label class="toggle-switch">
+                            <input type="checkbox" id="showProgressToggle">
+                            <span class="slider"></span>
+                        </label>
+                    </div>
+                    <div class="settings-option">
+                        <div class="settings-option-label">
+                            <label for="masteryModeToggle">習得モード</label>
+                            <p>2回連続で正解するまで「習得済み」になりません。</p>
+                        </div>
+                        <label class="toggle-switch">
+                            <input type="checkbox" id="masteryModeToggle">
+                            <span class="slider"></span>
+                        </label>
+                    </div>
                      <button id="backToProjectFromSettings" class="btn btn-primary mt-8 w-full">プロジェクトに戻る</button>
                 </div>
             </div>
@@ -406,6 +438,16 @@
             <div class="modal-buttons">
                 <button id="modalCancelQuizButton" class="modal-button cancel">キャンセル</button>
                 <button id="modalCreateQuizButton" class="modal-button create">保存</button>
+            </div>
+        </div>
+    </div>
+     <div id="interruptModal" class="modal">
+        <div class="modal-content">
+            <h2 class="modal-title">クイズを中断</h2>
+            <p>本当にクイズを中断しますか？現在の進捗は保存されません。</p>
+            <div class="modal-buttons">
+                <button id="modalCancelInterrupt" class="modal-button cancel">キャンセル</button>
+                <button id="modalConfirmInterrupt" class="modal-button create" style="background-color: #ef4444;">中断する</button>
             </div>
         </div>
     </div>
@@ -456,7 +498,12 @@
             const modalCreateQuizButton = document.getElementById('modalCreateQuizButton');
             const modalCancelQuizButton = document.getElementById('modalCancelQuizButton');
 
+            const interruptModal = document.getElementById('interruptModal');
+            const modalConfirmInterrupt = document.getElementById('modalConfirmInterrupt');
+            const modalCancelInterrupt = document.getElementById('modalCancelInterrupt');
+
             const quizTitle = document.getElementById('quizTitle');
+            const questionImage = document.getElementById('questionImage');
             const questionTextElement = document.getElementById('questionText');
             const optionsGridElement = document.getElementById('optionsGrid');
             const submissionArea = document.getElementById('submissionArea');
@@ -475,9 +522,14 @@
             const confettiContainer = document.getElementById('confettiContainer');
             const restartQuizButton = document.getElementById('restartQuizButton');
             const backToProjectButton = document.getElementById('backToProjectButton');
+            
+            // Settings DOM
             const darkModeToggle = document.getElementById('darkModeToggle');
             const themeColorCircles = document.querySelectorAll('.color-circle');
             const enableSoundToggle = document.getElementById('enableSoundToggle');
+            const questionCountSelect = document.getElementById('questionCountSelect');
+            const showProgressToggle = document.getElementById('showProgressToggle');
+            const masteryModeToggle = document.getElementById('masteryModeToggle');
             const backToProjectFromSettings = document.getElementById('backToProjectFromSettings');
 
             // --- App State ---
@@ -487,9 +539,15 @@
             let confettiAnimationId;
             let tempGeneratedQuestions = null;
             let uploadedFiles = []; // Array of {name, type, content}
+            
+            // Settings State
+            let enableSound = true;
+            let questionCount = 5;
+            let showProgress = true;
+            let masteryMode = false;
+
 
             // --- Sound Effects ---
-            let enableSound = true;
             const sounds = {
                 correct: new Tone.Synth({ volume: -12, oscillator: { type: 'sine' }, envelope: { attack: 0.005, decay: 0.1, sustain: 0.3, release: 1 } }).toDestination(),
                 incorrect: new Tone.FMSynth({ volume: -8, harmonicity: 1.5, modulationIndex: 10, oscillator: { type: "sawtooth" }, envelope: { attack: 0.01, decay: 0.3, sustain: 0.01, release: 0.1 } }).toDestination(),
@@ -560,6 +618,8 @@
                 projectTitle.textContent = newProject.name;
                 projectSettingsButton.classList.remove('invisible');
                 closeNewProjectModal();
+                resetUploadUI();
+                promptText.value = '';
                 switchScreen('generate'); 
                 if(window.innerWidth < 768 && sidebar.classList.contains('open')) toggleSidebar();
             };
@@ -585,6 +645,8 @@
 
             const setActiveProject = (projectId) => {
                 activeProjectId = projectId;
+                resetUploadUI();
+                promptText.value = '';
                 const project = projects.find(p => p.id === projectId);
                 if (project) {
                     projectTitle.textContent = project.name;
@@ -636,10 +698,13 @@
 
                 try {
                     const selectedType = questionType.value;
-                    let modelPrompt = `以下の情報に基づいて、高品質な${questionType.options[questionType.selectedIndex].text}形式のクイズを5問作成してください。`;
+                    let modelPrompt = `以下の情報に基づいて、高品質な${questionType.options[questionType.selectedIndex].text}形式のクイズを${questionCount}問作成してください。`;
                     
                     if (selectedType === 'fill_in_the_blank') {
                         modelPrompt += `答え(answer)は、単語や短い語句だけにしてください。文末の句点(。)や「です」「ます」を含めないでください。`;
+                    }
+                    if (uploadedFiles.some(f => f.type === 'image')) {
+                        modelPrompt += `アップロードされた画像に直接関連する問題を作成する場合、その問題オブジェクトに "image_source": true というプロパティを追加してください。`;
                     }
 
                     if (promptText.value.trim()) {
@@ -657,20 +722,35 @@
                         }
                     };
                     
-                    let itemSchema = {};
+                    let itemSchema = {
+                        type: "OBJECT",
+                        properties: {
+                            question: { type: "STRING" },
+                            explanation: { type: "STRING" },
+                            image_source: { type: "BOOLEAN", optional: true }
+                        },
+                        required: ["question", "explanation"]
+                    };
+
                     switch(selectedType) {
                         case 'fill_in_the_blank':
-                            itemSchema = { type: "OBJECT", properties: { question: { type: "STRING" }, answer: { type: "STRING" }, explanation: { type: "STRING" } }, required: ["question", "answer", "explanation"] };
+                            itemSchema.properties.answer = { type: "STRING" };
+                            itemSchema.required.push("answer");
                             break;
                         case 'sorting':
-                            itemSchema = { type: "OBJECT", properties: { question: { type: "STRING" }, items: { type: "ARRAY", items: { type: "STRING" } }, explanation: { type: "STRING" } }, required: ["question", "items", "explanation"] };
+                            itemSchema.properties.items = { type: "ARRAY", items: { type: "STRING" } };
+                            itemSchema.required.push("items");
                             break;
                         case 'multiple_select':
-                            itemSchema = { type: "OBJECT", properties: { question: { type: "STRING" }, options: { type: "ARRAY", items: { type: "STRING" } }, answer: { type: "ARRAY", items: { type: "STRING" } }, explanation: { type: "STRING" } }, required: ["question", "options", "answer", "explanation"] };
+                            itemSchema.properties.options = { type: "ARRAY", items: { type: "STRING" } };
+                            itemSchema.properties.answer = { type: "ARRAY", items: { type: "STRING" } };
+                            itemSchema.required.push("options", "answer");
                             break;
                         case 'multiple_choice':
                         default:
-                            itemSchema = { type: "OBJECT", properties: { question: { type: "STRING" }, options: { type: "ARRAY", items: { type: "STRING" } }, answer: { type: "STRING" }, explanation: { type: "STRING" } }, required: ["question", "options", "answer", "explanation"] };
+                            itemSchema.properties.options = { type: "ARRAY", items: { type: "STRING" } };
+                            itemSchema.properties.answer = { type: "STRING" };
+                            itemSchema.required.push("options", "answer");
                             break;
                     }
                     payload.generationConfig.responseSchema.properties.quizzes.items = itemSchema;
@@ -745,7 +825,9 @@
                         id: `quiz_${Date.now()}`,
                         name: quizName,
                         createdAt: new Date().toISOString(),
-                        questions: tempGeneratedQuestions
+                        questions: tempGeneratedQuestions,
+                        // Store image data with the quiz if it was used
+                        images: uploadedFiles.filter(f => f.type === 'image')
                     };
                     project.quizzes.push(newQuiz);
                     saveProjects();
@@ -773,6 +855,12 @@
                 questionTextElement.innerHTML = question.question;
                 optionsGridElement.innerHTML = '';
                 submissionArea.innerHTML = '';
+                questionImage.classList.add('hidden');
+
+                if(question.image_source && currentQuiz.images && currentQuiz.images.length > 0) {
+                    questionImage.src = currentQuiz.images[0].content; // Display the first image
+                    questionImage.classList.remove('hidden');
+                }
 
                 switch(question.type) {
                     case 'multiple_choice':
@@ -804,12 +892,12 @@
                         optionsGridElement.innerHTML = `
                             <div class="sorting-container">
                                 <div>
-                                    <h4 class="font-semibold mb-2 text-center">選択肢</h4>
-                                    <div id="sortingSource" class="sorting-box"></div>
-                                </div>
-                                <div>
                                     <h4 class="font-semibold mb-2 text-center">解答欄</h4>
                                     <div id="sortingTarget" class="sorting-box"></div>
+                                </div>
+                                <div>
+                                    <h4 class="font-semibold mb-2 text-center">選択肢</h4>
+                                    <div id="sortingSource" class="sorting-box"></div>
                                 </div>
                             </div>`;
                         const sourceContainer = document.getElementById('sortingSource');
@@ -967,6 +1055,13 @@
             };
 
             const updateProgressBar = () => {
+                if (!showProgress) {
+                    progressBarContainer.style.display = 'none';
+                    progressText.style.display = 'none';
+                    return;
+                }
+                progressBarContainer.style.display = 'block';
+                progressText.style.display = 'block';
                 const total = currentQuiz.questions.length;
                 const progress = total > 0 ? (currentQuiz.currentIndex + 1) / total : 0;
                 progressBar.style.width = `${progress * 100}%`;
@@ -1175,14 +1270,21 @@
             nameQuizModal.addEventListener('click', (e) => { if (e.target === nameQuizModal) closeNameQuizModal(); });
             newQuizNameInput.addEventListener('keydown', (e) => { if (e.key === 'Enter') handleCreateQuiz(); });
 
+            interruptButton.addEventListener('click', () => interruptModal.classList.add('show'));
+            modalCancelInterrupt.addEventListener('click', () => interruptModal.classList.remove('show'));
+            modalConfirmInterrupt.addEventListener('click', () => {
+                interruptModal.classList.remove('show');
+                setActiveProject(activeProjectId);
+            });
+
             nextButton.addEventListener('click', () => { playSound('click'); currentQuiz.currentIndex++; loadQuestion(); });
-            interruptButton.addEventListener('click', () => setActiveProject(activeProjectId));
             toggleExplanationButton.addEventListener('click', () => { explanationContentElement.classList.toggle('show'); toggleExplanationButton.textContent = explanationContentElement.classList.contains('show') ? '解説▲' : '解説▼'; });
             restartQuizButton.addEventListener('click', () => startQuiz(currentQuiz));
             backToProjectButton.addEventListener('click', () => setActiveProject(activeProjectId));
             projectSettingsButton.addEventListener('click', () => switchScreen('settings'));
             backToProjectFromSettings.addEventListener('click', () => setActiveProject(activeProjectId));
             
+            // Settings Listeners
             darkModeToggle.addEventListener('change', (e) => setDarkMode(e.target.checked));
             themeColorCircles.forEach(circle => {
                 circle.addEventListener('click', () => {
@@ -1195,26 +1297,41 @@
                 enableSound = e.target.checked;
                 localStorage.setItem('qube_enableSound', String(enableSound));
             });
+             questionCountSelect.addEventListener('change', (e) => {
+                questionCount = parseInt(e.target.value, 10);
+                localStorage.setItem('qube_questionCount', questionCount);
+            });
+            showProgressToggle.addEventListener('change', (e) => {
+                showProgress = e.target.checked;
+                localStorage.setItem('qube_showProgress', String(showProgress));
+            });
+            masteryModeToggle.addEventListener('change', (e) => {
+                masteryMode = e.target.checked;
+                localStorage.setItem('qube_masteryMode', String(masteryMode));
+            });
 
             // --- Initialization ---
             const init = () => {
-                // Set PDF.js worker source
                 pdfjsLib.GlobalWorkerOptions.workerSrc = `https://cdnjs.cloudflare.com/ajax/libs/pdf.js/2.11.338/pdf.worker.min.js`;
-
                 loadProjects();
                 switchScreen('welcome');
                 renderProjectList();
                 
+                // Load Settings
                 const isDark = localStorage.getItem('qube_darkMode') === 'true';
                 darkModeToggle.checked = isDark;
-                
                 const savedTheme = localStorage.getItem('qube_themeColor') || 'default';
                 document.querySelector(`.color-circle[data-theme="${savedTheme}"]`)?.classList.add('selected');
-                
                 setDarkMode(isDark);
 
                 enableSound = localStorage.getItem('qube_enableSound') !== 'false';
                 enableSoundToggle.checked = enableSound;
+                questionCount = parseInt(localStorage.getItem('qube_questionCount'), 10) || 5;
+                questionCountSelect.value = questionCount;
+                showProgress = localStorage.getItem('qube_showProgress') !== 'false';
+                showProgressToggle.checked = showProgress;
+                masteryMode = localStorage.getItem('qube_masteryMode') === 'true';
+                masteryModeToggle.checked = masteryMode;
             };
 
             init();
