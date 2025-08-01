@@ -2,7 +2,7 @@
 <html lang="ja">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
     <title>Qube</title>
     <!-- PWA settings -->
     <link rel="manifest" href="manifest.json">
@@ -48,6 +48,9 @@
             --score-color: #0c4a6e;
             --score-comment-color: #0369a1;
             --themed-text-color: #0c4a6e;
+
+            /* Safe Area Insets */
+            --safe-area-inset-bottom: env(safe-area-inset-bottom, 1rem);
         }
 
         body.dark-mode {
@@ -92,7 +95,7 @@
         #sidebar { width: 280px; background-color: var(--bg-secondary); border-right: 1px solid var(--border-color); padding: 20px; display: flex; flex-direction: column; transition: transform 0.3s ease, box-shadow 0.3s ease; transform: translateX(-100%); position: fixed; top: 0; left: 0; height: 100%; z-index: 1000; }
         #sidebar.open { transform: translateX(0); box-shadow: 0 0 40px rgba(0,0,0,0.2); }
         body.sidebar-open-desktop #mainContent { margin-left: 280px; }
-        #mainContent { flex-grow: 1; padding: 20px; overflow-y: auto; transition: margin-left 0.3s ease; }
+        #mainContent { flex-grow: 1; padding: 20px; overflow-y: auto; transition: margin-left 0.3s ease; padding-bottom: calc(20px + var(--safe-area-inset-bottom)); }
         @media (max-width: 767px) { 
             body.sidebar-open-desktop #mainContent { margin-left: 0; }
         }
@@ -109,7 +112,7 @@
         .project-name { flex-grow: 1; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
         .project-menu-btn { padding: 4px; border-radius: 50%; flex-shrink: 0; }
         .project-menu-btn:hover { background-color: rgba(0,0,0,0.1); }
-        .project-menu { position: absolute; right: 20px; background-color: var(--bg-secondary); border: 1px solid var(--border-color); border-radius: 8px; box-shadow: 0 4px 12px rgba(0,0,0,0.1); z-index: 1100; display: none; }
+        .project-menu { position: absolute; right: 20px; background-color: var(--bg-secondary); border: 1px solid var(--border-color); border-radius: 8px; box-shadow: 0 4px 12px rgba(0,0,0,0.1); z-index: 1100; display: none; min-width: 120px;}
         .project-menu.show { display: block; }
         .project-menu-item { padding: 8px 16px; cursor: pointer; }
         .project-menu-item:hover { background-color: var(--bg-tertiary); }
@@ -136,8 +139,8 @@
         .modal-title { font-size: 1.5rem; font-weight: 700; color: var(--text-primary); margin-bottom: 20px; }
         .modal-buttons { display: flex; justify-content: flex-end; gap: 10px; margin-top: 25px; }
         .modal-button { padding: 10px 25px; border-radius: 8px; font-weight: 600; cursor: pointer; transition: all 0.2s ease; border: none; }
-        .modal-button.create { background-color: var(--accent-primary); color: white; }
-        .modal-button.create:hover { background-color: var(--accent-primary-hover); }
+        .modal-button.create, .modal-button.save { background-color: var(--accent-primary); color: white; }
+        .modal-button.create:hover, .modal-button.save:hover { background-color: var(--accent-primary-hover); }
         .modal-button.delete { background-color: #ef4444; color: white; }
         .modal-button.delete:hover { background-color: #dc2626; }
         .modal-button.cancel { background-color: transparent; color: var(--text-secondary); border: 1px solid var(--border-color); }
@@ -164,16 +167,17 @@
         .divider::before, .divider::after { content: ''; height: 1px; background-color: var(--border-color); flex-grow: 1; }
 
         /* --- Integrated Quiz Screen Styles --- */
-        .quiz-container { max-width: 800px; margin-left: auto; margin-right: auto; }
-        .quiz-header { position: relative; display: flex; align-items: center; justify-content: center; padding-bottom: 1rem; gap: 1rem; }
-        .quiz-header .main-title { font-size: 1.5rem; font-weight: 700; margin: 0; color: var(--themed-text-color); }
-        #interruptButton { position: absolute; top: 50%; right: 0; transform: translateY(-50%); padding: 8px 15px; font-size: 0.8rem; background-color: #ef4444; color:white; }
+        .quiz-container { max-width: 800px; margin-left: auto; margin-right: auto; width: 100%; }
+        .quiz-header { display: flex; align-items: center; justify-content: space-between; padding-bottom: 1rem; gap: 1rem; }
+        #quizTitle { font-size: 1.5rem; font-weight: 700; color: var(--themed-text-color); text-align: center; flex-grow: 1; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+        #interruptButton { padding: 8px 15px; font-size: 0.8rem; background-color: #ef4444; color:white; flex-shrink: 0; }
         .progress-container { width: 100%; background-color: #e2e8f0; border-radius: 10px; height: 15px; margin-top: 10px; overflow: hidden; box-shadow: inset 0 1px 3px rgba(0,0,0,0.1); }
         .progress-bar { height: 100%; width: 0%; background-color: var(--progress-bar-bg); border-radius: 10px; transition: width 0.3s ease-in-out, background-color 0.3s ease; }
         .progress-text { font-size: 1rem; font-weight: 600; color: var(--text-primary); margin-top: 10px; transition: color 0.3s ease; text-align: center; }
         .question-area { min-height: 100px; display: flex; flex-direction: column; justify-content: center; align-items: center; transition: background-color 0.3s ease; text-align: left; margin-top: 1.5rem;}
         #questionImage { max-height: 200px; border-radius: 8px; margin-bottom: 1rem; }
         .question-text { font-size: 1.25rem; font-weight: 500; color: var(--themed-text-color); margin-bottom: 10px; transition: color 0.3s ease; width: 100%; text-align:center; }
+        #longContentBox { display: none; width: 100%; max-height: 250px; overflow-y: auto; background-color: var(--button-bg-default); border: 1px solid var(--border-color); padding: 1rem; border-radius: 8px; margin-bottom: 1rem; white-space: pre-wrap; font-family: monospace; font-size: 0.9rem; }
         .options-grid { display: grid; grid-template-columns: 1fr; gap: 12px; margin-top: 15px; }
         .option-button { background-color: var(--button-bg-default); color: var(--button-text-default); padding: 14px 20px; border-radius: 12px; font-size: 1rem; font-weight: 500; cursor: pointer; transition: all 0.3s ease; border: 2px solid var(--button-border-default); text-align: left; box-shadow: 0 4px 8px rgba(0, 0, 0, 0.08); line-height: 1.5; }
         .option-button:hover:not(:disabled) { background-color: var(--border-color); transform: translateY(-3px) scale(1.01); box-shadow: 0 6px 12px rgba(0, 0, 0, 0.12); }
@@ -340,6 +344,7 @@
                     <div id="progressText" class="progress-text"></div>
                     <div class="question-area">
                         <img id="questionImage" class="hidden"/>
+                        <div id="longContentBox"></div>
                         <div id="questionText" class="question-text"></div>
                     </div>
                     <div id="optionsGrid" class="options-grid"></div>
@@ -455,6 +460,19 @@
             </div>
         </div>
     </div>
+    <div id="renameProjectModal" class="modal">
+        <div class="modal-content">
+            <h2 class="modal-title">プロジェクト名を変更</h2>
+            <div class="form-group">
+                <label for="renameProjectNameInput">新しいプロジェクト名</label>
+                <input type="text" id="renameProjectNameInput">
+            </div>
+            <div class="modal-buttons">
+                <button id="modalCancelRenameButton" class="modal-button cancel">キャンセル</button>
+                <button id="modalSaveRenameButton" class="modal-button save">保存</button>
+            </div>
+        </div>
+    </div>
     <div id="nameQuizModal" class="modal">
         <div class="modal-content">
             <h2 class="modal-title">クイズに名前を付ける</h2>
@@ -531,6 +549,11 @@
             const newProjectNameInput = document.getElementById('newProjectNameInput');
             const modalCreateProjectButton = document.getElementById('modalCreateProjectButton');
             const modalCancelProjectButton = document.getElementById('modalCancelProjectButton');
+
+            const renameProjectModal = document.getElementById('renameProjectModal');
+            const renameProjectNameInput = document.getElementById('renameProjectNameInput');
+            const modalSaveRenameButton = document.getElementById('modalSaveRenameButton');
+            const modalCancelRenameButton = document.getElementById('modalCancelRenameButton');
             
             const nameQuizModal = document.getElementById('nameQuizModal');
             const newQuizNameInput = document.getElementById('newQuizNameInput');
@@ -548,6 +571,7 @@
 
             const quizTitle = document.getElementById('quizTitle');
             const questionImage = document.getElementById('questionImage');
+            const longContentBox = document.getElementById('longContentBox');
             const questionTextElement = document.getElementById('questionText');
             const optionsGridElement = document.getElementById('optionsGrid');
             const submissionArea = document.getElementById('submissionArea');
@@ -583,7 +607,7 @@
             let confettiAnimationId;
             let tempGeneratedQuestions = null;
             let uploadedFiles = []; // Array of {name, type, content (dataURL)}
-            let projectToDeleteId = null;
+            let projectToEditId = null;
             
             // Settings State
             let enableSound = true;
@@ -629,6 +653,10 @@
             const switchScreen = (screenName) => {
                 Object.values(screens).forEach(s => s.classList.remove('active'));
                 if (screens[screenName]) screens[screenName].classList.add('active');
+
+                // Control button visibility based on the screen
+                projectSettingsButton.classList.toggle('invisible', screenName !== 'projectStart');
+                hamburgerButton.classList.toggle('invisible', screenName === 'quiz');
             };
 
             const toggleSidebar = () => {
@@ -707,12 +735,14 @@
             };
             
             const showProjectMenu = (projectId, button) => {
-                // Close any existing menus
                 document.querySelectorAll('.project-menu').forEach(m => m.remove());
 
                 const menu = document.createElement('div');
                 menu.className = 'project-menu';
-                menu.innerHTML = `<div class="project-menu-item delete" data-project-id="${projectId}">削除</div>`;
+                menu.innerHTML = `
+                    <div class="project-menu-item" data-action="rename" data-project-id="${projectId}">名前を変更</div>
+                    <div class="project-menu-item delete" data-action="delete" data-project-id="${projectId}">削除</div>
+                `;
                 
                 document.body.appendChild(menu);
                 const rect = button.getBoundingClientRect();
@@ -720,23 +750,62 @@
                 menu.style.right = `${window.innerWidth - rect.right - rect.width}px`;
                 menu.classList.add('show');
 
-                // Click listener to close menu
                 const closeMenu = (e) => {
                     if (!menu.contains(e.target)) {
                         menu.remove();
-                        document.body.removeEventListener('click', closeMenu);
+                        document.body.removeEventListener('click', closeMenu, true);
                     }
                 };
-                setTimeout(() => document.body.addEventListener('click', closeMenu), 0);
                 
-                menu.querySelector('.delete').addEventListener('click', () => {
+                menu.addEventListener('click', (e) => {
+                    const action = e.target.dataset.action;
+                    if (action === 'rename') {
+                        showRenameProjectModal(projectId);
+                    } else if (action === 'delete') {
+                        showDeleteProjectModal(projectId);
+                    }
                     menu.remove();
-                    showDeleteProjectModal(projectId);
+                    document.body.removeEventListener('click', closeMenu, true);
                 });
+
+                setTimeout(() => document.body.addEventListener('click', closeMenu, true), 0);
             };
 
+            const showRenameProjectModal = (projectId) => {
+                projectToEditId = projectId;
+                const project = projects.find(p => p.id === projectId);
+                if (project) {
+                    renameProjectNameInput.value = project.name;
+                    renameProjectModal.classList.add('show');
+                    renameProjectNameInput.focus();
+                    renameProjectNameInput.select();
+                }
+            };
+
+            const closeRenameProjectModal = () => {
+                renameProjectModal.classList.remove('show');
+                projectToEditId = null;
+            };
+
+            const handleRenameProject = () => {
+                const newName = renameProjectNameInput.value.trim();
+                if (!newName || !projectToEditId) return;
+
+                const project = projects.find(p => p.id === projectToEditId);
+                if (project) {
+                    project.name = newName;
+                    saveProjects();
+                    renderProjectList();
+                    if (activeProjectId === projectToEditId) {
+                        projectTitle.textContent = newName;
+                    }
+                }
+                closeRenameProjectModal();
+            };
+
+
             const showDeleteProjectModal = (projectId) => {
-                projectToDeleteId = projectId;
+                projectToEditId = projectId;
                 const project = projects.find(p => p.id === projectId);
                 if(project) {
                     deleteProjectName.textContent = project.name;
@@ -746,18 +815,17 @@
             
             const closeDeleteProjectModal = () => {
                 deleteProjectModal.classList.remove('show');
-                projectToDeleteId = null;
+                projectToEditId = null;
             };
 
             const handleDeleteProject = () => {
-                if(!projectToDeleteId) return;
-                projects = projects.filter(p => p.id !== projectToDeleteId);
+                if(!projectToEditId) return;
+                projects = projects.filter(p => p.id !== projectToEditId);
                 
-                if(activeProjectId === projectToDeleteId) {
+                if(activeProjectId === projectToEditId) {
                     activeProjectId = null;
                     localStorage.removeItem('qube_lastProjectId');
-                    projectTitle.textContent = 'プロジェクトへようこそ';
-                    projectSettingsButton.classList.add('invisible');
+                    projectTitle.textContent = 'Qube';
                     switchScreen('welcome');
                 }
                 saveProjects();
@@ -774,7 +842,9 @@
                     });
                     item.addEventListener('dragend', (e) => {
                         setTimeout(() => {
-                            draggedItem.classList.remove('dragging');
+                            if (draggedItem) {
+                                draggedItem.classList.remove('dragging');
+                            }
                             draggedItem = null;
                         }, 0);
                     });
@@ -783,10 +853,12 @@
                 projectListEl.addEventListener('dragover', (e) => {
                     e.preventDefault();
                     const afterElement = getDragAfterElement(projectListEl, e.clientY);
-                    if (afterElement == null) {
-                        projectListEl.appendChild(draggedItem);
-                    } else {
-                        projectListEl.insertBefore(draggedItem, afterElement);
+                    if (draggedItem) {
+                        if (afterElement == null) {
+                            projectListEl.appendChild(draggedItem);
+                        } else {
+                            projectListEl.insertBefore(draggedItem, afterElement);
+                        }
                     }
                 });
 
@@ -819,7 +891,6 @@
                 const project = projects.find(p => p.id === projectId);
                 if (project) {
                     projectTitle.textContent = project.name;
-                    projectSettingsButton.classList.remove('invisible');
                     if (project.quizzes.length === 0) {
                         switchScreen('generate'); 
                     } else {
@@ -871,28 +942,16 @@
                 spinner.classList.remove('hidden');
                 generateQuizButton.disabled = true;
                 
-                let payload; // payloadをtryブロックの外で定義
+                let payload;
 
                 try {
-                    // =================================================================
-                    // ▼▼▼ APIキー設定箇所 ▼▼▼
-                    // 重要: ここにあなたのGoogle AI StudioのAPIキーを入力してください
                     const apiKey = "AIzaSyAmL3qPv1Zr0URta9hE0a4QCveWOfonBHc"; 
-                    // ▲▲▲ APIキー設定箇所 ▲▲▲
-                    // =================================================================
-
-                    // ★★★ 修正点 ★★★
-                    // APIキーが空の場合にエラーを投げる処理を削除しました。
-                    // この環境では、キーが空でも自動的に認証が行われます。
-                    // if (!apiKey) {
-                    //     throw new Error("APIキーが設定されていません。コードを編集して、apiKey変数にあなたのキーを入力してください。");
-                    // }
 
                     const isAutoGenre = autoGenreCheckbox.checked;
                     const selectedType = questionType.value;
                     const numQuestions = genQuestionCount.value === 'all' ? '可能な限り多く' : `${genQuestionCount.value}問`;
                     
-                    let basePrompt = `以下の情報に基づいて、高品質な${questionType.options[questionType.selectedIndex].text}形式のクイズを${numQuestions}作成してください。各問題には必ず、詳細な解説(explanation)を付けてください。生成プロセスはできるだけ高速にお願いします。画像や図を直接参照して答える問題以外では、image_sourceプロパティをtrueに設定しないでください。`;
+                    let basePrompt = `以下の情報に基づいて、高品質な${questionType.options[questionType.selectedIndex].text}形式のクイズを${numQuestions}作成してください。各問題には必ず、詳細な解説(explanation)を付けてください。もし問題文がコードや長文を含む場合は、その部分を long_content プロパティに格納し、question プロパティには「以下の内容について答えなさい」のような短い指示のみを入れてください。画像や図を直接参照して答える問題以外では、image_sourceプロパティをtrueに設定しないでください。`;
                     if (selectedType === 'fill_in_the_blank') {
                         basePrompt += `答え(answer)は、単語や短い語句だけにしてください。文末の句点(。)や「です」「ます」を含めないでください。`;
                     }
@@ -904,7 +963,7 @@
                         finalPrompt = basePrompt;
                     }
                     
-                    payload = { // ここでpayloadを初期化
+                    payload = {
                         contents: [{ role: "user", parts: [] }],
                         generationConfig: { responseMimeType: "application/json" }
                     };
@@ -934,7 +993,8 @@
                         properties: {
                             question: { type: "STRING" },
                             explanation: { type: "STRING" },
-                            image_source: { type: "BOOLEAN" }
+                            image_source: { type: "BOOLEAN" },
+                            long_content: { type: "STRING" }
                         },
                         required: ["question", "explanation"]
                     };
@@ -953,7 +1013,7 @@
                             itemSchema.properties.answer = { type: "ARRAY", items: { type: "STRING" } };
                             itemSchema.required.push("options", "answer");
                             break;
-                        default: // multiple_choice
+                        default:
                             itemSchema.properties.options = { type: "ARRAY", items: { type: "STRING" } };
                             itemSchema.properties.answer = { type: "STRING" };
                             itemSchema.required.push("options", "answer");
@@ -1009,7 +1069,7 @@
                         }
                     } else {
                          console.error("Invalid API response structure:", result);
-                        throw new Error("AIからの応答が無効、または空です。");
+                         throw new Error("AIからの応答が無効、または空です。");
                     }
                 } catch (error) {
                     console.error("Quiz generation failed:", error);
@@ -1100,14 +1160,22 @@
                 optionsGridElement.innerHTML = '';
                 submissionArea.innerHTML = '';
                 questionImage.classList.add('hidden');
+                longContentBox.style.display = 'none';
+                feedbackMessageElement.style.display = 'none';
                 feedbackMessageElement.classList.remove('correct-feedback', 'incorrect-feedback');
                 explanationContentElement.classList.remove('show');
                 toggleExplanationButton.classList.add('hidden');
+                toggleExplanationButton.textContent = '解説▼';
 
 
                 if(question.image_source && currentQuiz.images && currentQuiz.images.length > 0) {
-                    questionImage.src = currentQuiz.images[0].content; // Display the first image
+                    questionImage.src = currentQuiz.images[0].content;
                     questionImage.classList.remove('hidden');
+                }
+
+                if (question.long_content) {
+                    longContentBox.textContent = question.long_content;
+                    longContentBox.style.display = 'block';
                 }
 
                 switch(question.type) {
@@ -1149,15 +1217,15 @@
                                 </div>
                             </div>`;
                         const sourceContainer = document.getElementById('sortingSource');
+                        const targetContainer = document.getElementById('sortingTarget');
                         const shuffledItems = [...question.items].sort(() => Math.random() - 0.5);
-                        shuffledItems.forEach(item => {
+                        shuffledItems.forEach(itemText => {
                             const div = document.createElement('div');
-                            div.innerHTML = item;
+                            div.innerHTML = itemText;
                             div.classList.add('option-button', 'sorting-item');
-                            div.draggable = true;
                             sourceContainer.appendChild(div);
                         });
-                        addDragAndDropListeners();
+                        setupSortingInteractions();
                         createSubmitButton();
                         break;
                     default: 
@@ -1166,7 +1234,6 @@
                         break;
                 }
 
-                feedbackMessageElement.style.display = 'none';
                 updateProgressBar();
                 updateNavigationButtons();
             };
@@ -1205,13 +1272,12 @@
                         break;
                 }
                 
-                showFeedback(isCorrect, question);
+                showFeedback(isCorrect, question, userAnswer);
             };
 
-            const showFeedback = (isCorrect, question) => {
+            const showFeedback = (isCorrect, question, userAnswer) => {
                 optionsGridElement.querySelectorAll('button, input, .sorting-item').forEach(el => {
                     el.disabled = true;
-                    if (el.classList.contains('sorting-item')) el.draggable = false;
                 });
                 submissionArea.innerHTML = '';
                 feedbackMessageElement.style.display = 'block';
@@ -1223,19 +1289,25 @@
                     currentQuiz.score++;
                 } else {
                     playSound('incorrect');
-                    let correctAnswerText = question.answer;
-                    if (Array.isArray(question.answer)) correctAnswerText = question.answer.join(', ');
+                    let correctAnswerText = Array.isArray(question.answer) ? question.answer.join(', ') : question.answer;
                     if (question.type === 'sorting') correctAnswerText = question.items.join(' → ');
-                    
                     feedbackResultElement.innerHTML = `<strong>不正解...</strong> 正解は「${correctAnswerText}」でした。`;
                     feedbackMessageElement.classList.add('incorrect-feedback');
                 }
                 
                 currentQuiz.answeredQuestions.add(question.question);
 
-                if (question.type === 'multiple_choice' || question.type === 'multiple_select') {
+                if (question.type === 'multiple_choice') {
                     optionsGridElement.querySelectorAll('.option-button').forEach(button => {
-                        const isAnswer = Array.isArray(question.answer) ? question.answer.includes(button.dataset.option) : button.dataset.option === question.answer;
+                        if (button.dataset.option === question.answer) {
+                            button.classList.add('correct');
+                        } else if (button.dataset.option === userAnswer) {
+                            button.classList.add('incorrect');
+                        }
+                    });
+                } else if (question.type === 'multiple_select') {
+                    optionsGridElement.querySelectorAll('.option-button').forEach(button => {
+                        const isAnswer = question.answer.includes(button.dataset.option);
                         if (isAnswer) button.classList.add('correct');
                         if (button.classList.contains('selected') && !isAnswer) button.classList.add('incorrect');
                     });
@@ -1250,32 +1322,54 @@
                 updateNavigationButtons();
             };
             
-            const addDragAndDropListeners = () => {
-                const items = document.querySelectorAll('.sorting-item');
-                const containers = [document.getElementById('sortingSource'), document.getElementById('sortingTarget')];
-                let draggedItem = null;
+            const setupSortingInteractions = () => {
+                const isTouchDevice = ('ontouchstart' in window) || (navigator.maxTouchPoints > 0);
+                const sourceContainer = document.getElementById('sortingSource');
+                const targetContainer = document.getElementById('sortingTarget');
 
-                items.forEach(item => {
-                    item.addEventListener('dragstart', () => {
-                        draggedItem = item;
-                        setTimeout(() => item.classList.add('dragging'), 0);
+                const moveItem = (item) => {
+                    if (item.parentElement === sourceContainer) {
+                        targetContainer.appendChild(item);
+                    } else {
+                        sourceContainer.appendChild(item);
+                    }
+                };
+                
+                if (isTouchDevice) {
+                    sourceContainer.addEventListener('click', (e) => {
+                        if (e.target.classList.contains('sorting-item')) moveItem(e.target);
                     });
-                    item.addEventListener('dragend', () => {
-                        draggedItem.classList.remove('dragging');
+                    targetContainer.addEventListener('click', (e) => {
+                        if (e.target.classList.contains('sorting-item')) moveItem(e.target);
                     });
-                });
-
-                containers.forEach(container => {
-                    container.addEventListener('dragover', e => {
-                        e.preventDefault();
-                        const afterElement = getDragAfterElement(container, e.clientY);
-                        if (afterElement == null) {
-                            container.appendChild(draggedItem);
-                        } else {
-                            container.insertBefore(draggedItem, afterElement);
+                } else {
+                    let draggedItem = null;
+                    optionsGridElement.addEventListener('dragstart', (e) => {
+                        if (e.target.classList.contains('sorting-item')) {
+                            draggedItem = e.target;
+                            setTimeout(() => e.target.classList.add('dragging'), 0);
                         }
                     });
-                });
+                    optionsGridElement.addEventListener('dragend', (e) => {
+                        if (draggedItem) {
+                            draggedItem.classList.remove('dragging');
+                            draggedItem = null;
+                        }
+                    });
+                    [sourceContainer, targetContainer].forEach(container => {
+                        container.addEventListener('dragover', e => {
+                            e.preventDefault();
+                            const afterElement = getDragAfterElement(container, e.clientY);
+                            if (draggedItem) {
+                                if (afterElement == null) {
+                                    container.appendChild(draggedItem);
+                                } else {
+                                    container.insertBefore(draggedItem, afterElement);
+                                }
+                            }
+                        });
+                    });
+                }
             };
 
 
@@ -1483,6 +1577,11 @@
             modalCancelProjectButton.addEventListener('click', closeNewProjectModal);
             newProjectModal.addEventListener('click', (e) => { if (e.target === newProjectModal) closeNewProjectModal(); });
             newProjectNameInput.addEventListener('keydown', (e) => { if (e.key === 'Enter') handleCreateProject(); });
+
+            modalSaveRenameButton.addEventListener('click', handleRenameProject);
+            modalCancelRenameButton.addEventListener('click', closeRenameProjectModal);
+            renameProjectModal.addEventListener('click', (e) => { if (e.target === renameProjectModal) closeRenameProjectModal(); });
+            renameProjectNameInput.addEventListener('keydown', (e) => { if (e.key === 'Enter') handleRenameProject(); });
             
             generateNewQuizBtn.addEventListener('click', () => {
                 resetUploadUI();
@@ -1524,7 +1623,10 @@
             modalCancelDelete.addEventListener('click', closeDeleteProjectModal);
 
             nextButton.addEventListener('click', () => { playSound('click'); currentQuiz.currentIndex++; loadQuestion(); });
-            toggleExplanationButton.addEventListener('click', () => { explanationContentElement.classList.toggle('show'); toggleExplanationButton.textContent = explanationContentElement.classList.contains('show') ? '解説▲' : '解説▼'; });
+            toggleExplanationButton.addEventListener('click', () => { 
+                explanationContentElement.classList.toggle('show'); 
+                toggleExplanationButton.textContent = explanationContentElement.classList.contains('show') ? '解説▲' : '解説▼'; 
+            });
             restartQuizButton.addEventListener('click', () => startQuiz(currentQuiz));
             backToProjectButton.addEventListener('click', () => setActiveProject(activeProjectId));
             projectSettingsButton.addEventListener('click', () => switchScreen('settings'));
