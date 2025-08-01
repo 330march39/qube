@@ -101,6 +101,21 @@
         .screen { display: none; flex-direction: column; }
         .screen.active { display: flex; }
 
+        /* --- Project List Enhancements --- */
+        .project-item { display: flex; align-items: center; justify-content: space-between; padding: 8px; border-radius: 8px; cursor: pointer; transition: background-color 0.2s; }
+        .project-item:hover { background-color: var(--bg-tertiary); }
+        .project-item.active { background-color: var(--bg-tertiary); font-weight: bold; }
+        .project-item.dragging { opacity: 0.5; background-color: var(--accent-primary); }
+        .project-name { flex-grow: 1; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+        .project-menu-btn { padding: 4px; border-radius: 50%; flex-shrink: 0; }
+        .project-menu-btn:hover { background-color: rgba(0,0,0,0.1); }
+        .project-menu { position: absolute; right: 20px; background-color: var(--bg-secondary); border: 1px solid var(--border-color); border-radius: 8px; box-shadow: 0 4px 12px rgba(0,0,0,0.1); z-index: 1100; display: none; }
+        .project-menu.show { display: block; }
+        .project-menu-item { padding: 8px 16px; cursor: pointer; }
+        .project-menu-item:hover { background-color: var(--bg-tertiary); }
+        .project-menu-item.delete { color: #ef4444; }
+
+
         /* --- Qube Buttons & Forms --- */
         .btn { padding: 10px 20px; border-radius: 8px; font-weight: 600; cursor: pointer; transition: all 0.2s ease; border: none; }
         .btn-primary { background-color: var(--accent-primary); color: white; box-shadow: 0 4px 12px var(--accent-primary-shadow); }
@@ -123,6 +138,8 @@
         .modal-button { padding: 10px 25px; border-radius: 8px; font-weight: 600; cursor: pointer; transition: all 0.2s ease; border: none; }
         .modal-button.create { background-color: var(--accent-primary); color: white; }
         .modal-button.create:hover { background-color: var(--accent-primary-hover); }
+        .modal-button.delete { background-color: #ef4444; color: white; }
+        .modal-button.delete:hover { background-color: #dc2626; }
         .modal-button.cancel { background-color: transparent; color: var(--text-secondary); border: 1px solid var(--border-color); }
         .modal-button.cancel:hover { background-color: var(--border-color); }
 
@@ -215,7 +232,7 @@
             <h2 class="text-2xl font-bold mb-6" style="color: var(--accent-primary);">Qube</h2>
             <button id="newProjectButton" class="btn btn-primary w-full mb-6">新しいプロジェクトを作成</button>
             <h3 class="text-lg font-semibold mb-3 text-gray-500">プロジェクト一覧</h3>
-            <div id="projectList" class="flex-grow overflow-y-auto">
+            <div id="projectList" class="flex-grow overflow-y-auto space-y-1 pr-2">
                 <p class="text-gray-400">まだプロジェクトがありません。</p>
             </div>
         </aside>
@@ -234,7 +251,7 @@
             </header>
 
             <!-- Welcome Screen -->
-            <div id="welcomeScreen" class="screen active text-center p-8 bg-white dark:bg-gray-800 rounded-lg shadow-lg">
+            <div id="welcomeScreen" class="screen active text-center p-8 rounded-lg" style="background-color: var(--bg-secondary);">
                 <h2 class="text-4xl font-bold mb-4" style="color: var(--accent-primary);">Qubeへようこそ！</h2>
                 <p class="text-xl mb-8" style="color: var(--text-secondary);">AIの力で、あなたの学習を次のレベルへ。</p>
                 <p class="mb-8" style="color: var(--text-primary);">左のメニューから「新しいプロジェクトを作成」して、<br>あなただけのオリジナルクイズ作りを始めましょう。</p>
@@ -295,9 +312,11 @@
                             </select>
                         </div>
                     </div>
-                     <div class="form-group flex items-center gap-2">
-                        <input type="checkbox" id="autoGenreCheckbox" class="w-4 h-4">
-                        <label for="autoGenreCheckbox" class="mb-0">AIによる自動ジャンル分け</label>
+                     <div class="form-group">
+                        <label class="flex items-center gap-2 cursor-pointer">
+                            <input type="checkbox" id="autoGenreCheckbox" class="w-4 h-4 accent-sky-500">
+                            <span class="select-none">AIによる自動ジャンル分け</span>
+                        </label>
                     </div>
                     <button id="generateQuizButton" class="btn btn-primary w-full mt-4 py-3 text-lg flex items-center justify-center">
                         <span class="button-text">クイズを生成する</span>
@@ -454,7 +473,17 @@
             <p>本当にクイズを中断しますか？現在の進捗は保存されません。</p>
             <div class="modal-buttons">
                 <button id="modalCancelInterrupt" class="modal-button cancel">キャンセル</button>
-                <button id="modalConfirmInterrupt" class="modal-button create" style="background-color: #ef4444;">中断する</button>
+                <button id="modalConfirmInterrupt" class="modal-button delete">中断する</button>
+            </div>
+        </div>
+    </div>
+    <div id="deleteProjectModal" class="modal">
+        <div class="modal-content">
+            <h2 class="modal-title">プロジェクトを削除</h2>
+            <p>本当に「<span id="deleteProjectName"></span>」を削除しますか？この操作は元に戻せません。</p>
+            <div class="modal-buttons">
+                <button id="modalCancelDelete" class="modal-button cancel">キャンセル</button>
+                <button id="modalConfirmDelete" class="modal-button delete">削除する</button>
             </div>
         </div>
     </div>
@@ -486,7 +515,6 @@
             const backToProjectStartBtn = document.getElementById('backToProjectStartBtn');
             const promptText = document.getElementById('promptText');
             const promptLabel = document.getElementById('promptLabel');
-            const aiMode = document.getElementById('aiMode');
             const questionType = document.getElementById('questionType');
             const genQuestionCount = document.getElementById('genQuestionCount');
             const autoGenreCheckbox = document.getElementById('autoGenreCheckbox');
@@ -510,6 +538,11 @@
             const interruptModal = document.getElementById('interruptModal');
             const modalConfirmInterrupt = document.getElementById('modalConfirmInterrupt');
             const modalCancelInterrupt = document.getElementById('modalCancelInterrupt');
+
+            const deleteProjectModal = document.getElementById('deleteProjectModal');
+            const deleteProjectName = document.getElementById('deleteProjectName');
+            const modalConfirmDelete = document.getElementById('modalConfirmDelete');
+            const modalCancelDelete = document.getElementById('modalCancelDelete');
 
             const quizTitle = document.getElementById('quizTitle');
             const questionImage = document.getElementById('questionImage');
@@ -548,6 +581,7 @@
             let confettiAnimationId;
             let tempGeneratedQuestions = null;
             let uploadedFiles = []; // Array of {name, type, content}
+            let projectToDeleteId = null;
             
             // Settings State
             let enableSound = true;
@@ -627,33 +661,152 @@
                 projects.unshift(newProject); // Add to the top
                 saveProjects();
                 renderProjectList();
-                activeProjectId = newProject.id;
-                projectTitle.textContent = newProject.name;
-                projectSettingsButton.classList.remove('invisible');
+                setActiveProject(newProject.id);
                 closeNewProjectModal();
-                resetUploadUI();
-                promptText.value = '';
-                switchScreen('generate'); 
                 if(window.innerWidth < 768 && sidebar.classList.contains('open')) toggleSidebar();
             };
 
             const renderProjectList = () => {
                 projectListEl.innerHTML = '';
                 if (projects.length === 0) {
-                    projectListEl.innerHTML = '<p class="text-gray-400">まだプロジェクトがありません。</p>';
+                    projectListEl.innerHTML = '<p class="text-gray-400 p-2">まだプロジェクトがありません。</p>';
                     return;
                 }
                 projects.forEach(p => {
                     const projectEl = document.createElement('div');
-                    projectEl.textContent = p.name;
-                    projectEl.className = `p-2 rounded-md cursor-pointer hover:bg-sky-100 dark:hover:bg-sky-800 ${p.id === activeProjectId ? 'bg-sky-100 dark:bg-sky-800 font-bold' : ''}`;
+                    projectEl.className = `project-item ${p.id === activeProjectId ? 'active' : ''}`;
                     projectEl.dataset.projectId = p.id;
-                    projectEl.addEventListener('click', () => {
+                    projectEl.draggable = true;
+
+                    const nameEl = document.createElement('div');
+                    nameEl.textContent = p.name;
+                    nameEl.className = 'project-name';
+                    
+                    const menuBtn = document.createElement('button');
+                    menuBtn.innerHTML = `<svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" viewBox="0 0 20 20" fill="currentColor"><path d="M10 6a2 2 0 110-4 2 2 0 010 4zM10 12a2 2 0 110-4 2 2 0 010 4zM10 18a2 2 0 110-4 2 2 0 010 4z" /></svg>`;
+                    menuBtn.className = 'project-menu-btn';
+                    
+                    projectEl.appendChild(nameEl);
+                    projectEl.appendChild(menuBtn);
+                    projectListEl.appendChild(projectEl);
+
+                    // Event Listeners for each item
+                    nameEl.addEventListener('click', () => {
                         setActiveProject(p.id);
                         if(window.innerWidth < 768) toggleSidebar();
                     });
-                    projectListEl.appendChild(projectEl);
+
+                    menuBtn.addEventListener('click', (e) => {
+                        e.stopPropagation();
+                        showProjectMenu(p.id, e.currentTarget);
+                    });
                 });
+                addProjectDragDropListeners();
+            };
+            
+            const showProjectMenu = (projectId, button) => {
+                // Close any existing menus
+                document.querySelectorAll('.project-menu').forEach(m => m.remove());
+
+                const menu = document.createElement('div');
+                menu.className = 'project-menu';
+                menu.innerHTML = `<div class="project-menu-item delete" data-project-id="${projectId}">削除</div>`;
+                
+                document.body.appendChild(menu);
+                const rect = button.getBoundingClientRect();
+                menu.style.top = `${rect.bottom}px`;
+                menu.style.right = `${window.innerWidth - rect.right - rect.width}px`;
+                menu.classList.add('show');
+
+                // Click listener to close menu
+                const closeMenu = (e) => {
+                    if (!menu.contains(e.target)) {
+                        menu.remove();
+                        document.body.removeEventListener('click', closeMenu);
+                    }
+                };
+                setTimeout(() => document.body.addEventListener('click', closeMenu), 0);
+                
+                menu.querySelector('.delete').addEventListener('click', () => {
+                    menu.remove();
+                    showDeleteProjectModal(projectId);
+                });
+            };
+
+            const showDeleteProjectModal = (projectId) => {
+                projectToDeleteId = projectId;
+                const project = projects.find(p => p.id === projectId);
+                if(project) {
+                    deleteProjectName.textContent = project.name;
+                    deleteProjectModal.classList.add('show');
+                }
+            };
+            
+            const closeDeleteProjectModal = () => {
+                deleteProjectModal.classList.remove('show');
+                projectToDeleteId = null;
+            };
+
+            const handleDeleteProject = () => {
+                if(!projectToDeleteId) return;
+                projects = projects.filter(p => p.id !== projectToDeleteId);
+                saveProjects();
+                
+                if(activeProjectId === projectToDeleteId) {
+                    activeProjectId = null;
+                    projectTitle.textContent = 'プロジェクトへようこそ';
+                    projectSettingsButton.classList.add('invisible');
+                    switchScreen('welcome');
+                }
+                
+                renderProjectList();
+                closeDeleteProjectModal();
+            };
+
+            const addProjectDragDropListeners = () => {
+                let draggedItem = null;
+                projectListEl.querySelectorAll('.project-item').forEach(item => {
+                    item.addEventListener('dragstart', (e) => {
+                        draggedItem = item;
+                        setTimeout(() => item.classList.add('dragging'), 0);
+                    });
+                    item.addEventListener('dragend', (e) => {
+                        setTimeout(() => {
+                            draggedItem.classList.remove('dragging');
+                            draggedItem = null;
+                        }, 0);
+                    });
+                });
+
+                projectListEl.addEventListener('dragover', (e) => {
+                    e.preventDefault();
+                    const afterElement = getDragAfterElement(projectListEl, e.clientY);
+                    if (afterElement == null) {
+                        projectListEl.appendChild(draggedItem);
+                    } else {
+                        projectListEl.insertBefore(draggedItem, afterElement);
+                    }
+                });
+
+                projectListEl.addEventListener('drop', (e) => {
+                    e.preventDefault();
+                    const newOrderIds = Array.from(projectListEl.querySelectorAll('.project-item')).map(item => item.dataset.projectId);
+                    projects.sort((a, b) => newOrderIds.indexOf(a.id) - newOrderIds.indexOf(b.id));
+                    saveProjects();
+                });
+            };
+
+            const getDragAfterElement = (container, y) => {
+                const draggableElements = [...container.querySelectorAll('.project-item:not(.dragging)')];
+                return draggableElements.reduce((closest, child) => {
+                    const box = child.getBoundingClientRect();
+                    const offset = y - box.top - box.height / 2;
+                    if (offset < 0 && offset > closest.offset) {
+                        return { offset: offset, element: child };
+                    } else {
+                        return closest;
+                    }
+                }, { offset: Number.NEGATIVE_INFINITY }).element;
             };
 
             const setActiveProject = (projectId) => {
@@ -713,7 +866,7 @@
                     const isAutoGenre = autoGenreCheckbox.checked;
                     const selectedType = questionType.value;
                     const numQuestions = genQuestionCount.value === 'all' ? '可能な限り多く' : `${genQuestionCount.value}問`;
-                    let modelPrompt = `以下の情報に基づいて、高品質な${questionType.options[questionType.selectedIndex].text}形式のクイズを${numQuestions}作成してください。`;
+                    let modelPrompt = `以下の情報に基づいて、高品質な${questionType.options[questionType.selectedIndex].text}形式のクイズを${numQuestions}作成してください。各問題には必ず、詳細な解説(explanation)を付けてください。`;
                     
                     if (selectedType === 'fill_in_the_blank') {
                         modelPrompt += `答え(answer)は、単語や短い語句だけにしてください。文末の句点(。)や「です」「ます」を含めないでください。`;
@@ -722,14 +875,35 @@
                         modelPrompt += `アップロードされた画像に直接関連する問題を作成する場合、その問題オブジェクトに "image_source": true というプロパティを追加してください。`;
                     }
 
+                    let sourceContent = '';
                     if (promptText.value.trim()) {
-                        modelPrompt += `\nユーザーからの追加指示: 「${promptText.value}」`;
+                        sourceContent += `ユーザーからのテキスト入力:\n${promptText.value}\n\n`;
                     }
+                    
+                    uploadedFiles.forEach(file => {
+                        if (file.type !== 'image') {
+                           sourceContent += `ファイル「${file.name}」の内容:\n${file.content}\n\n`;
+                        }
+                    });
                     
                     const payload = {
                         contents: [{ role: "user", parts: [] }],
                         generationConfig: { responseMimeType: "application/json" }
                     };
+                    
+                    let finalPrompt = modelPrompt;
+                    if (sourceContent) {
+                        finalPrompt += `\n\n--- クイズ生成の元になる情報 ---\n${sourceContent}`;
+                    }
+                    payload.contents[0].parts.push({ text: finalPrompt });
+
+                    uploadedFiles.forEach(file => {
+                        if (file.type === 'image') {
+                            const mimeType = file.content.substring(5, file.content.indexOf(';'));
+                            const base64Data = file.content.split(',')[1];
+                            payload.contents[0].parts.push({ inlineData: { mimeType, data: base64Data } });
+                        }
+                    });
                     
                     let itemSchema = {
                         type: "OBJECT",
@@ -757,7 +931,6 @@
                     }
 
                     if (isAutoGenre) {
-                        modelPrompt = `提供された情報を分析し、内容を複数のジャンルやトピックに分類してください。その後、各ジャンルごとに、指定された形式（${questionType.options[questionType.selectedIndex].text}）でクイズを${numQuestions}作成してください。` + modelPrompt;
                         payload.generationConfig.responseSchema = {
                             type: "OBJECT",
                             properties: {
@@ -780,26 +953,19 @@
                             properties: { "quizzes": { "type": "ARRAY", "items": itemSchema } }
                         };
                     }
-
-
-                    payload.contents[0].parts.push({ text: modelPrompt });
                     
-                    let textContent = '';
-                    uploadedFiles.forEach(file => {
-                        if (file.type === 'image') {
-                            const mimeType = file.content.substring(5, file.content.indexOf(';'));
-                            const base64Data = file.content.split(',')[1];
-                            payload.contents[0].parts.push({ inlineData: { mimeType, data: base64Data } });
-                        } else { // text or pdf
-                            textContent += file.content + '\n\n';
-                        }
-                    });
+                    // ===============================================================
+                    // ▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼ APIキーをここに入力 ▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼
+                    // ===============================================================
+                    const apiKey = ""; // 例: "AIzaSy..."
+                    // ===============================================================
+                    // ▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲
+                    // ===============================================================
 
-                    if (textContent) {
-                        payload.contents[0].parts[0].text += `\n\nクイズ生成の元になるテキスト:\n---\n${textContent}\n---`;
+                    if (!apiKey) {
+                        throw new Error("APIキーが設定されていません。JavaScriptファイルで `apiKey` を設定してください。");
                     }
-                    
-                    const apiKey = ""; // Provided by the environment
+
                     const apiUrl = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash-preview-05-20:generateContent?key=${apiKey}`;
                     
                     const response = await fetch(apiUrl, {
@@ -808,7 +974,11 @@
                         body: JSON.stringify(payload)
                     });
 
-                    if (!response.ok) throw new Error(`API request failed with status ${response.status}`);
+                    if (!response.ok) {
+                         const errorBody = await response.text();
+                         console.error("API Error Response:", errorBody);
+                         throw new Error(`APIリクエストに失敗しました (ステータス: ${response.status})`);
+                    }
                     const result = await response.json();
                     
                     if (result.candidates?.[0]?.content?.parts?.[0]?.text) {
@@ -820,7 +990,8 @@
                             showNameQuizModal();
                         }
                     } else {
-                        throw new Error("AIからの応答が無効です。");
+                         console.error("Invalid API response structure:", result);
+                        throw new Error("AIからの応答が無効、または空です。");
                     }
                 } catch (error) {
                     console.error("Quiz generation failed:", error);
@@ -906,6 +1077,10 @@
                 optionsGridElement.innerHTML = '';
                 submissionArea.innerHTML = '';
                 questionImage.classList.add('hidden');
+                feedbackMessageElement.classList.remove('correct-feedback', 'incorrect-feedback');
+                explanationContentElement.classList.remove('show');
+                toggleExplanationButton.classList.add('hidden');
+
 
                 if(question.image_source && currentQuiz.images && currentQuiz.images.length > 0) {
                     questionImage.src = currentQuiz.images[0].content; // Display the first image
@@ -1080,19 +1255,6 @@
                 });
             };
 
-            const getDragAfterElement = (container, y) => {
-                const draggableElements = [...container.querySelectorAll('.sorting-item:not(.dragging)')];
-                return draggableElements.reduce((closest, child) => {
-                    const box = child.getBoundingClientRect();
-                    const offset = y - box.top - box.height / 2;
-                    if (offset < 0 && offset > closest.offset) {
-                        return { offset: offset, element: child };
-                    } else {
-                        return closest;
-                    }
-                }, { offset: Number.NEGATIVE_INFINITY }).element;
-            };
-
 
             const updateNavigationButtons = () => {
                 const question = currentQuiz.questions[currentQuiz.currentIndex];
@@ -1174,10 +1336,10 @@
             const applyColors = (themeName, isDark) => {
                  const root = document.documentElement;
                  const themes = {
-                    'default': { '--accent-primary': '#0ea5e9', '--accent-primary-hover': '#0284c7', '--accent-primary-shadow': 'rgba(14, 165, 233, 0.3)', '--themed-text-color': isDark ? '#e0f2fe' : '#0c4a6e' },
-                    'red': { '--accent-primary': '#ef4444', '--accent-primary-hover': '#dc2626', '--accent-primary-shadow': 'rgba(239, 68, 68, 0.3)', '--themed-text-color': isDark ? '#fca5a5' : '#991b1b' },
-                    'green': { '--accent-primary': '#10b981', '--accent-primary-hover': '#059669', '--accent-primary-shadow': 'rgba(16, 185, 129, 0.3)', '--themed-text-color': isDark ? '#a7f3d0' : '#065f46' },
-                    'indigo': { '--accent-primary': '#6366f1', '--accent-primary-hover': '#4f46e5', '--accent-primary-shadow': 'rgba(99, 102, 241, 0.3)', '--themed-text-color': isDark ? '#c7d2fe' : '#4338ca' }
+                     'default': { '--accent-primary': isDark ? '#38bdf8' : '#0ea5e9', '--accent-primary-hover': isDark ? '#0ea5e9' : '#0284c7', '--accent-primary-shadow': isDark ? 'rgba(56, 189, 248, 0.3)' : 'rgba(14, 165, 233, 0.3)', '--themed-text-color': isDark ? '#e0f2fe' : '#0c4a6e' },
+                     'red': { '--accent-primary': isDark ? '#f87171' : '#ef4444', '--accent-primary-hover': isDark ? '#ef4444' : '#dc2626', '--accent-primary-shadow': 'rgba(239, 68, 68, 0.3)', '--themed-text-color': isDark ? '#fca5a5' : '#991b1b' },
+                     'green': { '--accent-primary': isDark ? '#4ade80' : '#10b981', '--accent-primary-hover': isDark ? '#10b981' : '#059669', '--accent-primary-shadow': 'rgba(16, 185, 129, 0.3)', '--themed-text-color': isDark ? '#a7f3d0' : '#065f46' },
+                     'indigo': { '--accent-primary': isDark ? '#818cf8' : '#6366f1', '--accent-primary-hover': isDark ? '#6366f1' : '#4f46e5', '--accent-primary-shadow': 'rgba(99, 102, 241, 0.3)', '--themed-text-color': isDark ? '#c7d2fe' : '#4338ca' }
                  };
                  const theme = themes[themeName] || themes.default;
                  Object.entries(theme).forEach(([prop, value]) => root.style.setProperty(prop, value));
@@ -1207,17 +1369,22 @@
                             reader.onerror = reject;
                             reader.readAsDataURL(file);
                         } else if (file.type === 'application/pdf') {
-                            const loadingTask = pdfjsLib.getDocument(URL.createObjectURL(file));
-                            loadingTask.promise.then(async (pdf) => {
-                                let text = '';
-                                for (let i = 1; i <= pdf.numPages; i++) {
-                                    const page = await pdf.getPage(i);
-                                    const textContent = await page.getTextContent();
-                                    text += textContent.items.map(item => item.str).join(' ');
-                                }
-                                resolve({ name: file.name, type: 'pdf', content: text });
-                            }).catch(reject);
-                        } else if (file.type.startsWith('text/')) {
+                            const reader = new FileReader();
+                            reader.onload = (e) => {
+                                const loadingTask = pdfjsLib.getDocument(e.target.result);
+                                loadingTask.promise.then(async (pdf) => {
+                                    let text = '';
+                                    for (let i = 1; i <= pdf.numPages; i++) {
+                                        const page = await pdf.getPage(i);
+                                        const textContent = await page.getTextContent();
+                                        text += textContent.items.map(item => item.str).join(' ') + '\n';
+                                    }
+                                    resolve({ name: file.name, type: 'pdf', content: text });
+                                }).catch(reject);
+                            };
+                            reader.onerror = reject;
+                            reader.readAsArrayBuffer(file);
+                        } else if (file.type.startsWith('text/') || file.name.endsWith('.md')) {
                             const reader = new FileReader();
                             reader.onload = (e) => resolve({ name: file.name, type: 'text', content: e.target.result });
                             reader.onerror = reject;
@@ -1326,6 +1493,9 @@
                 interruptModal.classList.remove('show');
                 setActiveProject(activeProjectId);
             });
+
+            modalConfirmDelete.addEventListener('click', handleDeleteProject);
+            modalCancelDelete.addEventListener('click', closeDeleteProjectModal);
 
             nextButton.addEventListener('click', () => { playSound('click'); currentQuiz.currentIndex++; loadQuestion(); });
             toggleExplanationButton.addEventListener('click', () => { explanationContentElement.classList.toggle('show'); toggleExplanationButton.textContent = explanationContentElement.classList.contains('show') ? '解説▲' : '解説▼'; });
