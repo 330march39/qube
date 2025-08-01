@@ -870,18 +870,23 @@
                 buttonText.textContent = '生成中...';
                 spinner.classList.remove('hidden');
                 generateQuizButton.disabled = true;
+                
+                let payload; // payloadをtryブロックの外で定義
 
                 try {
                     // =================================================================
                     // ▼▼▼ APIキー設定箇所 ▼▼▼
                     // 重要: ここにあなたのGoogle AI StudioのAPIキーを入力してください
-                    const apiKey = "AIzaSyA_c7CFmw0VJo1itcTmLJPapMYmnzzVYVU"; 
+                    const apiKey = "AIzaSyAmL3qPv1Zr0URta9hE0a4QCveWOfonBHc"; 
                     // ▲▲▲ APIキー設定箇所 ▲▲▲
                     // =================================================================
 
-                    if (!apiKey) {
-                        throw new Error("APIキーが設定されていません。コードを編集して、apiKey変数にあなたのキーを入力してください。");
-                    }
+                    // ★★★ 修正点 ★★★
+                    // APIキーが空の場合にエラーを投げる処理を削除しました。
+                    // この環境では、キーが空でも自動的に認証が行われます。
+                    // if (!apiKey) {
+                    //     throw new Error("APIキーが設定されていません。コードを編集して、apiKey変数にあなたのキーを入力してください。");
+                    // }
 
                     const isAutoGenre = autoGenreCheckbox.checked;
                     const selectedType = questionType.value;
@@ -899,7 +904,7 @@
                         finalPrompt = basePrompt;
                     }
                     
-                    const payload = {
+                    payload = { // ここでpayloadを初期化
                         contents: [{ role: "user", parts: [] }],
                         generationConfig: { responseMimeType: "application/json" }
                     };
@@ -929,20 +934,26 @@
                         properties: {
                             question: { type: "STRING" },
                             explanation: { type: "STRING" },
-                            image_source: { type: "BOOLEAN", optional: true }
+                            image_source: { type: "BOOLEAN" }
                         },
                         required: ["question", "explanation"]
                     };
 
                     switch(selectedType) {
-                        case 'fill_in_the_blank': itemSchema.properties.answer = { type: "STRING" }; itemSchema.required.push("answer"); break;
-                        case 'sorting': itemSchema.properties.items = { type: "ARRAY", items: { type: "STRING" } }; itemSchema.required.push("items"); break;
+                        case 'fill_in_the_blank': 
+                            itemSchema.properties.answer = { type: "STRING" }; 
+                            itemSchema.required.push("answer"); 
+                            break;
+                        case 'sorting': 
+                            itemSchema.properties.items = { type: "ARRAY", items: { type: "STRING" } }; 
+                            itemSchema.required.push("items"); 
+                            break;
                         case 'multiple_select':
                             itemSchema.properties.options = { type: "ARRAY", items: { type: "STRING" } };
                             itemSchema.properties.answer = { type: "ARRAY", items: { type: "STRING" } };
                             itemSchema.required.push("options", "answer");
                             break;
-                        default:
+                        default: // multiple_choice
                             itemSchema.properties.options = { type: "ARRAY", items: { type: "STRING" } };
                             itemSchema.properties.answer = { type: "STRING" };
                             itemSchema.required.push("options", "answer");
@@ -973,7 +984,6 @@
                         };
                     }
                     
-                    // ★★★ 修正点 ★★★ APIキーをURLに含めるように修正
                     const apiUrl = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash-preview-05-20:generateContent?key=${apiKey}`;
                     
                     const response = await fetch(apiUrl, {
@@ -1003,6 +1013,9 @@
                     }
                 } catch (error) {
                     console.error("Quiz generation failed:", error);
+                    if(payload) {
+                        console.error("Failed Payload:", JSON.stringify(payload, null, 2));
+                    }
                     generationError.textContent = `クイズの生成に失敗しました: ${error.message}`;
                     generationError.classList.remove('hidden');
                 } finally {
