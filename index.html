@@ -102,6 +102,7 @@
             height: 100%;
             background-color: var(--bg-primary);
             display: flex;
+            flex-direction: column;
             justify-content: center;
             align-items: center;
             z-index: 9999;
@@ -111,6 +112,13 @@
         .splash-screen.hidden {
             opacity: 0;
             pointer-events: none;
+        }
+        .splash-screen img {
+            width: 128px;
+            height: 128px;
+        }
+        .splash-screen h1 {
+            display: none; /* Hidden by default, shown on image error */
         }
 
         /* --- Qube Base Layout --- */
@@ -182,6 +190,53 @@
         .modal-button.delete:hover, .modal-button.reset:hover { background-color: #dc2626; }
         .modal-button.cancel { background-color: transparent; color: var(--text-secondary); border: 1px solid var(--border-color); }
         .modal-button.cancel:hover { background-color: var(--border-color); }
+
+        /* --- ToS Modal --- */
+        #tosModal .modal-content { max-width: 500px; }
+        #tosContent { max-height: 30vh; overflow-y: auto; background-color: var(--bg-primary); padding: 1rem; border-radius: 8px; font-size: 0.9rem; color: var(--text-secondary); border: 1px solid var(--border-color); }
+
+        /* --- Add to Home Screen Popup --- */
+        #addToHomeScreenPopup {
+            display: none;
+            position: fixed;
+            bottom: calc(20px + var(--safe-area-inset-bottom));
+            left: 50%;
+            transform: translateX(-50%);
+            background-color: var(--bg-secondary);
+            color: var(--text-primary);
+            padding: 15px 20px;
+            border-radius: 12px;
+            box-shadow: 0 5px 20px rgba(0,0,0,0.2);
+            z-index: 4000;
+            width: 90%;
+            max-width: 400px;
+        }
+        #addToHomeScreenPopup::after {
+            content: '';
+            position: absolute;
+            bottom: -10px;
+            left: 50%;
+            transform: translateX(-50%);
+            width: 0;
+            height: 0;
+            border-left: 10px solid transparent;
+            border-right: 10px solid transparent;
+            border-top: 10px solid var(--bg-secondary);
+        }
+        #closeAddToHomeScreen {
+            position: absolute;
+            top: 8px;
+            right: 8px;
+            width: 24px;
+            height: 24px;
+            border-radius: 50%;
+            background: var(--bg-tertiary);
+            color: var(--text-secondary);
+            border: none;
+            cursor: pointer;
+            font-size: 1.2rem;
+            line-height: 24px;
+        }
 
         /* --- Project Start Screen --- */
         .start-screen-container { max-width: 600px; margin: auto; text-align: center; }
@@ -319,6 +374,7 @@
 <body>
     <!-- Splash Screen -->
     <div id="splashScreen" class="splash-screen">
+        <img src="https://placehold.co/128x128/0ea5e9/FFFFFF?text=Qube" alt="Qube Logo" id="splashLogo">
         <h1 class="text-5xl font-bold" style="color: var(--accent-primary);">Qube</h1>
     </div>
 
@@ -652,6 +708,30 @@
         </div>
     </div>
 
+    <!-- Terms of Service Modal -->
+    <div id="tosModal" class="modal">
+        <div class="modal-content">
+            <h2 class="modal-title">利用規約</h2>
+            <div id="tosContent">
+                <p class="mb-2">このサービスはAI（人工知能）を利用しています。</p>
+                <p class="mb-2">Google社のGemini APIを利用しています。</p>
+                <p class="mb-2">AIによる回答結果には、誤った情報が含まれる可能性があり、その正確性を保証するものではありません。</p>
+                <p>当サービスのご利用により生じた、いかなる損害についても、当方は一切の責任を負いません。</p>
+            </div>
+            <div class="modal-buttons">
+                <button id="tosAgreeButton" class="modal-button create">同意して利用を開始</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Add to Home Screen Popup for iOS -->
+    <div id="addToHomeScreenPopup" class="text-sm">
+        <button id="closeAddToHomeScreen">&times;</button>
+        <p class="font-bold mb-2">ホーム画面に追加してアプリとして使おう！</p>
+        <p>下の共有ボタン <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4 inline-block -mt-1" viewBox="0 0 20 20" fill="currentColor"><path d="M15 8a3 3 0 10-2.977-2.63l-4.94 2.47a3 3 0 100 4.319l4.94 2.47a3 3 0 10.895-1.789l-4.94-2.47a3.027 3.027 0 000-.74l4.94-2.47C13.456 7.68 14.19 8 15 8z" /></svg> から「ホーム画面に追加」を選択してください。</p>
+        <p class="text-xs mt-2 text-gray-500">アプリ版とブラウザ版で生成したクイズが同期しないため、生成する前にアプリ版を使用することをおすすめします。</p>
+    </div>
+
 
     <script>
         document.addEventListener('DOMContentLoaded', () => {
@@ -714,11 +794,11 @@
             const modalConfirmDelete = document.getElementById('modalConfirmDelete');
             const modalCancelDelete = document.getElementById('modalCancelDelete');
 
+            let questionTextElement = document.getElementById('questionText');
+            let optionsGridElement = document.getElementById('optionsGrid');
             const quizTitle = document.getElementById('quizTitle');
             const questionImage = document.getElementById('questionImage');
             const longContentBox = document.getElementById('longContentBox');
-            const questionTextElement = document.getElementById('questionText');
-            const optionsGridElement = document.getElementById('optionsGrid');
             const submissionArea = document.getElementById('submissionArea');
             const feedbackMessageElement = document.getElementById('feedbackMessage');
             const feedbackResultElement = document.getElementById('feedbackResult');
@@ -757,6 +837,12 @@
             const deleteQuizInstanceModal = document.getElementById('deleteQuizInstanceModal');
             const deleteQuizNameInstance = document.getElementById('deleteQuizNameInstance');
             const resetMasteryModal = document.getElementById('resetMasteryModal');
+
+            // ToS & PWA Prompt DOM
+            const tosModal = document.getElementById('tosModal');
+            const tosAgreeButton = document.getElementById('tosAgreeButton');
+            const addToHomeScreenPopup = document.getElementById('addToHomeScreenPopup');
+            const closeAddToHomeScreen = document.getElementById('closeAddToHomeScreen');
 
 
             // --- App State ---
@@ -1415,9 +1501,15 @@
                     showQuizResult();
                     return;
                 }
+
+                // Sorting bug fix: Re-clone the options grid element to clear old event listeners
+                const parent = optionsGridElement.parentNode;
+                const newGrid = optionsGridElement.cloneNode(false);
+                parent.replaceChild(newGrid, optionsGridElement);
+                optionsGridElement = newGrid;
+
                 const question = currentQuiz.questions[currentQuiz.currentIndex];
                 questionTextElement.innerHTML = question.question;
-                optionsGridElement.innerHTML = '';
                 submissionArea.innerHTML = '';
                 questionImage.classList.add('hidden');
                 longContentBox.style.display = 'none';
@@ -2150,10 +2242,26 @@
             deleteQuizInstanceModal.querySelector('.delete').addEventListener('click', handleDeleteQuiz);
             deleteQuizInstanceModal.querySelector('.cancel').addEventListener('click', () => deleteQuizInstanceModal.classList.remove('show'));
 
+            // --- ToS & PWA Listeners ---
+            tosAgreeButton.addEventListener('click', () => {
+                localStorage.setItem('qube_tos_agreed', 'true');
+                tosModal.classList.remove('show');
+            });
+
+            closeAddToHomeScreen.addEventListener('click', () => {
+                localStorage.setItem('qube_add_to_home_screen_dismissed', 'true');
+                addToHomeScreenPopup.style.display = 'none';
+            });
             
             // --- Initialization ---
             const init = () => {
                 const splashScreen = document.getElementById('splashScreen');
+                const splashLogo = document.getElementById('splashLogo');
+                splashLogo.onerror = () => {
+                    splashLogo.style.display = 'none';
+                    splashLogo.nextElementSibling.style.display = 'block';
+                };
+
                 pdfjsLib.GlobalWorkerOptions.workerSrc = `https://cdnjs.cloudflare.com/ajax/libs/pdf.js/2.11.338/pdf.worker.min.js`;
                 loadState();
                 
@@ -2192,6 +2300,20 @@
                         splashScreen.style.display = 'none';
                     }, { once: true });
                 }, 1200);
+
+                // Check for ToS agreement
+                if (!localStorage.getItem('qube_tos_agreed')) {
+                    tosModal.classList.add('show');
+                }
+
+                // Check for PWA prompt on iOS
+                const isIOS = /iPad|iPhone|iPod/.test(navigator.userAgent) && !window.MSStream;
+                const isInStandaloneMode = window.matchMedia('(display-mode: standalone)').matches;
+                if (isIOS && !isInStandaloneMode && !localStorage.getItem('qube_add_to_home_screen_dismissed')) {
+                    setTimeout(() => {
+                        addToHomeScreenPopup.style.display = 'block';
+                    }, 5000);
+                }
             };
 
             init();
