@@ -415,7 +415,11 @@
     <div class="main-container">
         <!-- Sidebar -->
         <aside id="sidebar">
-            <h2 class="text-2xl font-bold mb-6" style="color: var(--accent-primary);">Qube</h2>
+            <!-- MODIFIED: Sidebar Header with Logo -->
+            <div class="flex items-center mb-6 h-10">
+                <img src="iconsp.png" alt="Qube Logo" class="h-10" onerror="this.style.display='none'; this.nextElementSibling.style.display='block';">
+                <h2 class="text-2xl font-bold ml-2" style="color: var(--accent-primary); display: none;">Qube</h2>
+            </div>
             <button id="newProjectButton" class="btn btn-primary w-full mb-6">新しいプロジェクトを作成</button>
             <h3 class="text-lg font-semibold mb-3 text-gray-500">プロジェクト一覧</h3>
             <div id="projectList" class="flex-grow overflow-y-auto space-y-1 pr-2">
@@ -427,12 +431,15 @@
         <!-- Main Content -->
         <main id="mainContent">
             <header class="flex items-center justify-between mb-8">
-                 <div class="flex items-center gap-2">
+                <div class="flex items-center gap-2">
                     <button id="hamburgerButton" class="p-2 rounded-md">
                         <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16M4 18h16" /></svg>
                     </button>
                 </div>
-                <h1 id="projectTitle" class="text-3xl font-bold text-center absolute left-1/2 -translate-x-1/2" style="color: var(--text-primary);">Qube</h1>
+                <!-- MODIFIED: Project Title container for dynamic content (logo or text) -->
+                <h1 id="projectTitle" class="text-3xl font-bold text-center absolute left-1/2 -translate-x-1/2 flex items-center justify-center h-12" style="color: var(--text-primary);">
+                    <!-- Content is set by JavaScript -->
+                </h1>
                 <button id="projectSettingsButton" class="p-2 rounded-md invisible">
                         <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z" /><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" /></svg>
                 </button>
@@ -847,9 +854,11 @@
             const explanationTextElement = explanationContentElement.querySelector('.explanation-text');
             const toggleExplanationButton = document.getElementById('toggleExplanationButton');
             const nextButton = document.getElementById('nextButton');
+            
+            // MODIFIED: Interrupt button styling updated
             const interruptButton = document.createElement('button'); // Create button dynamically
             interruptButton.id = 'interruptButton';
-            interruptButton.className = 'btn hidden bg-red-500 text-white text-sm py-1 px-3';
+            interruptButton.className = 'btn hidden bg-red-500 text-white text-sm py-2 px-4 rounded-md';
             interruptButton.textContent = '中断';
             document.querySelector('#mainContent > header').appendChild(interruptButton);
 
@@ -979,17 +988,30 @@
             };
 
             // --- UI & State Management Functions ---
+            // NEW: Helper to update the main header title with text or the logo
+            const updateProjectTitle = (text) => {
+                const defaultTitleHTML = `<img src="iconsp.png" alt="Qube Logo" class="h-10" onerror="this.style.display='none'; this.nextElementSibling.style.display='block';"><span style="display:none;">Qube</span>`;
+                if (!text || text === 'Qube') {
+                    projectTitle.innerHTML = defaultTitleHTML;
+                } else {
+                    projectTitle.innerHTML = `<span>${text}</span>`;
+                }
+            };
+
             const switchScreen = (screenName) => {
                 Object.values(screens).forEach(s => s.classList.remove('active'));
                 if (screens[screenName]) screens[screenName].classList.add('active');
+                
+                // MODIFIED: Hide hamburger button during quiz
+                hamburgerButton.classList.toggle('hidden', screenName === 'quiz');
                 projectSettingsButton.classList.toggle('invisible', screenName === 'quiz' || screenName === 'welcome');
                 interruptButton.classList.toggle('hidden', screenName !== 'quiz');
                 
                 if (screenName === 'quiz') {
-                    projectTitle.textContent = currentQuiz?.name || "クイズ";
+                    updateProjectTitle(currentQuiz?.name || "クイズ");
                 } else {
                     const project = appState.projects.find(p => p.id === activeProjectId);
-                    projectTitle.textContent = project?.name || 'Qube';
+                    updateProjectTitle(project?.name || 'Qube');
                 }
             };
 
@@ -1048,9 +1070,10 @@
                     projectEl.dataset.projectId = p.id;
                     projectEl.draggable = true;
 
+                    // MODIFIED: Pin icon changed to emoji
                     let pinIcon = '';
                     if (p.isPinned) {
-                        pinIcon = `<svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4 mr-2 flex-shrink-0" style="color: var(--accent-primary);" viewBox="0 0 20 20" fill="currentColor"><path fill-rule="evenodd" d="M10 3a1 1 0 011 1v5.068l4.243 4.243a1 1 0 01-1.414 1.414L10 11.414l-3.828 3.828a1 1 0 01-1.414-1.414L8 9.586V4a1 1 0 011-1z" clip-rule="evenodd" /><path d="M4 14a1 1 0 011-1h10a1 1 0 110 2H5a1 1 0 01-1-1z" /></svg>`;
+                        pinIcon = `<span class="mr-2 flex-shrink-0">📌</span>`;
                     }
 
                     const nameEl = document.createElement('div');
@@ -1148,7 +1171,7 @@
                     project.name = newName;
                     saveState();
                     renderProjectList();
-                    if (activeProjectId === projectToEditId) projectTitle.textContent = newName;
+                    if (activeProjectId === projectToEditId) updateProjectTitle(newName);
                 }
                 closeRenameProjectModal();
             };
@@ -1173,7 +1196,7 @@
                 if(activeProjectId === projectToEditId) {
                     activeProjectId = null;
                     localStorage.removeItem('qube_lastActiveProjectId');
-                    projectTitle.textContent = 'Qube';
+                    updateProjectTitle('Qube');
                     switchScreen('welcome');
                 }
                 saveState();
@@ -1230,7 +1253,7 @@
                 promptText.value = '';
                 const project = appState.projects.find(p => p.id === projectId);
                 if (project) {
-                    projectTitle.textContent = project.name;
+                    updateProjectTitle(project.name);
                     if (project.quizzes.length === 0) {
                         switchScreen('generate'); 
                     } else {
@@ -1302,7 +1325,7 @@
                 let payload;
 
                 try {
-                    const apiKey = ""; // API Key is managed by the environment
+                    const apiKey = "AIzaSyAmL3qPv1Zr0URta9hE0a4QCveWOfonBHc"; // API Key is managed by the environment
 
                     const isAutoGenre = autoGenreCheckbox.checked;
                     const selectedType = questionType.value;
