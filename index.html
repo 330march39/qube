@@ -8,12 +8,11 @@
     <link rel="apple-touch-icon" href="icon.png">
     <!-- PWA settings -->
     <link rel="manifest" href="manifest.json">
-    <link rel="apple-touch-icon" href="icon-192x192.png">
+    <link rel="apple-touch-icon" href="icon.png">
     <meta name="apple-mobile-web-app-capable" content="yes">
-    <meta name="apple-mobile-web-app-status-bar-style" content="black">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
     <meta name="apple-mobile-web-app-title" content="Qube">
-    <meta name="theme-color" content="#f0f9ff" media="(prefers-color-scheme: light)">
-    <meta name="theme-color" content="#0f172a" media="(prefers-color-scheme: dark)">
+    <meta name="theme-color" content="#f0f9ff">
 
     <script src="https://cdn.tailwindcss.com"></script>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=Noto+Sans+JP:wght@400;500;700&display=swap" rel="stylesheet">
@@ -93,6 +92,26 @@
             overflow: hidden; /* Prevent body scroll */
         }
 
+        /* --- Splash Screen --- */
+        .splash-screen {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background-color: var(--bg-primary);
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            z-index: 9999;
+            transition: opacity 0.5s ease-out;
+            will-change: opacity;
+        }
+        .splash-screen.hidden {
+            opacity: 0;
+            pointer-events: none;
+        }
+
         /* --- Qube Base Layout --- */
         .main-container { display: flex; height: 100vh; width: 100%; }
         #sidebar { width: 280px; background-color: var(--bg-secondary); border-right: 1px solid var(--border-color); padding: 20px; display: flex; flex-direction: column; transition: transform 0.3s ease, box-shadow 0.3s ease; transform: translateX(-100%); position: fixed; top: 0; left: 0; height: 100%; z-index: 1000; }
@@ -116,7 +135,7 @@
         .project-item { display: flex; align-items: center; justify-content: space-between; padding: 8px; border-radius: 8px; cursor: pointer; transition: background-color 0.2s; }
         .project-item:hover { background-color: var(--bg-tertiary); }
         .project-item.active { background-color: var(--bg-tertiary); font-weight: bold; }
-        .project-item.dragging { opacity: 0.5; background-color: var(--accent-primary); }
+        .project-item.dragging { opacity: 0.7; background-color: var(--accent-primary); color: white; box-shadow: 0 8px 20px rgba(0,0,0,0.2); z-index: 10; }
         .project-name { flex-grow: 1; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
         .project-menu-btn { padding: 4px; border-radius: 50%; flex-shrink: 0; }
         .project-menu-btn:hover { background-color: rgba(0,0,0,0.1); }
@@ -275,9 +294,9 @@
         input:checked + .slider:before { transform: translateX(26px); }
         
         #settingsScreen select {
-    　　background-color: var(--bg-secondary);
-        color: var(--text-primary);
-        border-color: var(--border-color);
+        　　background-color: var(--bg-secondary);
+            color: var(--text-primary);
+            border-color: var(--border-color);
         }
 
         /* Edit Quiz Modal Styles */
@@ -285,8 +304,10 @@
         #editQuizList .project-item { padding-left: 0; } /* Remove indent */
         .drag-handle { touch-action: none; cursor: move; padding: 8px; }
         #editQuizList .project-item.dragging {
-            opacity: 0.5;
+            opacity: 0.7;
             background: var(--bg-tertiary);
+            box-shadow: 0 8px 20px rgba(0,0,0,0.2);
+            z-index: 10;
         }
 
         @media (min-width: 640px) { 
@@ -295,6 +316,11 @@
     </style>
 </head>
 <body>
+    <!-- Splash Screen -->
+    <div id="splashScreen" class="splash-screen">
+        <h1 class="text-5xl font-bold" style="color: var(--accent-primary);">Qube</h1>
+    </div>
+
     <div id="confettiContainer" class="confetti-container"></div>
     <div class="main-container">
         <!-- Sidebar -->
@@ -316,7 +342,7 @@
                 </button>
                 <h1 id="projectTitle" class="text-3xl font-bold text-center flex-grow" style="color: var(--text-primary);">Qube</h1>
                 <button id="projectSettingsButton" class="p-2 rounded-md invisible">
-                     <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z" /><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" /></svg>
+                        <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z" /><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" /></svg>
                 </button>
             </header>
             
@@ -1732,6 +1758,8 @@
                 appState.settings.darkMode = isDark;
                 document.body.classList.toggle('dark-mode', isDark);
                 applyColors(appState.settings.themeColor, isDark);
+                // Update status bar color on toggle
+                document.querySelector('meta[name="theme-color"]').content = isDark ? '#0f172a' : '#f0f9ff';
                 saveState();
             };
 
@@ -1871,8 +1899,19 @@
                 editQuizzesModal.classList.add('show');
             };
 
+            const updateQuizOrder = () => {
+                const project = appState.projects.find(p => p.id === activeProjectId);
+                if (!project) return;
+                const newOrderIds = Array.from(editQuizList.querySelectorAll('.project-item')).map(item => item.dataset.quizId);
+                project.quizzes.sort((a, b) => newOrderIds.indexOf(a.id) - newOrderIds.indexOf(b.id));
+                saveState();
+                populateQuizSelect(project);
+            };
+
             const addQuizDragDropListeners = () => {
                 let draggedItem = null;
+
+                // --- MOUSE DRAG & DROP ---
                 editQuizList.querySelectorAll('.project-item').forEach(item => {
                     item.addEventListener('dragstart', (e) => {
                         draggedItem = item;
@@ -1893,18 +1932,46 @@
                 });
                 editQuizList.addEventListener('drop', (e) => {
                     e.preventDefault();
-                    const project = appState.projects.find(p => p.id === activeProjectId);
-                    if (!project) return;
-                    const newOrderIds = Array.from(editQuizList.querySelectorAll('.project-item')).map(item => item.dataset.quizId);
-                    project.quizzes.sort((a, b) => newOrderIds.indexOf(a.id) - newOrderIds.indexOf(b.id));
-                    saveState();
-                    populateQuizSelect(project);
+                    if (!draggedItem) return;
+                    updateQuizOrder();
                 });
+
+                // --- TOUCH DRAG & DROP ---
+                let touchDraggedItem = null;
+                const touchStart = (e) => {
+                    if (!e.target.classList.contains('drag-handle') && !e.target.closest('.drag-handle')) return;
+                    e.preventDefault();
+                    touchDraggedItem = e.target.closest('.project-item');
+                    touchDraggedItem.classList.add('dragging');
+                    document.addEventListener('touchmove', touchMove, { passive: false });
+                    document.addEventListener('touchend', touchEnd, { once: true });
+                };
+                const touchMove = (e) => {
+                    if (!touchDraggedItem) return;
+                    e.preventDefault();
+                    const y = e.touches[0].clientY;
+                    const afterElement = getDragAfterElement(editQuizList, y);
+                    if (afterElement == null) editQuizList.appendChild(touchDraggedItem);
+                    else editQuizList.insertBefore(touchDraggedItem, afterElement);
+                };
+                const touchEnd = () => {
+                    if (!touchDraggedItem) return;
+                    touchDraggedItem.classList.remove('dragging');
+                    touchDraggedItem = null;
+                    updateQuizOrder();
+                    document.removeEventListener('touchmove', touchMove);
+                };
+                
+                editQuizList.removeEventListener('touchstart', touchStart); // Clean up previous listeners
+                editQuizList.addEventListener('touchstart', touchStart, { passive: false });
             };
 
             const handleQuizEditActions = (e) => {
-                const action = e.target.dataset.action;
-                const id = e.target.dataset.quizId;
+                const button = e.target.closest('button');
+                if (!button) return;
+                
+                const action = button.dataset.action;
+                const id = button.dataset.quizId;
                 if (!action || !id) return;
 
                 quizToEditId = id;
@@ -2079,6 +2146,7 @@
             
             // --- Initialization ---
             const init = () => {
+                const splashScreen = document.getElementById('splashScreen');
                 pdfjsLib.GlobalWorkerOptions.workerSrc = `https://cdnjs.cloudflare.com/ajax/libs/pdf.js/2.11.338/pdf.worker.min.js`;
                 loadState();
                 
@@ -2086,6 +2154,7 @@
                 const { settings } = appState;
                 darkModeToggle.checked = settings.darkMode;
                 document.body.classList.toggle('dark-mode', settings.darkMode);
+                document.querySelector('meta[name="theme-color"]').content = settings.darkMode ? '#0f172a' : '#f0f9ff';
                 
                 themeColorCircles.forEach(c => c.classList.remove('selected'));
                 document.querySelector(`.color-circle[data-theme="${settings.themeColor}"]`)?.classList.add('selected');
@@ -2108,6 +2177,14 @@
                     switchScreen('welcome');
                 }
                 renderProjectList();
+                
+                // Hide splash screen after a delay
+                setTimeout(() => {
+                    splashScreen.classList.add('hidden');
+                    splashScreen.addEventListener('transitionend', () => {
+                        splashScreen.style.display = 'none';
+                    }, { once: true });
+                }, 1200);
             };
 
             init();
