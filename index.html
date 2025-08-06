@@ -16,7 +16,7 @@
     <script src="https://cdn.tailwindcss.com"></script>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=Noto+Sans+JP:wght@400;500;700&display=swap" rel="stylesheet">
     <script src="https://cdnjs.cloudflare.com/ajax/libs/tone/14.8.49/Tone.min.js"></script>
-    <!-- PDF.js for PDF processing (Only for thumbnail generation, not text extraction) -->
+    <!-- PDF.js for PDF processing -->
     <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/2.11.338/pdf.min.js"></script>
     <style>
         /* --- Base Variables from Qube --- */
@@ -88,14 +88,20 @@
             background-color: var(--bg-primary);
             color: var(--text-primary);
             transition: background-color 0.3s ease, color 0.3s ease;
+            overflow: hidden; /* Prevent body scroll */
         }
 
         /* --- Qube Base Layout --- */
-        .main-container { display: flex; height: 100vh; width: 100%; overflow: hidden; }
+        .main-container { display: flex; height: 100vh; width: 100%; }
         #sidebar { width: 280px; background-color: var(--bg-secondary); border-right: 1px solid var(--border-color); padding: 20px; display: flex; flex-direction: column; transition: transform 0.3s ease, box-shadow 0.3s ease; transform: translateX(-100%); position: fixed; top: 0; left: 0; height: 100%; z-index: 1000; }
         #sidebar.open { transform: translateX(0); box-shadow: 0 0 40px rgba(0,0,0,0.2); }
+        
+        #mainContent { flex-grow: 1; display: flex; flex-direction: column; height: 100vh; transition: margin-left 0.3s ease; }
         body.sidebar-open-desktop #mainContent { margin-left: 280px; }
-        #mainContent { flex-grow: 1; padding: 20px; overflow-y: auto; transition: margin-left 0.3s ease; padding-bottom: calc(20px + var(--safe-area-inset-bottom)); }
+        
+        #mainContent > header { padding: 20px 20px 0 20px; }
+        #screenContainer { flex-grow: 1; overflow-y: auto; padding: 20px; padding-bottom: calc(20px + var(--safe-area-inset-bottom)); }
+
         @media (max-width: 767px) { 
             body.sidebar-open-desktop #mainContent { margin-left: 0; }
         }
@@ -129,7 +135,16 @@
         .form-group label { display: block; margin-bottom: 8px; font-weight: 600; color: var(--text-secondary); }
         .form-group input, .form-group select, .form-group textarea { width: 100%; padding: 12px; border-radius: 8px; border: 1px solid var(--border-color); background-color: var(--bg-secondary); color: var(--text-primary); font-size: 1rem; }
         .form-group textarea { min-height: 120px; resize: vertical; }
-        #fillInBlankInput { font-size: 1.2rem; padding: 16px; text-align: center; }
+        #fillInBlankInput {
+            width: 100%;
+            padding: 16px;
+            border-radius: 8px;
+            border: 1px solid var(--border-color);
+            background-color: var(--bg-secondary);
+            color: var(--text-primary);
+            font-size: 1.2rem;
+            text-align: center;
+        }
         
         /* --- Qube Modal --- */
         .modal { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background-color: var(--modal-bg); display: flex; justify-content: center; align-items: center; z-index: 2000; opacity: 0; visibility: hidden; transition: opacity 0.3s ease, visibility 0.3s ease; }
@@ -141,8 +156,8 @@
         .modal-button { padding: 10px 25px; border-radius: 8px; font-weight: 600; cursor: pointer; transition: all 0.2s ease; border: none; }
         .modal-button.create, .modal-button.save { background-color: var(--accent-primary); color: white; }
         .modal-button.create:hover, .modal-button.save:hover { background-color: var(--accent-primary-hover); }
-        .modal-button.delete { background-color: #ef4444; color: white; }
-        .modal-button.delete:hover { background-color: #dc2626; }
+        .modal-button.delete, .modal-button.reset { background-color: #ef4444; color: white; }
+        .modal-button.delete:hover, .modal-button.reset:hover { background-color: #dc2626; }
         .modal-button.cancel { background-color: transparent; color: var(--text-secondary); border: 1px solid var(--border-color); }
         .modal-button.cancel:hover { background-color: var(--border-color); }
 
@@ -168,17 +183,18 @@
 
         /* --- Integrated Quiz Screen Styles --- */
         .quiz-container { max-width: 800px; margin-left: auto; margin-right: auto; width: 100%; }
-        .quiz-header { display: flex; align-items: center; justify-content: space-between; padding-bottom: 1rem; gap: 1rem; }
+        .quiz-header { position: relative; display: flex; align-items: center; justify-content: center; padding-bottom: 1rem; gap: 1rem; }
         #quizTitle { font-size: 1.5rem; font-weight: 700; color: var(--themed-text-color); text-align: center; flex-grow: 1; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-        #interruptButton { padding: 8px 15px; font-size: 0.8rem; background-color: #ef4444; color:white; flex-shrink: 0; }
+        #interruptButton { position: absolute; right: 0; padding: 8px 15px; font-size: 0.8rem; background-color: #ef4444; color:white; flex-shrink: 0; }
         .progress-container { width: 100%; background-color: #e2e8f0; border-radius: 10px; height: 15px; margin-top: 10px; overflow: hidden; box-shadow: inset 0 1px 3px rgba(0,0,0,0.1); }
-        .progress-bar { height: 100%; width: 0%; background-color: var(--progress-bar-bg); border-radius: 10px; transition: width 0.3s ease-in-out, background-color 0.3s ease; }
+        .progress-bar { height: 100%; width: 0%; background-color: var(--progress-bar-bg); border-radius: 10px; transition: width 0.3s ease-in-out, background-color: 0.3s ease; }
         .progress-text { font-size: 1rem; font-weight: 600; color: var(--text-primary); margin-top: 10px; transition: color 0.3s ease; text-align: center; }
         .question-area { min-height: 100px; display: flex; flex-direction: column; justify-content: center; align-items: center; transition: background-color 0.3s ease; text-align: left; margin-top: 1.5rem;}
-        #questionImage { max-height: 200px; border-radius: 8px; margin-bottom: 1rem; }
+        #questionImage { max-height: 200px; border-radius: 8px; margin-top: 1rem; }
         .question-text { font-size: 1.25rem; font-weight: 500; color: var(--themed-text-color); margin-bottom: 10px; transition: color 0.3s ease; width: 100%; text-align:center; }
         #longContentBox { display: none; width: 100%; max-height: 250px; overflow-y: auto; background-color: var(--button-bg-default); border: 1px solid var(--border-color); padding: 1rem; border-radius: 8px; margin-bottom: 1rem; white-space: pre-wrap; font-family: monospace; font-size: 0.9rem; }
         .options-grid { display: grid; grid-template-columns: 1fr; gap: 12px; margin-top: 15px; }
+        .options-grid.options-grid-full-width { grid-template-columns: 1fr; }
         .option-button { background-color: var(--button-bg-default); color: var(--button-text-default); padding: 14px 20px; border-radius: 12px; font-size: 1rem; font-weight: 500; cursor: pointer; transition: all 0.3s ease; border: 2px solid var(--button-border-default); text-align: left; box-shadow: 0 4px 8px rgba(0, 0, 0, 0.08); line-height: 1.5; }
         .option-button:hover:not(:disabled) { background-color: var(--border-color); transform: translateY(-3px) scale(1.01); box-shadow: 0 6px 12px rgba(0, 0, 0, 0.12); }
         .option-button.correct { background-color: var(--correct-option-bg); border-color: var(--correct-feedback-border); color: var(--correct-feedback-text); }
@@ -188,7 +204,7 @@
         .sorting-item.dragging { opacity: 0.5; }
         .sorting-container { display: flex; flex-direction: column; gap: 1rem; }
         .sorting-box { display: flex; flex-wrap: wrap; gap: 10px; padding: 1rem; border-radius: 12px; border: 2px dashed var(--border-color); min-height: 70px; }
-        .feedback-message { margin-top: 1.5rem; font-size: 1rem; text-align: left; padding: 1rem 1.5rem; border-radius: 12px; background-color: var(--feedback-bg); border: 1px solid var(--feedback-border); box-shadow: inset 0 1px 3px rgba(0,0,0,0.05); line-height: 1.5; transition: all 0.3s ease; }
+        .feedback-message { margin-top: 1.5rem; font-size: 1rem; text-align: left; padding: 1rem 1.5rem; border-radius: 12px; background-color: var(--feedback-bg); border: 1px solid var(--feedback-border); box-shadow: inset 0 1px 3px rgba(0,0,0,0.05); line-height: 1.5; }
         .feedback-message.correct-feedback { color: var(--correct-feedback-text); border-color: var(--correct-feedback-border); }
         .feedback-message.incorrect-feedback { color: var(--incorrect-feedback-text); border-color: var(--incorrect-feedback-border); }
         .feedback-header { display: flex; justify-content: space-between; align-items: center; gap: 15px; min-height: 24px; flex-wrap: wrap; }
@@ -206,8 +222,41 @@
         .confetti-container { position: absolute; top: 0; left: 0; width: 100%; height: 100%; overflow: hidden; pointer-events: none; z-index: 0; }
         .confetti { position: absolute; width: 10px; height: 10px; background-color: #f06; opacity: 1; }
 
-        /* --- Integrated Settings Screen Styles --- */
-        .settings-container { max-width: 700px; margin: 0 auto; }
+        /* --- Settings Screen (Modal) Styles --- */
+        #settingsScreen {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background-color: var(--modal-bg);
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            z-index: 3000;
+            opacity: 0;
+            visibility: hidden;
+            transition: opacity 0.3s ease, visibility 0.3s ease;
+        }
+        #settingsScreen.active {
+            opacity: 1;
+            visibility: visible;
+        }
+        #settingsScreen .settings-container, #editQuizzesModal .modal-content {
+            background-color: var(--bg-secondary);
+            padding: 30px;
+            border-radius: 16px;
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.2);
+            max-width: 700px;
+            width: 90%;
+            transform: translateY(-20px) scale(0.95);
+            transition: transform 0.3s ease, background-color 0.3s ease;
+            max-height: 90vh;
+            overflow-y: auto;
+        }
+        #settingsScreen.active .settings-container, #editQuizzesModal.show .modal-content {
+            transform: translateY(0) scale(1);
+        }
         .settings-option { display: flex; justify-content: space-between; align-items: center; padding: 16px 0; border-bottom: 1px solid var(--border-color); flex-wrap: nowrap; gap: 1rem;}
         .settings-option:last-child { border-bottom: none; }
         .settings-option-label { display: flex; flex-direction: column; align-items: flex-start; flex-grow: 1; min-width: 0; }
@@ -222,6 +271,11 @@
         .slider:before { position: absolute; content: ""; height: 26px; width: 26px; left: 4px; bottom: 4px; background-color: white; transition: .4s; border-radius: 50%; }
         input:checked + .slider { background-color: var(--accent-primary); }
         input:checked + .slider:before { transform: translateX(26px); }
+
+        /* Edit Quiz Modal Styles */
+        #editQuizzesModal .modal-content { max-width: 600px; }
+        #editQuizList .project-item { padding-left: 16px; } /* Indent quiz items */
+
 
         @media (min-width: 640px) { 
             .options-grid { grid-template-columns: 1fr 1fr; }
@@ -253,197 +307,202 @@
                      <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z" /><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" /></svg>
                 </button>
             </header>
-
-            <!-- Welcome Screen -->
-            <div id="welcomeScreen" class="screen active text-center p-8 rounded-lg" style="background-color: var(--bg-secondary);">
-                <h2 class="text-4xl font-bold mb-4" style="color: var(--accent-primary);">Qubeへようこそ！</h2>
-                <p class="text-xl mb-8" style="color: var(--text-secondary);">AIの力で、あなたの学習を次のレベルへ。</p>
-                <p class="mb-8" style="color: var(--text-primary);">左のメニューから「新しいプロジェクトを作成」して、<br>あなただけのオリジナルクイズ作りを始めましょう。</p>
-                <button id="getStartedButton" class="btn btn-primary text-lg px-8 py-3">さっそく始める</button>
-            </div>
-
-            <!-- Project Start Screen (New) -->
-            <div id="projectStartScreen" class="screen">
-                <div class="start-screen-container">
-                    <h2 class="text-3xl font-bold mb-6">学習を開始</h2>
-                    <div class="form-group">
-                        <label for="quizSelect" class="text-left">作成済みクイズから選ぶ</label>
-                        <select id="quizSelect"></select>
-                    </div>
-                    <button id="startSelectedQuizButton" class="btn btn-primary btn-lg w-full">選択したクイズを開始</button>
-                    <div class="divider">または</div>
-                    <button id="generateNewQuizBtn" class="btn btn-lg w-full" style="background-color: var(--button-bg-default); color: var(--button-text-default); border: 1px solid var(--border-color);">新しいクイズをAIで生成</button>
-                </div>
-            </div>
             
-            <!-- Quiz Generation Screen -->
-            <div id="generationScreen" class="screen">
-                <div class="max-w-3xl mx-auto w-full">
-                    <button id="backToProjectStartBtn" class="btn mb-4 text-sm" style="background-color: transparent; color: var(--text-secondary); padding: 4px 8px;">← プロジェクトに戻る</button>
-                    
-                    <div class="form-group">
-                         <label>ファイルをアップロード</label>
-                         <div id="fileDropArea" class="w-full p-8 border-2 border-dashed rounded-lg text-center cursor-pointer hover:border-sky-500">
-                             <p class="text-gray-500">ここにファイルをドラッグ＆ドロップ<br>またはクリックして選択</p>
-                             <input type="file" class="hidden" id="fileUpload" accept=".txt,.md,.text,.pdf,image/*" multiple>
-                         </div>
-                         <div id="filePreviewContainer"></div>
-                    </div>
+            <div id="screenContainer">
+                <!-- Welcome Screen -->
+                <div id="welcomeScreen" class="screen active text-center p-8 rounded-lg" style="background-color: var(--bg-secondary);">
+                    <h2 class="text-4xl font-bold mb-4" style="color: var(--accent-primary);">Qubeへようこそ！</h2>
+                    <p class="text-xl mb-8" style="color: var(--text-secondary);">AIの力で、あなたの学習を次のレベルへ。</p>
+                    <p class="mb-8" style="color: var(--text-primary);">左のメニューから「新しいプロジェクトを作成」して、<br>あなただけのオリジナルクイズ作りを始めましょう。</p>
+                    <button id="getStartedButton" class="btn btn-primary text-lg px-8 py-3">さっそく始める</button>
+                </div>
 
-                    <div class="divider">または</div>
-
-                    <div class="form-group">
-                        <label id="promptLabel" for="promptText">クイズにしたい内容を入力または貼り付け</label>
-                        <textarea id="promptText" placeholder="例: 日本の首都は東京です。徳川家康は江戸幕府を開きました..."></textarea>
-                    </div>
-                    
-                    <div class="grid md:grid-cols-2 gap-4 mt-8">
+                <!-- Project Start Screen (New) -->
+                <div id="projectStartScreen" class="screen">
+                    <div class="start-screen-container">
+                        <h2 class="text-3xl font-bold mb-6">学習を開始</h2>
                         <div class="form-group">
-                            <label for="genQuestionCount">問題数</label>
-                            <select id="genQuestionCount">
-                                <option value="5">5問</option>
-                                <option value="10">10問</option>
-                                <option value="all">全て</option>
-                            </select>
+                            <label for="quizSelect" class="text-left">作成済みクイズから選ぶ</label>
+                            <select id="quizSelect"></select>
                         </div>
+                        <button id="startSelectedQuizButton" class="btn btn-primary btn-lg w-full">選択したクイズを開始</button>
+                        <div class="divider">または</div>
+                        <button id="generateNewQuizBtn" class="btn btn-lg w-full" style="background-color: var(--button-bg-default); color: var(--button-text-default); border: 1px solid var(--border-color);">新しいクイズをAIで生成</button>
+                    </div>
+                </div>
+                
+                <!-- Quiz Generation Screen -->
+                <div id="generationScreen" class="screen">
+                    <div class="max-w-3xl mx-auto w-full">
+                        <button id="backToProjectStartBtn" class="btn mb-4 text-sm" style="background-color: transparent; color: var(--text-secondary); padding: 4px 8px;">← プロジェクトに戻る</button>
+                        
                         <div class="form-group">
-                            <label for="questionType">問題形式</label>
-                            <select id="questionType">
-                                <option value="multiple_choice">選択肢</option>
-                                <option value="fill_in_the_blank">記述式</option>
-                                <option value="sorting">並び替え</option>
-                                <option value="multiple_select">複数選択</option>
-                            </select>
+                             <label>ファイルをアップロード</label>
+                             <div id="fileDropArea" class="w-full p-8 border-2 border-dashed rounded-lg text-center cursor-pointer hover:border-sky-500">
+                                 <p class="text-gray-500">ここにファイルをドラッグ＆ドロップ<br>またはクリックして選択</p>
+                                 <input type="file" class="hidden" id="fileUpload" accept=".txt,.md,.text,.pdf,image/*" multiple>
+                             </div>
+                             <div id="filePreviewContainer"></div>
                         </div>
-                    </div>
-                     <div class="form-group">
-                        <label class="flex items-center gap-2 cursor-pointer">
-                            <input type="checkbox" id="autoGenreCheckbox" class="w-4 h-4 accent-sky-500">
-                            <span class="select-none">AIによる自動ジャンル分け</span>
-                        </label>
-                    </div>
-                    <button id="generateQuizButton" class="btn btn-primary w-full mt-4 py-3 text-lg flex items-center justify-center">
-                        <span class="button-text">クイズを生成する</span>
-                        <svg class="spinner hidden animate-spin ml-3 h-5 w-5 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24"><circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle><path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path></svg>
-                    </button>
-                    <p id="generationWarning" class="text-red-500 text-sm mt-2 text-center hidden"></p>
-                    <p id="generationError" class="text-red-500 text-sm mt-2 text-center hidden"></p>
-                </div>
-            </div>
 
-            <!-- Quiz Screen (New UI) -->
-            <div id="quizScreen" class="screen">
-                <div class="quiz-container">
-                    <div class="quiz-header">
-                        <h1 id="quizTitle" class="main-title">クイズ</h1>
-                        <button id="interruptButton" class="btn">中断</button>
-                    </div>
-                    <div class="progress-container">
-                        <div id="progressBar" class="progress-bar"></div>
-                    </div>
-                    <div id="progressText" class="progress-text"></div>
-                    <div class="question-area">
-                        <img id="questionImage" class="hidden"/>
-                        <div id="longContentBox"></div>
-                        <div id="questionText" class="question-text"></div>
-                    </div>
-                    <div id="optionsGrid" class="options-grid"></div>
-                    <div id="submissionArea" class="mt-4 text-right"></div>
-                    <div id="feedbackMessage" class="feedback-message" style="display: none;">
-                        <div class="feedback-header">
-                            <div id="feedbackResult"></div>
-                            <button id="toggleExplanationButton" class="toggle-explanation-button hidden">解説▼</button>
+                        <div class="divider">または</div>
+
+                        <div class="form-group">
+                            <label id="promptLabel" for="promptText">クイズにしたい内容を入力または貼り付け</label>
+                            <textarea id="promptText" placeholder="例: 日本の首都は東京です。徳川家康は江戸幕府を開きました..."></textarea>
                         </div>
-                        <div id="explanationContent" class="explanation-content">
-                            <div class="explanation-text"></div>
+                        
+                        <div class="grid md:grid-cols-2 gap-4 mt-8">
+                            <div class="form-group">
+                                <label for="genQuestionCount">問題数</label>
+                                <select id="genQuestionCount">
+                                    <option value="5">5問</option>
+                                    <option value="10">10問</option>
+                                    <option value="all">全て</option>
+                                </select>
+                            </div>
+                            <div class="form-group">
+                                <label for="questionType">問題形式</label>
+                                <select id="questionType">
+                                    <option value="multiple_choice">選択肢</option>
+                                    <option value="fill_in_the_blank">記述式</option>
+                                    <option value="sorting">並び替え</option>
+                                    <option value="multiple_select">複数選択</option>
+                                </select>
+                            </div>
                         </div>
-                    </div>
-                    <div class="navigation-buttons">
-                        <button id="nextButton" class="btn btn-primary">次の問題</button>
+                         <div class="form-group mt-4">
+                            <label class="flex items-center gap-2 cursor-pointer">
+                                <input type="checkbox" id="autoGenreCheckbox" class="w-4 h-4 accent-sky-500">
+                                <span class="select-none">AIによる自動ジャンル分け</span>
+                            </label>
+                        </div>
+                        <button id="generateQuizButton" class="btn btn-primary w-full mt-4 py-3 text-lg flex items-center justify-center">
+                            <span class="button-text">クイズを生成する</span>
+                            <svg class="spinner hidden animate-spin ml-3 h-5 w-5 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24"><circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle><path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path></svg>
+                        </button>
+                        <p id="generationWarning" class="text-red-500 text-sm mt-2 text-center hidden"></p>
+                        <p id="generationError" class="text-red-500 text-sm mt-2 text-center hidden"></p>
                     </div>
                 </div>
-            </div>
 
-            <!-- Result Screen (New UI) -->
-            <div id="resultScreen" class="screen">
-                <div class="result-container">
-                    <h2 class="text-2xl font-bold mb-4" style="color: var(--score-color);">クイズ結果</h2>
-                    <div id="finalScore" class="score-area"></div>
-                    <div id="scoreComment" class="score-comment"></div>
-                    <div class="mt-6 flex flex-col items-center gap-3">
-                        <button id="restartQuizButton" class="btn btn-primary w-full max-w-xs">もう一度挑戦</button>
-                        <button id="backToProjectButton" class="btn w-full max-w-xs" style="background-color: var(--button-bg-default); color: var(--button-text-default); border: 1px solid var(--border-color);">プロジェクトに戻る</button>
+                <!-- Quiz Screen (New UI) -->
+                <div id="quizScreen" class="screen">
+                    <div class="quiz-container">
+                        <div class="quiz-header">
+                            <h1 id="quizTitle" class="main-title">クイズ</h1>
+                            <button id="interruptButton" class="btn">中断</button>
+                        </div>
+                        <div class="progress-container">
+                            <div id="progressBar" class="progress-bar"></div>
+                        </div>
+                        <div id="progressText" class="progress-text"></div>
+                        <div class="question-area">
+                            <div id="questionText" class="question-text"></div>
+                            <img id="questionImage" class="hidden"/>
+                            <div id="longContentBox"></div>
+                        </div>
+                        <div id="optionsGrid" class="options-grid"></div>
+                        <div id="submissionArea" class="mt-4 text-right"></div>
+                        <div id="feedbackMessage" class="feedback-message" style="visibility: hidden;">
+                            <div class="feedback-header">
+                                <div id="feedbackResult"></div>
+                                <button id="toggleExplanationButton" class="toggle-explanation-button hidden">解説▼</button>
+                            </div>
+                            <div id="explanationContent" class="explanation-content">
+                                <div class="explanation-text"></div>
+                            </div>
+                        </div>
+                        <div class="navigation-buttons">
+                            <button id="nextButton" class="btn btn-primary">次の問題</button>
+                        </div>
                     </div>
                 </div>
-            </div>
 
-            <!-- Settings Screen (New UI) -->
-            <div id="settingsScreen" class="screen">
-                 <div class="settings-container">
-                    <h2 class="text-2xl font-bold mb-4 text-center">設定</h2>
-                    <div class="settings-option">
-                        <div class="settings-option-label">
-                            <label for="darkModeToggle">ダークモード</label>
-                        </div>
-                        <label class="toggle-switch">
-                            <input type="checkbox" id="darkModeToggle">
-                            <span class="slider"></span>
-                        </label>
-                    </div>
-                    <div class="settings-option">
-                        <div class="settings-option-label">
-                            <label>テーマカラー</label>
-                        </div>
-                        <div class="theme-colors">
-                            <div class="color-circle" data-theme="default" style="background-color: #0ea5e9;"></div>
-                            <div class="color-circle" data-theme="red" style="background-color: #ef4444;"></div>
-                            <div class="color-circle" data-theme="green" style="background-color: #10b981;"></div>
-                            <div class="color-circle" data-theme="indigo" style="background-color: #6366f1;"></div>
+                <!-- Result Screen (New UI) -->
+                <div id="resultScreen" class="screen">
+                    <div class="result-container">
+                        <h2 class="text-2xl font-bold mb-4" style="color: var(--score-color);">クイズ結果</h2>
+                        <div id="finalScore" class="score-area"></div>
+                        <div id="scoreComment" class="score-comment"></div>
+                        <div class="mt-6 flex flex-col items-center gap-3">
+                            <button id="restartQuizButton" class="btn btn-primary w-full max-w-xs">もう一度挑戦</button>
+                            <button id="backToProjectButton" class="btn w-full max-w-xs" style="background-color: var(--button-bg-default); color: var(--button-text-default); border: 1px solid var(--border-color);">プロジェクトに戻る</button>
                         </div>
                     </div>
-                    <div class="settings-option">
-                        <div class="settings-option-label">
-                            <label for="enableSoundToggle">効果音</label>
-                        </div>
-                        <label class="toggle-switch">
-                            <input type="checkbox" id="enableSoundToggle">
-                            <span class="slider"></span>
-                        </label>
-                    </div>
-                     <div class="settings-option">
-                        <div class="settings-option-label">
-                            <label for="questionCountSelect">問題数</label>
-                        </div>
-                        <select id="questionCountSelect" class="w-24 p-2 border rounded">
-                            <option value="5">5問</option>
-                            <option value="10">10問</option>
-                            <option value="15">15問</option>
-                            <option value="20">20問</option>
-                        </select>
-                    </div>
-                    <div class="settings-option">
-                        <div class="settings-option-label">
-                            <label for="showProgressToggle">進捗状況を表示</label>
-                        </div>
-                        <label class="toggle-switch">
-                            <input type="checkbox" id="showProgressToggle">
-                            <span class="slider"></span>
-                        </label>
-                    </div>
-                    <div class="settings-option">
-                        <div class="settings-option-label">
-                            <label for="masteryModeToggle">習得モード</label>
-                            <p>2回連続で正解するまで「習得済み」になりません。</p>
-                        </div>
-                        <label class="toggle-switch">
-                            <input type="checkbox" id="masteryModeToggle">
-                            <span class="slider"></span>
-                        </label>
-                    </div>
-                     <button id="backToProjectFromSettings" class="btn btn-primary mt-8 w-full">プロジェクトに戻る</button>
                 </div>
             </div>
         </main>
+    </div>
+
+    <!-- Settings Screen (Now a Modal) -->
+    <div id="settingsScreen" class="screen">
+         <div class="settings-container">
+            <h2 class="text-2xl font-bold mb-4 text-center">設定</h2>
+            <div class="settings-option">
+                <div class="settings-option-label">
+                    <label for="darkModeToggle">ダークモード</label>
+                </div>
+                <label class="toggle-switch">
+                    <input type="checkbox" id="darkModeToggle">
+                    <span class="slider"></span>
+                </label>
+            </div>
+            <div class="settings-option">
+                <div class="settings-option-label">
+                    <label>テーマカラー</label>
+                </div>
+                <div class="theme-colors">
+                    <div class="color-circle" data-theme="default" style="background-color: #0ea5e9;"></div>
+                    <div class="color-circle" data-theme="red" style="background-color: #ef4444;"></div>
+                    <div class="color-circle" data-theme="green" style="background-color: #10b981;"></div>
+                    <div class="color-circle" data-theme="indigo" style="background-color: #6366f1;"></div>
+                </div>
+            </div>
+            <div class="settings-option">
+                <div class="settings-option-label">
+                    <label for="enableSoundToggle">効果音</label>
+                </div>
+                <label class="toggle-switch">
+                    <input type="checkbox" id="enableSoundToggle">
+                    <span class="slider"></span>
+                </label>
+            </div>
+             <div class="settings-option">
+                <div class="settings-option-label">
+                    <label for="questionCountSelect">問題数</label>
+                </div>
+                <select id="questionCountSelect" class="w-24 p-2 border rounded">
+                    <option value="5">5問</option>
+                    <option value="10">10問</option>
+                    <option value="15">15問</option>
+                    <option value="20">20問</option>
+                </select>
+            </div>
+            <div class="settings-option">
+                <div class="settings-option-label">
+                    <label for="showProgressToggle">進捗状況を表示</label>
+                </div>
+                <label class="toggle-switch">
+                    <input type="checkbox" id="showProgressToggle">
+                    <span class="slider"></span>
+                </label>
+            </div>
+            <div class="settings-option">
+                <div class="settings-option-label">
+                    <label for="masteryModeToggle">習得モード</label>
+                    <p>2回連続で正解するまで「習得済み」になりません。</p>
+                </div>
+                <label class="toggle-switch">
+                    <input type="checkbox" id="masteryModeToggle">
+                    <span class="slider"></span>
+                </label>
+            </div>
+             <div class="settings-option">
+                <button id="editQuizzesButton" class="btn w-full">作成済みクイズを編集する</button>
+            </div>
+             <button id="backToProjectFromSettings" class="btn btn-primary mt-8 w-full">閉じる</button>
+        </div>
     </div>
 
     <!-- Modals -->
@@ -506,6 +565,52 @@
             </div>
         </div>
     </div>
+    
+    <!-- New Modals for Quiz Editing -->
+    <div id="editQuizzesModal" class="modal">
+        <div class="modal-content">
+            <h2 class="modal-title">クイズの編集</h2>
+            <div id="editQuizList" class="space-y-2">
+                <!-- Quiz items will be dynamically inserted here -->
+            </div>
+            <div class="modal-buttons">
+                <button id="closeEditQuizModalButton" class="modal-button cancel">閉じる</button>
+            </div>
+        </div>
+    </div>
+    <div id="renameQuizModal" class="modal">
+        <div class="modal-content">
+            <h2 class="modal-title">クイズ名を変更</h2>
+            <div class="form-group">
+                <label for="renameQuizNameInput">新しいクイズ名</label>
+                <input type="text" id="renameQuizNameInput">
+            </div>
+            <div class="modal-buttons">
+                <button class="modal-button cancel">キャンセル</button>
+                <button class="modal-button save">保存</button>
+            </div>
+        </div>
+    </div>
+    <div id="deleteQuizModal" class="modal">
+        <div class="modal-content">
+            <h2 class="modal-title">クイズを削除</h2>
+            <p>本当に「<span id="deleteQuizName"></span>」を削除しますか？この操作は元に戻せません。</p>
+            <div class="modal-buttons">
+                <button class="modal-button cancel">キャンセル</button>
+                <button class="modal-button delete">削除する</button>
+            </div>
+        </div>
+    </div>
+    <div id="resetMasteryModal" class="modal">
+        <div class="modal-content">
+            <h2 class="modal-title">学習完了！</h2>
+            <p>このクイズのすべての問題を習得しました。進捗をリセットして、もう一度挑戦しますか？</p>
+            <div class="modal-buttons">
+                <button class="modal-button cancel">キャンセル</button>
+                <button class="modal-button reset">リセット</button>
+            </div>
+        </div>
+    </div>
 
 
     <script>
@@ -526,8 +631,8 @@
                 generate: document.getElementById('generationScreen'),
                 quiz: document.getElementById('quizScreen'),
                 result: document.getElementById('resultScreen'),
-                settings: document.getElementById('settingsScreen'),
             };
+            const settingsScreen = document.getElementById('settingsScreen');
 
             const generateQuizButton = document.getElementById('generateQuizButton');
             const generateNewQuizBtn = document.getElementById('generateNewQuizBtn');
@@ -599,23 +704,39 @@
             const showProgressToggle = document.getElementById('showProgressToggle');
             const masteryModeToggle = document.getElementById('masteryModeToggle');
             const backToProjectFromSettings = document.getElementById('backToProjectFromSettings');
+            const editQuizzesButton = document.getElementById('editQuizzesButton');
+
+            // New Edit Quiz Modal DOM
+            const editQuizzesModal = document.getElementById('editQuizzesModal');
+            const editQuizList = document.getElementById('editQuizList');
+            const closeEditQuizModalButton = document.getElementById('closeEditQuizModalButton');
+            const renameQuizModal = document.getElementById('renameQuizModal');
+            const renameQuizNameInput = document.getElementById('renameQuizNameInput');
+            const deleteQuizModal = document.getElementById('deleteQuizModal');
+            const deleteQuizName = document.getElementById('deleteQuizName');
+            const resetMasteryModal = document.getElementById('resetMasteryModal');
+
 
             // --- App State ---
-            let projects = [];
+            let appState = {
+                projects: [],
+                settings: {
+                    darkMode: false,
+                    themeColor: 'default',
+                    enableSound: true,
+                    questionCount: 5,
+                    showProgress: true,
+                    masteryMode: false,
+                }
+            };
             let activeProjectId = null;
             let currentQuiz = null; 
             let confettiAnimationId;
             let tempGeneratedQuestions = null;
-            let uploadedFiles = []; // Array of {name, type, content (dataURL)}
+            let uploadedFiles = []; // Array of {name, type, content, thumbnail?}
             let projectToEditId = null;
+            let quizToEditId = null; // For renaming/deleting specific quizzes
             
-            // Settings State
-            let enableSound = true;
-            let questionCount = 5;
-            let showProgress = true;
-            let masteryMode = false;
-
-
             // --- Sound Effects ---
             const sounds = {
                 correct: new Tone.Synth({ volume: -12, oscillator: { type: 'sine' }, envelope: { attack: 0.005, decay: 0.1, sustain: 0.3, release: 1 } }).toDestination(),
@@ -623,8 +744,9 @@
                 click: new Tone.Synth({ volume: -15, oscillator: { type: 'triangle' }, envelope: { attack: 0.005, decay: 0.1, sustain: 0.01, release: 0.1 } }).toDestination(),
                 fanfare: new Tone.PolySynth(Tone.Synth, { volume: -10 }).toDestination(),
             };
+            
             async function playSound(type) {
-                if (!enableSound) return;
+                if (!appState.settings.enableSound) return;
                 if (Tone.context.state !== 'running') await Tone.start();
                 const now = Tone.now();
                 try {
@@ -642,19 +764,25 @@
             }
             
             // --- Data Persistence ---
-            const saveProjects = () => {
-                localStorage.setItem('qube_projects', JSON.stringify(projects));
+            const saveState = () => {
+                localStorage.setItem('qube_app_data', JSON.stringify(appState));
             };
-            const loadProjects = () => {
-                projects = JSON.parse(localStorage.getItem('qube_projects')) || [];
+            const loadState = () => {
+                const savedData = localStorage.getItem('qube_app_data');
+                if (savedData) {
+                    appState = JSON.parse(savedData);
+                    if (appState.projects) {
+                        appState.projects.forEach(p => {
+                            if (!p.mastery) p.mastery = {};
+                        });
+                    }
+                }
             };
 
             // --- UI & State Management Functions ---
             const switchScreen = (screenName) => {
                 Object.values(screens).forEach(s => s.classList.remove('active'));
                 if (screens[screenName]) screens[screenName].classList.add('active');
-
-                // Control button visibility based on the screen
                 projectSettingsButton.classList.toggle('invisible', screenName !== 'projectStart');
                 hamburgerButton.classList.toggle('invisible', screenName === 'quiz');
             };
@@ -669,7 +797,7 @@
             };
             
             const showNewProjectModal = () => {
-                newProjectNameInput.value = `プロジェクト ${projects.length + 1}`;
+                newProjectNameInput.value = `プロジェクト ${appState.projects.length + 1}`;
                 newProjectModal.classList.add('show');
                 newProjectNameInput.focus();
                 newProjectNameInput.select();
@@ -686,10 +814,12 @@
                 const newProject = { 
                     id: `proj_${Date.now()}`, 
                     name: projectName, 
-                    quizzes: []
+                    quizzes: [],
+                    mastery: {},
+                    lastPlayedQuizId: null
                 };
-                projects.unshift(newProject); // Add to the top
-                saveProjects();
+                appState.projects.unshift(newProject);
+                saveState();
                 renderProjectList();
                 setActiveProject(newProject.id);
                 closeNewProjectModal();
@@ -698,11 +828,11 @@
 
             const renderProjectList = () => {
                 projectListEl.innerHTML = '';
-                if (projects.length === 0) {
+                if (appState.projects.length === 0) {
                     projectListEl.innerHTML = '<p class="text-gray-400 p-2">まだプロジェクトがありません。</p>';
                     return;
                 }
-                projects.forEach(p => {
+                appState.projects.forEach(p => {
                     const projectEl = document.createElement('div');
                     projectEl.className = `project-item ${p.id === activeProjectId ? 'active' : ''}`;
                     projectEl.dataset.projectId = p.id;
@@ -720,7 +850,6 @@
                     projectEl.appendChild(menuBtn);
                     projectListEl.appendChild(projectEl);
 
-                    // Event Listeners for each item
                     nameEl.addEventListener('click', () => {
                         setActiveProject(p.id);
                         if(window.innerWidth < 768) toggleSidebar();
@@ -736,44 +865,36 @@
             
             const showProjectMenu = (projectId, button) => {
                 document.querySelectorAll('.project-menu').forEach(m => m.remove());
-
                 const menu = document.createElement('div');
                 menu.className = 'project-menu';
                 menu.innerHTML = `
                     <div class="project-menu-item" data-action="rename" data-project-id="${projectId}">名前を変更</div>
                     <div class="project-menu-item delete" data-action="delete" data-project-id="${projectId}">削除</div>
                 `;
-                
                 document.body.appendChild(menu);
                 const rect = button.getBoundingClientRect();
                 menu.style.top = `${rect.bottom}px`;
                 menu.style.right = `${window.innerWidth - rect.right - rect.width}px`;
                 menu.classList.add('show');
-
                 const closeMenu = (e) => {
                     if (!menu.contains(e.target)) {
                         menu.remove();
                         document.body.removeEventListener('click', closeMenu, true);
                     }
                 };
-                
                 menu.addEventListener('click', (e) => {
                     const action = e.target.dataset.action;
-                    if (action === 'rename') {
-                        showRenameProjectModal(projectId);
-                    } else if (action === 'delete') {
-                        showDeleteProjectModal(projectId);
-                    }
+                    if (action === 'rename') showRenameProjectModal(projectId);
+                    else if (action === 'delete') showDeleteProjectModal(projectId);
                     menu.remove();
                     document.body.removeEventListener('click', closeMenu, true);
                 });
-
                 setTimeout(() => document.body.addEventListener('click', closeMenu, true), 0);
             };
 
             const showRenameProjectModal = (projectId) => {
                 projectToEditId = projectId;
-                const project = projects.find(p => p.id === projectId);
+                const project = appState.projects.find(p => p.id === projectId);
                 if (project) {
                     renameProjectNameInput.value = project.name;
                     renameProjectModal.classList.add('show');
@@ -790,23 +911,19 @@
             const handleRenameProject = () => {
                 const newName = renameProjectNameInput.value.trim();
                 if (!newName || !projectToEditId) return;
-
-                const project = projects.find(p => p.id === projectToEditId);
+                const project = appState.projects.find(p => p.id === projectToEditId);
                 if (project) {
                     project.name = newName;
-                    saveProjects();
+                    saveState();
                     renderProjectList();
-                    if (activeProjectId === projectToEditId) {
-                        projectTitle.textContent = newName;
-                    }
+                    if (activeProjectId === projectToEditId) projectTitle.textContent = newName;
                 }
                 closeRenameProjectModal();
             };
 
-
             const showDeleteProjectModal = (projectId) => {
                 projectToEditId = projectId;
-                const project = projects.find(p => p.id === projectId);
+                const project = appState.projects.find(p => p.id === projectId);
                 if(project) {
                     deleteProjectName.textContent = project.name;
                     deleteProjectModal.classList.add('show');
@@ -820,15 +937,14 @@
 
             const handleDeleteProject = () => {
                 if(!projectToEditId) return;
-                projects = projects.filter(p => p.id !== projectToEditId);
-                
+                appState.projects = appState.projects.filter(p => p.id !== projectToEditId);
                 if(activeProjectId === projectToEditId) {
                     activeProjectId = null;
-                    localStorage.removeItem('qube_lastProjectId');
+                    localStorage.removeItem('qube_lastActiveProjectId');
                     projectTitle.textContent = 'Qube';
                     switchScreen('welcome');
                 }
-                saveProjects();
+                saveState();
                 renderProjectList();
                 closeDeleteProjectModal();
             };
@@ -840,33 +956,26 @@
                         draggedItem = item;
                         setTimeout(() => item.classList.add('dragging'), 0);
                     });
-                    item.addEventListener('dragend', (e) => {
+                    item.addEventListener('dragend', () => {
                         setTimeout(() => {
-                            if (draggedItem) {
-                                draggedItem.classList.remove('dragging');
-                            }
+                            if (draggedItem) draggedItem.classList.remove('dragging');
                             draggedItem = null;
                         }, 0);
                     });
                 });
-
                 projectListEl.addEventListener('dragover', (e) => {
                     e.preventDefault();
                     const afterElement = getDragAfterElement(projectListEl, e.clientY);
                     if (draggedItem) {
-                        if (afterElement == null) {
-                            projectListEl.appendChild(draggedItem);
-                        } else {
-                            projectListEl.insertBefore(draggedItem, afterElement);
-                        }
+                        if (afterElement == null) projectListEl.appendChild(draggedItem);
+                        else projectListEl.insertBefore(draggedItem, afterElement);
                     }
                 });
-
                 projectListEl.addEventListener('drop', (e) => {
                     e.preventDefault();
                     const newOrderIds = Array.from(projectListEl.querySelectorAll('.project-item')).map(item => item.dataset.projectId);
-                    projects.sort((a, b) => newOrderIds.indexOf(a.id) - newOrderIds.indexOf(b.id));
-                    saveProjects();
+                    appState.projects.sort((a, b) => newOrderIds.indexOf(a.id) - newOrderIds.indexOf(b.id));
+                    saveState();
                 });
             };
 
@@ -875,20 +984,17 @@
                 return draggableElements.reduce((closest, child) => {
                     const box = child.getBoundingClientRect();
                     const offset = y - box.top - box.height / 2;
-                    if (offset < 0 && offset > closest.offset) {
-                        return { offset: offset, element: child };
-                    } else {
-                        return closest;
-                    }
+                    if (offset < 0 && offset > closest.offset) return { offset: offset, element: child };
+                    else return closest;
                 }, { offset: Number.NEGATIVE_INFINITY }).element;
             };
 
             const setActiveProject = (projectId) => {
                 activeProjectId = projectId;
-                localStorage.setItem('qube_lastProjectId', projectId);
+                localStorage.setItem('qube_lastActiveProjectId', projectId);
                 resetUploadUI();
                 promptText.value = '';
-                const project = projects.find(p => p.id === projectId);
+                const project = appState.projects.find(p => p.id === projectId);
                 if (project) {
                     projectTitle.textContent = project.name;
                     if (project.quizzes.length === 0) {
@@ -910,14 +1016,30 @@
                     quizSelect.appendChild(option);
                     startSelectedQuizButton.disabled = true;
                 } else {
+                    const requiredMasteryCount = appState.settings.masteryMode ? 2 : 1;
                     project.quizzes.forEach(quiz => {
+                        const masteryData = (project.mastery && project.mastery[quiz.id]) ? project.mastery[quiz.id] : {};
+                        const masteredCount = Object.values(masteryData).filter(count => count >= requiredMasteryCount).length;
+                        const isFullyMastered = masteredCount === quiz.questions.length && quiz.questions.length > 0;
+                        
                         const option = document.createElement('option');
                         option.value = quiz.id;
-                        option.textContent = quiz.name;
+                        option.textContent = (isFullyMastered ? '✅ ' : '') + quiz.name;
                         quizSelect.appendChild(option);
                     });
                     startSelectedQuizButton.disabled = false;
+                    if (project.lastPlayedQuizId) {
+                        quizSelect.value = project.lastPlayedQuizId;
+                    }
                 }
+            };
+
+            const shuffleArray = (array) => {
+                for (let i = array.length - 1; i > 0; i--) {
+                    const j = Math.floor(Math.random() * (i + 1));
+                    [array[i], array[j]] = [array[j], array[i]];
+                }
+                return array;
             };
             
             // --- Quiz Generation (Qube Core) ---
@@ -951,7 +1073,7 @@
                     const selectedType = questionType.value;
                     const numQuestions = genQuestionCount.value === 'all' ? '可能な限り多く' : `${genQuestionCount.value}問`;
                     
-                    let basePrompt = `以下の情報に基づいて、高品質な${questionType.options[questionType.selectedIndex].text}形式のクイズを${numQuestions}作成してください。各問題には必ず、詳細な解説(explanation)を付けてください。もし問題文がコードや長文を含む場合は、その部分を long_content プロパティに格納し、question プロパティには「以下の内容について答えなさい」のような短い指示のみを入れてください。画像や図を直接参照して答える問題以外では、image_sourceプロパティをtrueに設定しないでください。`;
+                    let basePrompt = `以下の情報に基づいて、高品質な${questionType.options[questionType.selectedIndex].text}形式のクイズを${numQuestions}作成してください。各問題には必ず、詳細な解説(explanation)を付けてください。もし問題文がコードや長文を含む場合は、その部分を long_content プロパティに格納し、question プロパティには「以下の内容について答えなさい」のような短い指示のみを入れてください。画像や図を直接参照して答える問題以外では、image_sourceプロパティをtrueに設定しないでください。選択肢(options)を生成する際、正解(answer)は必ず選択肢リストの中に含め、その位置をランダムにしてください。常に最初の選択肢が正解にならないようにしてください。 **最重要**: 生成される問題の正解（answerやitems）は、提供された情報源と完全に一致し、事実として絶対に正確でなければなりません。誤った情報や無関係な解答を生成しないでください。`;
                     if (selectedType === 'fill_in_the_blank') {
                         basePrompt += `答え(answer)は、単語や短い語句だけにしてください。文末の句点(。)や「です」「ます」を含めないでください。`;
                     }
@@ -974,7 +1096,7 @@
                     }
                      uploadedFiles.forEach(file => {
                         if (file.type === 'text') {
-                           textContent += `ファイル「${file.name}」の内容:\n${file.content}\n\n`;
+                            textContent += `ファイル「${file.name}」の内容:\n${file.content}\n\n`;
                         }
                     });
 
@@ -1088,7 +1210,7 @@
             };
             
             const handleAutoGenreResponse = (genres, questionType) => {
-                const project = projects.find(p => p.id === activeProjectId);
+                const project = appState.projects.find(p => p.id === activeProjectId);
                 if (!project || !genres) return;
 
                 genres.forEach(genre => {
@@ -1101,14 +1223,15 @@
                             images: uploadedFiles.filter(f => f.type === 'image' || f.type === 'pdf')
                         };
                         project.quizzes.push(newQuiz);
+                        project.mastery[newQuiz.id] = {};
                     }
                 });
-                saveProjects();
+                saveState();
                 setActiveProject(activeProjectId);
             };
 
             const showNameQuizModal = () => {
-                const project = projects.find(p => p.id === activeProjectId);
+                const project = appState.projects.find(p => p.id === activeProjectId);
                 if (!project) return;
                 newQuizNameInput.value = `クイズ ${project.quizzes.length + 1}`;
                 nameQuizModal.classList.add('show');
@@ -1124,7 +1247,7 @@
                     newQuizNameInput.focus();
                     return;
                 }
-                const project = projects.find(p => p.id === activeProjectId);
+                const project = appState.projects.find(p => p.id === activeProjectId);
                 if (project && tempGeneratedQuestions) {
                     const newQuiz = {
                         id: `quiz_${Date.now()}`,
@@ -1134,7 +1257,8 @@
                         images: uploadedFiles.filter(f => f.type === 'image' || f.type === 'pdf')
                     };
                     project.quizzes.push(newQuiz);
-                    saveProjects();
+                    project.mastery[newQuiz.id] = {};
+                    saveState();
                     tempGeneratedQuestions = null;
                     closeNameQuizModal();
                     setActiveProject(activeProjectId); 
@@ -1143,14 +1267,67 @@
 
             // --- Quiz Gameplay ---
             const startQuiz = (quiz) => {
+                document.querySelectorAll('.project-menu').forEach(m => m.remove());
                 if (!quiz || !quiz.questions || quiz.questions.length === 0) return;
-                currentQuiz = { ...quiz, currentIndex: 0, score: 0, answeredQuestions: new Set() };
+
+                const project = appState.projects.find(p => p.id === activeProjectId);
+                project.lastPlayedQuizId = quiz.id;
+                saveState();
+                
+                const requiredMasteryCount = appState.settings.masteryMode ? 2 : 1;
+                const masteryData = (project.mastery && project.mastery[quiz.id]) ? project.mastery[quiz.id] : {};
+                const masteredCount = Object.values(masteryData).filter(count => count >= requiredMasteryCount).length;
+                const isFullyMastered = masteredCount === quiz.questions.length && quiz.questions.length > 0;
+
+                if (isFullyMastered) {
+                    resetMasteryModal.classList.add('show');
+                    resetMasteryModal.querySelector('.reset').onclick = () => {
+                        project.mastery[quiz.id] = {};
+                        saveState();
+                        resetMasteryModal.classList.remove('show');
+                        startQuiz(quiz); // Restart the quiz after resetting
+                    };
+                    resetMasteryModal.querySelector('.cancel').onclick = () => {
+                        resetMasteryModal.classList.remove('show');
+                    };
+                    return;
+                }
+
+                let questionsToAsk = quiz.questions;
+                let originalIndices = quiz.questions.map((_, i) => i);
+
+                const unmasteredIndices = quiz.questions
+                    .map((_, index) => index)
+                    .filter(index => (masteryData[index] || 0) < requiredMasteryCount);
+
+                if (unmasteredIndices.length === 0) {
+                     alert("このクイズのすべての問題を習得しました！");
+                     return;
+                }
+                
+                const shuffledIndices = shuffleArray([...unmasteredIndices]);
+                questionsToAsk = shuffledIndices.map(index => quiz.questions[index]);
+                originalIndices = shuffledIndices;
+                
+                currentQuiz = { 
+                    ...quiz, 
+                    questions: questionsToAsk,
+                    originalIndices: originalIndices,
+                    currentIndex: 0, 
+                    score: 0, 
+                    answeredQuestions: new Set() 
+                };
+
                 quizTitle.textContent = quiz.name;
                 switchScreen('quiz');
                 loadQuestion();
             };
 
             const loadQuestion = () => {
+                feedbackMessageElement.style.visibility = 'hidden';
+                feedbackMessageElement.classList.remove('correct-feedback', 'incorrect-feedback');
+                feedbackResultElement.innerHTML = '';
+
                 if (currentQuiz.currentIndex >= currentQuiz.questions.length) {
                     showQuizResult();
                     return;
@@ -1161,8 +1338,7 @@
                 submissionArea.innerHTML = '';
                 questionImage.classList.add('hidden');
                 longContentBox.style.display = 'none';
-                feedbackMessageElement.style.display = 'none';
-                feedbackMessageElement.classList.remove('correct-feedback', 'incorrect-feedback');
+                
                 explanationContentElement.classList.remove('show');
                 toggleExplanationButton.classList.add('hidden');
                 toggleExplanationButton.textContent = '解説▼';
@@ -1180,7 +1356,7 @@
 
                 switch(question.type) {
                     case 'multiple_choice':
-                        question.options.forEach(option => {
+                        shuffleArray([...question.options]).forEach(option => {
                             const button = document.createElement('button');
                             button.innerHTML = option;
                             button.classList.add('option-button');
@@ -1201,10 +1377,11 @@
                         createSubmitButton();
                         break;
                     case 'fill_in_the_blank':
-                        optionsGridElement.innerHTML = `<input type="text" id="fillInBlankInput" class="form-group" placeholder="答えを入力...">`;
+                        optionsGridElement.innerHTML = `<input type="text" id="fillInBlankInput" placeholder="答えを入力...">`;
                         createSubmitButton();
                         break;
                     case 'sorting':
+                        optionsGridElement.classList.add('options-grid-full-width');
                         optionsGridElement.innerHTML = `
                             <div class="sorting-container">
                                 <div>
@@ -1217,12 +1394,12 @@
                                 </div>
                             </div>`;
                         const sourceContainer = document.getElementById('sortingSource');
-                        const targetContainer = document.getElementById('sortingTarget');
                         const shuffledItems = [...question.items].sort(() => Math.random() - 0.5);
                         shuffledItems.forEach(itemText => {
                             const div = document.createElement('div');
                             div.innerHTML = itemText;
                             div.classList.add('option-button', 'sorting-item');
+                            div.draggable = true;
                             sourceContainer.appendChild(div);
                         });
                         setupSortingInteractions();
@@ -1232,6 +1409,9 @@
                          optionsGridElement.innerHTML = `<p class="text-red-500">不明な問題形式です。</p>`;
                          currentQuiz.answeredQuestions.add(question.question);
                         break;
+                }
+                if(question.type !== 'sorting') {
+                    optionsGridElement.classList.remove('options-grid-full-width');
                 }
 
                 updateProgressBar();
@@ -1260,7 +1440,9 @@
                         break;
                     case 'multiple_select':
                         userAnswer = Array.from(optionsGridElement.querySelectorAll('.option-button.selected')).map(btn => btn.dataset.option);
-                        isCorrect = userAnswer.length === question.answer.length && userAnswer.every(val => question.answer.includes(val)) && question.answer.every(val => userAnswer.includes(val));
+                        const sortedUserAnswer = [...userAnswer].sort();
+                        const sortedCorrectAnswer = [...question.answer].sort();
+                        isCorrect = JSON.stringify(sortedUserAnswer) === JSON.stringify(sortedCorrectAnswer);
                         break;
                     case 'fill_in_the_blank':
                         userAnswer = document.getElementById('fillInBlankInput').value;
@@ -1280,20 +1462,31 @@
                     el.disabled = true;
                 });
                 submissionArea.innerHTML = '';
-                feedbackMessageElement.style.display = 'block';
+                feedbackMessageElement.style.visibility = 'visible';
+                const project = appState.projects.find(p => p.id === activeProjectId);
+                const originalIndex = currentQuiz.originalIndices[currentQuiz.currentIndex];
+                if (!project.mastery[currentQuiz.id]) {
+                    project.mastery[currentQuiz.id] = {};
+                }
+                const currentMasteryCount = project.mastery[currentQuiz.id][originalIndex] || 0;
+
 
                 if (isCorrect) {
                     playSound('correct');
                     feedbackResultElement.innerHTML = `<strong>正解！</strong>`;
                     feedbackMessageElement.classList.add('correct-feedback');
                     currentQuiz.score++;
+                    project.mastery[currentQuiz.id][originalIndex] = currentMasteryCount + 1;
+
                 } else {
                     playSound('incorrect');
                     let correctAnswerText = Array.isArray(question.answer) ? question.answer.join(', ') : question.answer;
                     if (question.type === 'sorting') correctAnswerText = question.items.join(' → ');
                     feedbackResultElement.innerHTML = `<strong>不正解...</strong> 正解は「${correctAnswerText}」でした。`;
                     feedbackMessageElement.classList.add('incorrect-feedback');
+                    project.mastery[currentQuiz.id][originalIndex] = 0; // Reset consecutive count on incorrect
                 }
+                saveState();
                 
                 currentQuiz.answeredQuestions.add(question.question);
 
@@ -1307,9 +1500,13 @@
                     });
                 } else if (question.type === 'multiple_select') {
                     optionsGridElement.querySelectorAll('.option-button').forEach(button => {
-                        const isAnswer = question.answer.includes(button.dataset.option);
-                        if (isAnswer) button.classList.add('correct');
-                        if (button.classList.contains('selected') && !isAnswer) button.classList.add('incorrect');
+                        const isCorrectAnswer = question.answer.includes(button.dataset.option);
+                        const wasSelected = userAnswer.includes(button.dataset.option);
+                        if (isCorrectAnswer) {
+                            button.classList.add('correct');
+                        } else if (wasSelected && !isCorrectAnswer) {
+                            button.classList.add('incorrect');
+                        }
                     });
                 } else if(question.type === 'fill_in_the_blank') {
                     document.getElementById('fillInBlankInput').classList.add(isCorrect ? 'correct' : 'incorrect');
@@ -1336,11 +1533,10 @@
                 };
                 
                 if (isTouchDevice) {
-                    sourceContainer.addEventListener('click', (e) => {
-                        if (e.target.classList.contains('sorting-item')) moveItem(e.target);
-                    });
-                    targetContainer.addEventListener('click', (e) => {
-                        if (e.target.classList.contains('sorting-item')) moveItem(e.target);
+                    optionsGridElement.addEventListener('click', (e) => {
+                        if (e.target.classList.contains('sorting-item')) {
+                            moveItem(e.target);
+                        }
                     });
                 } else {
                     let draggedItem = null;
@@ -1376,15 +1572,16 @@
             const updateNavigationButtons = () => {
                 const question = currentQuiz.questions[currentQuiz.currentIndex];
                 if (!question) {
-                    nextButton.disabled = true;
+                    nextButton.style.display = 'none';
                     return;
                 }
-                nextButton.disabled = !currentQuiz.answeredQuestions.has(question.question);
-                nextButton.textContent = (currentQuiz.currentIndex === currentQuiz.questions.length - 1 && !nextButton.disabled) ? '結果を見る' : '次の問題';
+                const isAnswered = currentQuiz.answeredQuestions.has(question.question);
+                nextButton.style.display = isAnswered ? 'block' : 'none';
+                nextButton.textContent = (currentQuiz.currentIndex === currentQuiz.questions.length - 1) ? '結果を見る' : '次の問題';
             };
 
             const updateProgressBar = () => {
-                if (!showProgress) {
+                if (!appState.settings.showProgress) {
                     progressBarContainer.style.display = 'none';
                     progressText.style.display = 'none';
                     return;
@@ -1451,47 +1648,66 @@
 
             // --- Settings Functions ---
             const applyColors = (themeName, isDark) => {
-                 const root = document.documentElement;
-                 const themes = {
+                const root = document.documentElement;
+                const themes = {
                       'default': { '--accent-primary': isDark ? '#38bdf8' : '#0ea5e9', '--accent-primary-hover': isDark ? '#0ea5e9' : '#0284c7', '--accent-primary-shadow': isDark ? 'rgba(56, 189, 248, 0.3)' : 'rgba(14, 165, 233, 0.3)', '--themed-text-color': isDark ? '#e0f2fe' : '#0c4a6e' },
                       'red': { '--accent-primary': isDark ? '#f87171' : '#ef4444', '--accent-primary-hover': isDark ? '#ef4444' : '#dc2626', '--accent-primary-shadow': 'rgba(239, 68, 68, 0.3)', '--themed-text-color': isDark ? '#fca5a5' : '#991b1b' },
                       'green': { '--accent-primary': isDark ? '#4ade80' : '#10b981', '--accent-primary-hover': isDark ? '#10b981' : '#059669', '--accent-primary-shadow': 'rgba(16, 185, 129, 0.3)', '--themed-text-color': isDark ? '#a7f3d0' : '#065f46' },
                       'indigo': { '--accent-primary': isDark ? '#818cf8' : '#6366f1', '--accent-primary-hover': isDark ? '#6366f1' : '#4f46e5', '--accent-primary-shadow': 'rgba(99, 102, 241, 0.3)', '--themed-text-color': isDark ? '#c7d2fe' : '#4338ca' }
-                 };
-                 const theme = themes[themeName] || themes.default;
-                 Object.entries(theme).forEach(([prop, value]) => root.style.setProperty(prop, value));
-                 root.style.setProperty('--progress-bar-bg', root.style.getPropertyValue('--accent-primary'));
+               };
+                const theme = themes[themeName] || themes.default;
+                Object.entries(theme).forEach(([prop, value]) => root.style.setProperty(prop, value));
+                root.style.setProperty('--progress-bar-bg', root.style.getPropertyValue('--accent-primary'));
             };
             
             const setDarkMode = (isDark) => {
+                appState.settings.darkMode = isDark;
                 document.body.classList.toggle('dark-mode', isDark);
-                localStorage.setItem('qube_darkMode', isDark);
-                applyColors(localStorage.getItem('qube_themeColor') || 'default', isDark);
+                applyColors(appState.settings.themeColor, isDark);
+                saveState();
             };
 
             const setThemeColor = (themeName) => {
-                localStorage.setItem('qube_themeColor', themeName);
-                applyColors(themeName, document.body.classList.contains('dark-mode'));
+                appState.settings.themeColor = themeName;
+                applyColors(themeName, appState.settings.darkMode);
+                saveState();
             };
 
             // --- File Upload Logic ---
             const handleFileSelect = async (files) => {
                 fileUpload.disabled = true;
                 const filePromises = Array.from(files).map(file => {
-                    return new Promise((resolve, reject) => {
+                    return new Promise(async (resolve, reject) => {
                         const reader = new FileReader();
-                        reader.onload = (e) => {
-                            let fileType = 'text';
-                            if (file.type.startsWith('image/')) fileType = 'image';
-                            if (file.type === 'application/pdf') fileType = 'pdf';
-                            resolve({ name: file.name, type: fileType, content: e.target.result });
-                        };
-                        reader.onerror = reject;
-                        
-                        if (file.type.startsWith('text/') || file.name.endsWith('.md')) {
-                            reader.readAsText(file);
-                        } else {
+                        reader.onerror = (err) => reject(err);
+
+                        if (file.type === 'application/pdf') {
+                            reader.onload = async (e) => {
+                                try {
+                                    const loadingTask = pdfjsLib.getDocument(e.target.result);
+                                    const pdf = await loadingTask.promise;
+                                    const page = await pdf.getPage(1);
+                                    const viewport = page.getViewport({ scale: 0.5 });
+                                    const canvas = document.createElement('canvas');
+                                    canvas.height = viewport.height;
+                                    canvas.width = viewport.width;
+                                    await page.render({ canvasContext: canvas.getContext('2d'), viewport }).promise;
+                                    
+                                    resolve({ name: file.name, type: 'pdf', content: e.target.result, thumbnail: canvas.toDataURL() });
+                                } catch (pdfError) {
+                                    console.error("Failed to process PDF for thumbnail:", pdfError);
+                                    reject(new Error(`PDFのプレビュー作成に失敗しました: ${file.name}`));
+                                }
+                            };
                             reader.readAsDataURL(file);
+                        } else if (file.type.startsWith('text/') || file.name.endsWith('.md')) {
+                            reader.onload = (e) => resolve({ name: file.name, type: 'text', content: e.target.result });
+                            reader.readAsText(file);
+                        } else if (file.type.startsWith('image/')) {
+                            reader.onload = (e) => resolve({ name: file.name, type: 'image', content: e.target.result });
+                            reader.readAsDataURL(file);
+                        } else {
+                            resolve(null);
                         }
                     });
                 });
@@ -1501,9 +1717,10 @@
                     uploadedFiles.push(...results.filter(r => r !== null));
                     await updateUIAfterFileUpload();
                 } catch (err) {
-                    alert('ファイルの読み込みに失敗しました: ' + err.message);
+                    generationError.textContent = `ファイルの読み込みに失敗しました: ${err.message}`;
+                    generationError.classList.remove('hidden');
                 } finally {
-                    fileUpload.value = ''; // Reset file input to allow re-uploading the same file
+                    fileUpload.value = '';
                     fileUpload.disabled = false;
                 }
             };
@@ -1519,20 +1736,9 @@
                         img.src = file.content;
                         itemDiv.appendChild(img);
                     } else if (file.type === 'pdf') {
-                        const canvas = document.createElement('canvas');
-                        itemDiv.appendChild(canvas);
-                        try {
-                            const loadingTask = pdfjsLib.getDocument(file.content);
-                            const pdf = await loadingTask.promise;
-                            const page = await pdf.getPage(1);
-                            const viewport = page.getViewport({ scale: 0.5 });
-                            canvas.height = viewport.height;
-                            canvas.width = viewport.width;
-                            const renderContext = { canvasContext: canvas.getContext('2d'), viewport: viewport };
-                            await page.render(renderContext).promise;
-                        } catch (e) {
-                            console.error("PDF thumbnail rendering failed:", e);
-                        }
+                        const img = document.createElement('img');
+                        img.src = file.thumbnail;
+                        itemDiv.appendChild(img);
                     }
 
                     const p = document.createElement('p');
@@ -1593,14 +1799,13 @@
 
             startSelectedQuizButton.addEventListener('click', () => {
                 const selectedQuizId = quizSelect.value;
-                const project = projects.find(p => p.id === activeProjectId);
+                const project = appState.projects.find(p => p.id === activeProjectId);
                 if (project) {
                     const quizToStart = project.quizzes.find(q => q.id === selectedQuizId);
                     if (quizToStart) startQuiz(quizToStart);
                 }
             });
 
-            // File Drop Area Listeners
             fileDropArea.addEventListener('click', () => fileUpload.click());
             fileUpload.addEventListener('change', (e) => handleFileSelect(e.target.files));
             fileDropArea.addEventListener('dragover', (e) => { e.preventDefault(); fileDropArea.classList.add('dragover'); });
@@ -1629,11 +1834,18 @@
             });
             restartQuizButton.addEventListener('click', () => startQuiz(currentQuiz));
             backToProjectButton.addEventListener('click', () => setActiveProject(activeProjectId));
-            projectSettingsButton.addEventListener('click', () => switchScreen('settings'));
-            backToProjectFromSettings.addEventListener('click', () => setActiveProject(activeProjectId));
             
-            // Settings Listeners
+            projectSettingsButton.addEventListener('click', () => settingsScreen.classList.add('active'));
+            backToProjectFromSettings.addEventListener('click', () => settingsScreen.classList.remove('active'));
+            settingsScreen.addEventListener('click', (e) => {
+                if (e.target === settingsScreen) {
+                    settingsScreen.classList.remove('active');
+                }
+            });
+            
+            // --- Settings Listeners ---
             darkModeToggle.addEventListener('change', (e) => setDarkMode(e.target.checked));
+            
             themeColorCircles.forEach(circle => {
                 circle.addEventListener('click', () => {
                     themeColorCircles.forEach(c => c.classList.remove('selected'));
@@ -1641,49 +1853,51 @@
                     setThemeColor(circle.dataset.theme);
                 });
             });
+            
             enableSoundToggle.addEventListener('change', (e) => {
-                enableSound = e.target.checked;
-                localStorage.setItem('qube_enableSound', String(enableSound));
+                appState.settings.enableSound = e.target.checked;
+                saveState();
             });
-             questionCountSelect.addEventListener('change', (e) => {
-                questionCount = parseInt(e.target.value, 10);
-                localStorage.setItem('qube_questionCount', questionCount);
+            
+            questionCountSelect.addEventListener('change', (e) => {
+                appState.settings.questionCount = parseInt(e.target.value, 10);
+                saveState();
             });
+
             showProgressToggle.addEventListener('change', (e) => {
-                showProgress = e.target.checked;
-                localStorage.setItem('qube_showProgress', String(showProgress));
+                appState.settings.showProgress = e.target.checked;
+                saveState();
             });
+
             masteryModeToggle.addEventListener('change', (e) => {
-                masteryMode = e.target.checked;
-                localStorage.setItem('qube_masteryMode', String(masteryMode));
+                appState.settings.masteryMode = e.target.checked;
+                saveState();
             });
 
             // --- Initialization ---
             const init = () => {
                 pdfjsLib.GlobalWorkerOptions.workerSrc = `https://cdnjs.cloudflare.com/ajax/libs/pdf.js/2.11.338/pdf.worker.min.js`;
-                loadProjects();
+                loadState();
                 
-                // Load Settings
-                const isDark = localStorage.getItem('qube_darkMode') === 'true';
-                darkModeToggle.checked = isDark;
-                const savedTheme = localStorage.getItem('qube_themeColor') || 'default';
-                document.querySelector(`.color-circle[data-theme="${savedTheme}"]`)?.classList.add('selected');
-                setDarkMode(isDark);
+                // Apply loaded settings to UI
+                const { settings } = appState;
+                darkModeToggle.checked = settings.darkMode;
+                document.body.classList.toggle('dark-mode', settings.darkMode);
+                
+                themeColorCircles.forEach(c => c.classList.remove('selected'));
+                document.querySelector(`.color-circle[data-theme="${settings.themeColor}"]`)?.classList.add('selected');
+                applyColors(settings.themeColor, settings.darkMode);
 
-                enableSound = localStorage.getItem('qube_enableSound') !== 'false';
-                enableSoundToggle.checked = enableSound;
-                questionCount = parseInt(localStorage.getItem('qube_questionCount'), 10) || 5;
-                questionCountSelect.value = questionCount;
-                showProgress = localStorage.getItem('qube_showProgress') !== 'false';
-                showProgressToggle.checked = showProgress;
-                masteryMode = localStorage.getItem('qube_masteryMode') === 'true';
-                masteryModeToggle.checked = masteryMode;
+                enableSoundToggle.checked = settings.enableSound;
+                questionCountSelect.value = settings.questionCount;
+                showProgressToggle.checked = settings.showProgress;
+                masteryModeToggle.checked = settings.masteryMode;
 
                 // Restore last session
-                const lastProjectId = localStorage.getItem('qube_lastProjectId');
-                const projectExists = projects.some(p => p.id === lastProjectId);
-                if (lastProjectId && projectExists) {
-                    setActiveProject(lastProjectId);
+                const lastActiveProjectId = localStorage.getItem('qube_lastActiveProjectId');
+                const projectExists = appState.projects.some(p => p.id === lastActiveProjectId);
+                if (lastActiveProjectId && projectExists) {
+                    setActiveProject(lastActiveProjectId);
                 } else {
                     switchScreen('welcome');
                 }
