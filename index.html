@@ -25,6 +25,7 @@
             --bg-primary: #f0f9ff;
             --bg-secondary: #ffffff;
             --bg-tertiary: #e0f2fe;
+            --bg-welcome: #ffffff; /* New variable for welcome screen */
             --text-primary: #1e293b;
             --text-secondary: #64748b;
             --accent-primary: #0ea5e9;
@@ -59,6 +60,7 @@
             --bg-primary: #0f172a;
             --bg-secondary: #1e293b;
             --bg-tertiary: #0c4a6e;
+            --bg-welcome: #1e293b; /* New variable for welcome screen */
             --text-primary: #e2e8f0;
             --text-secondary: #94a3b8;
             --accent-primary: #38bdf8;
@@ -239,6 +241,10 @@
         }
 
         /* --- Project Start Screen --- */
+        #welcomeScreen, #projectStartScreen .start-screen-container {
+            background-color: var(--bg-welcome);
+            transition: background-color 0.3s ease;
+        }
         .start-screen-container { max-width: 600px; margin: auto; text-align: center; }
         .start-screen-container h2 { color: var(--themed-text-color); }
         .start-screen-container .form-group select {
@@ -264,7 +270,7 @@
         #quizTitle { font-size: 1.5rem; font-weight: 700; color: var(--themed-text-color); text-align: center; flex-grow: 1; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
         #interruptButton { position: absolute; right: 0; padding: 8px 15px; font-size: 0.8rem; background-color: #ef4444; color:white; flex-shrink: 0; }
         .progress-container { width: 100%; background-color: #e2e8f0; border-radius: 10px; height: 15px; margin-top: 10px; overflow: hidden; box-shadow: inset 0 1px 3px rgba(0,0,0,0.1); }
-        .progress-bar { height: 100%; width: 0%; background-color: var(--progress-bar-bg); border-radius: 10px; transition: width 0.3s ease-in-out, background-color: 0.3s ease; }
+        .progress-bar { height: 100%; width: 0%; background-color: var(--progress-bar-bg); border-radius: 10px; transition: width 0.4s ease-in-out; }
         .progress-text { font-size: 1rem; font-weight: 600; color: var(--text-primary); margin-top: 10px; transition: color 0.3s ease; text-align: center; }
         .question-area { min-height: 100px; display: flex; flex-direction: column; justify-content: center; align-items: center; transition: background-color 0.3s ease; text-align: left; margin-top: 1.5rem;}
         #questionImage { max-height: 200px; border-radius: 8px; margin-top: 1rem; }
@@ -349,11 +355,40 @@
         input:checked + .slider { background-color: var(--accent-primary); }
         input:checked + .slider:before { transform: translateX(26px); }
         
-        #settingsScreen select {
+        #settingsScreen select, #soundVolumeSlider {
             background-color: var(--bg-secondary);
             color: var(--text-primary);
             border-color: var(--border-color);
         }
+        #soundVolumeSlider {
+            -webkit-appearance: none;
+            appearance: none;
+            width: 128px; /* w-32 */
+            height: 8px;
+            background: var(--border-color);
+            border-radius: 5px;
+            outline: none;
+            opacity: 0.7;
+            transition: opacity .2s;
+        }
+        #soundVolumeSlider:hover { opacity: 1; }
+        #soundVolumeSlider::-webkit-slider-thumb {
+            -webkit-appearance: none;
+            appearance: none;
+            width: 20px;
+            height: 20px;
+            background: var(--accent-primary);
+            cursor: pointer;
+            border-radius: 50%;
+        }
+        #soundVolumeSlider::-moz-range-thumb {
+            width: 20px;
+            height: 20px;
+            background: var(--accent-primary);
+            cursor: pointer;
+            border-radius: 50%;
+        }
+
 
         /* Edit Quiz Modal Styles */
         #editQuizzesModal .modal-content { max-width: 600px; }
@@ -405,7 +440,7 @@
             
             <div id="screenContainer">
                 <!-- Welcome Screen -->
-                <div id="welcomeScreen" class="screen active text-center p-8 rounded-lg" style="background-color: var(--bg-secondary);">
+                <div id="welcomeScreen" class="screen active text-center p-8 rounded-lg">
                     <h2 class="text-4xl font-bold mb-4" style="color: var(--accent-primary);">Qubeへようこそ！</h2>
                     <p class="text-xl mb-8" style="color: var(--text-secondary);">AIの力で、あなたの学習を次のレベルへ。</p>
                     <p class="mb-8" style="color: var(--text-primary);">左のメニューから「新しいプロジェクトを作成」して、<br>あなただけのオリジナルクイズ作りを始めましょう。</p>
@@ -414,7 +449,7 @@
 
                 <!-- Project Start Screen (New) -->
                 <div id="projectStartScreen" class="screen">
-                    <div class="start-screen-container">
+                    <div class="start-screen-container p-8 rounded-lg">
                         <h2 class="text-3xl font-bold mb-6">学習を開始</h2>
                         <div class="form-group">
                             <label for="quizSelect" class="text-left">作成済みクイズから選ぶ</label>
@@ -563,6 +598,12 @@
                     <input type="checkbox" id="enableSoundToggle">
                     <span class="slider"></span>
                 </label>
+            </div>
+            <div class="settings-option">
+                <div class="settings-option-label">
+                    <label for="soundVolumeSlider">効果音の音量</label>
+                </div>
+                <input type="range" id="soundVolumeSlider" min="0" max="100">
             </div>
              <div class="settings-option">
                 <div class="settings-option-label">
@@ -728,7 +769,7 @@
     <div id="addToHomeScreenPopup" class="text-sm">
         <button id="closeAddToHomeScreen">&times;</button>
         <p class="font-bold mb-2">ホーム画面に追加してアプリとして使おう！</p>
-        <p>下の共有ボタン <span id="iosShareIconContainer" class="inline-block align-middle h-5 w-5 -mt-1"><svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" viewBox="0 0 20 20" fill="currentColor"><path d="M15 8a3 3 0 10-2.977-2.63l-4.94 2.47a3 3 0 100 4.319l4.94 2.47a3 3 0 10.895-1.789l-4.94-2.47a3.027 3.027 0 000-.74l4.94-2.47C13.456 7.68 14.19 8 15 8z" /></svg></span> から「ホーム画面に追加」を選択してください。</p>
+        <p>下の共有ボタン <span id="iosShareIconContainer" class="inline-block align-middle h-5 w-5 -mt-1"></span> から「ホーム画面に追加」を選択してください。</p>
         <p class="text-xs mt-2 text-gray-500">アプリ版とブラウザ版で生成したクイズが同期しないため、生成する前にアプリ版を使用することをおすすめします。</p>
     </div>
 
@@ -796,7 +837,7 @@
 
             let questionTextElement = document.getElementById('questionText');
             let optionsGridElement = document.getElementById('optionsGrid');
-            const quizTitle = document.getElementById('quizTitle');
+            const quizTitleEl = document.getElementById('quizTitle');
             const questionImage = document.getElementById('questionImage');
             const longContentBox = document.getElementById('longContentBox');
             const submissionArea = document.getElementById('submissionArea');
@@ -820,6 +861,7 @@
             const darkModeToggle = document.getElementById('darkModeToggle');
             const themeColorCircles = document.querySelectorAll('.color-circle');
             const enableSoundToggle = document.getElementById('enableSoundToggle');
+            const soundVolumeSlider = document.getElementById('soundVolumeSlider');
             const questionCountSelect = document.getElementById('questionCountSelect');
             const showProgressToggle = document.getElementById('showProgressToggle');
             const masteryModeToggle = document.getElementById('masteryModeToggle');
@@ -852,6 +894,7 @@
                     darkMode: false,
                     themeColor: 'default',
                     enableSound: true,
+                    soundVolume: 75, // Default volume at 75%
                     questionCount: 5,
                     showProgress: true,
                     masteryMode: false,
@@ -867,12 +910,27 @@
             
             // --- Sound Effects ---
             const sounds = {
-                correct: new Tone.Synth({ volume: -12, oscillator: { type: 'sine' }, envelope: { attack: 0.005, decay: 0.1, sustain: 0.3, release: 1 } }).toDestination(),
-                incorrect: new Tone.FMSynth({ volume: -8, harmonicity: 1.5, modulationIndex: 10, oscillator: { type: "sawtooth" }, envelope: { attack: 0.01, decay: 0.3, sustain: 0.01, release: 0.1 } }).toDestination(),
-                click: new Tone.Synth({ volume: -15, oscillator: { type: 'triangle' }, envelope: { attack: 0.005, decay: 0.1, sustain: 0.01, release: 0.1 } }).toDestination(),
-                fanfare: new Tone.PolySynth(Tone.Synth, { volume: -10 }).toDestination(),
+                correct: new Tone.Synth({ oscillator: { type: 'sine' }, envelope: { attack: 0.005, decay: 0.1, sustain: 0.3, release: 1 } }).toDestination(),
+                incorrect: new Tone.FMSynth({ harmonicity: 1.5, modulationIndex: 10, oscillator: { type: "sawtooth" }, envelope: { attack: 0.01, decay: 0.3, sustain: 0.01, release: 0.1 } }).toDestination(),
+                click: new Tone.Synth({ oscillator: { type: 'triangle' }, envelope: { attack: 0.005, decay: 0.1, sustain: 0.01, release: 0.1 } }).toDestination(),
+                fanfare: new Tone.PolySynth(Tone.Synth).toDestination(),
             };
             
+            const updateVolume = (level) => {
+                const numberLevel = Number(level);
+                let db;
+                if (numberLevel === 0) {
+                    db = -Infinity; // Mute
+                } else {
+                    // Map 1-100 to a decibel range of -30dB to 0dB for a better perceived volume scale
+                    db = (numberLevel - 1) * (30 / 99) - 30;
+                }
+                Object.values(sounds).forEach(sound => {
+                    sound.volume.value = db;
+                });
+                appState.settings.soundVolume = numberLevel;
+            };
+
             async function playSound(type) {
                 if (!appState.settings.enableSound) return;
                 if (Tone.context.state !== 'running') await Tone.start();
@@ -898,7 +956,11 @@
             const loadState = () => {
                 const savedData = localStorage.getItem('qube_app_data');
                 if (savedData) {
-                    appState = JSON.parse(savedData);
+                    const loadedState = JSON.parse(savedData);
+                    // Merge loaded settings with defaults to prevent errors if new settings are added
+                    appState.settings = { ...appState.settings, ...loadedState.settings };
+                    appState.projects = loadedState.projects || [];
+
                     if (appState.projects) {
                         appState.projects.forEach(p => {
                             if (!p.mastery) p.mastery = {};
@@ -1196,7 +1258,7 @@
                 let payload;
 
                 try {
-                    const apiKey = "AIzaSyAmL3qPv1Zr0URta9hE0a4QCveWOfonBHc"; 
+                    const apiKey = ""; // API Key is managed by the environment
 
                     const isAutoGenre = autoGenreCheckbox.checked;
                     const selectedType = questionType.value;
@@ -1487,7 +1549,7 @@
                     answeredQuestions: new Set() 
                 };
 
-                quizTitle.textContent = quiz.name;
+                quizTitleEl.textContent = quiz.name;
                 switchScreen('quiz');
                 loadQuestion();
             };
@@ -1833,19 +1895,46 @@
                 }
                 confettiAnimationId = requestAnimationFrame(animate);
             };
+            
+            // --- Helper function to convert hex to RGB ---
+            const hexToRgb = (hex) => {
+                let result = /^#?([a-f\d]{2})([a-f\d]{2})([a-f\d]{2})$/i.exec(hex);
+                return result ? {
+                    r: parseInt(result[1], 16),
+                    g: parseInt(result[2], 16),
+                    b: parseInt(result[3], 16)
+                } : null;
+            }
 
             // --- Settings Functions ---
             const applyColors = (themeName, isDark) => {
                 const root = document.documentElement;
                 const themes = {
-                     'default': { '--accent-primary': isDark ? '#38bdf8' : '#0ea5e9', '--accent-primary-hover': isDark ? '#0ea5e9' : '#0284c7', '--accent-primary-shadow': isDark ? 'rgba(56, 189, 248, 0.3)' : 'rgba(14, 165, 233, 0.3)', '--themed-text-color': isDark ? '#e0f2fe' : '#0c4a6e' },
-                     'red': { '--accent-primary': isDark ? '#f87171' : '#ef4444', '--accent-primary-hover': isDark ? '#ef4444' : '#dc2626', '--accent-primary-shadow': 'rgba(239, 68, 68, 0.3)', '--themed-text-color': isDark ? '#fca5a5' : '#991b1b' },
-                     'green': { '--accent-primary': isDark ? '#4ade80' : '#10b981', '--accent-primary-hover': isDark ? '#10b981' : '#059669', '--accent-primary-shadow': 'rgba(16, 185, 129, 0.3)', '--themed-text-color': isDark ? '#a7f3d0' : '#065f46' },
-                     'indigo': { '--accent-primary': isDark ? '#818cf8' : '#6366f1', '--accent-primary-hover': isDark ? '#6366f1' : '#4f46e5', '--accent-primary-shadow': 'rgba(99, 102, 241, 0.3)', '--themed-text-color': isDark ? '#c7d2fe' : '#4338ca' }
+                     'default': { base: '#0ea5e9', hover: '#0284c7', darkBase: '#38bdf8', darkHover: '#0ea5e9' },
+                     'red': { base: '#ef4444', hover: '#dc2626', darkBase: '#f87171', darkHover: '#ef4444' },
+                     'green': { base: '#10b981', hover: '#059669', darkBase: '#4ade80', darkHover: '#10b981' },
+                     'indigo': { base: '#6366f1', hover: '#4f46e5', darkBase: '#818cf8', darkHover: '#6366f1' }
                 };
                 const theme = themes[themeName] || themes.default;
-                Object.entries(theme).forEach(([prop, value]) => root.style.setProperty(prop, value));
-                root.style.setProperty('--progress-bar-bg', root.style.getPropertyValue('--accent-primary'));
+                const accentColor = isDark ? theme.darkBase : theme.base;
+                const accentHover = isDark ? theme.darkHover : theme.hover;
+                const rgb = hexToRgb(accentColor);
+
+                root.style.setProperty('--accent-primary', accentColor);
+                root.style.setProperty('--accent-primary-hover', accentHover);
+                root.style.setProperty('--accent-primary-shadow', `rgba(${rgb.r}, ${rgb.g}, ${rgb.b}, 0.3)`);
+                root.style.setProperty('--progress-bar-bg', accentColor);
+                
+                // Set theme-derived backgrounds
+                if (isDark) {
+                    root.style.setProperty('--themed-text-color', `rgba(${rgb.r}, ${rgb.g}, ${rgb.b}, 0.9)`);
+                    root.style.setProperty('--bg-tertiary', `rgba(${rgb.r}, ${rgb.g}, ${rgb.b}, 0.2)`);
+                    root.style.setProperty('--bg-welcome', `rgba(${rgb.r}, ${rgb.g}, ${rgb.b}, 0.15)`);
+                } else {
+                    root.style.setProperty('--themed-text-color', theme.hover);
+                    root.style.setProperty('--bg-tertiary', `rgba(${rgb.r}, ${rgb.g}, ${rgb.b}, 0.1)`);
+                    root.style.setProperty('--bg-welcome', `rgba(${rgb.r}, ${rgb.g}, ${rgb.b}, 0.05)`);
+                }
             };
             
             const setDarkMode = (isDark) => {
@@ -2211,6 +2300,9 @@
                 appState.settings.enableSound = e.target.checked;
                 saveState();
             });
+
+            soundVolumeSlider.addEventListener('input', (e) => updateVolume(e.target.value));
+            soundVolumeSlider.addEventListener('change', saveState);
             
             questionCountSelect.addEventListener('change', (e) => {
                 appState.settings.questionCount = parseInt(e.target.value, 10);
@@ -2267,15 +2359,16 @@
                 
                 // Apply loaded settings to UI
                 const { settings } = appState;
+                setDarkMode(settings.darkMode);
                 darkModeToggle.checked = settings.darkMode;
-                document.body.classList.toggle('dark-mode', settings.darkMode);
-                document.querySelector('meta[name="theme-color"]').content = settings.darkMode ? '#0f172a' : '#f0f9ff';
                 
                 themeColorCircles.forEach(c => c.classList.remove('selected'));
                 document.querySelector(`.color-circle[data-theme="${settings.themeColor}"]`)?.classList.add('selected');
-                applyColors(settings.themeColor, settings.darkMode);
-
+                
                 enableSoundToggle.checked = settings.enableSound;
+                soundVolumeSlider.value = settings.soundVolume;
+                updateVolume(settings.soundVolume); // Set initial volume for Tone.js
+
                 questionCountSelect.value = settings.questionCount;
                 showProgressToggle.checked = settings.showProgress;
                 masteryModeToggle.checked = settings.masteryMode;
@@ -2311,7 +2404,8 @@
                 const isInStandaloneMode = window.matchMedia('(display-mode: standalone)').matches;
                 if (isIOS && !isInStandaloneMode && !localStorage.getItem('qube_add_to_home_screen_dismissed')) {
                     const iosShareIconContainer = document.getElementById('iosShareIconContainer');
-                    iosShareIconContainer.innerHTML = `<svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" viewBox="0 0 20 20" fill="currentColor"><path fill-rule="evenodd" d="M10 3a1 1 0 011 1v5h5a1 1 0 110 2h-5v5a1 1 0 11-2 0v-5H4a1 1 0 110-2h5V4a1 1 0 011-1z" clip-rule="evenodd" transform="translate(0, -5) scale(1.2)" /><path d="M3 12a2 2 0 012-2h10a2 2 0 012 2v5a2 2 0 01-2 2H5a2 2 0 01-2-2v-5z" /></svg>`;
+                    // Correct SVG for iOS Share Icon (Upload arrow from a box)
+                    iosShareIconContainer.innerHTML = `<svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" viewBox="0 0 20 20" fill="currentColor"><path d="M10 3a1 1 0 01.707.293l3 3a1 1 0 01-1.414 1.414L11 6.414V13a1 1 0 11-2 0V6.414L7.707 7.707a1 1 0 01-1.414-1.414l3-3A1 1 0 0110 3zM4 14a1 1 0 011-1h10a1 1 0 110 2H5a1 1 0 01-1-1z" /></svg>`;
                     setTimeout(() => {
                         addToHomeScreenPopup.style.display = 'block';
                     }, 5000);
