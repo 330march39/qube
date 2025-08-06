@@ -364,6 +364,7 @@
                             <div class="form-group">
                                 <label for="questionType">問題形式</label>
                                 <select id="questionType">
+                                    <option value="auto_select">適切なものを選ぶ</option>
                                     <option value="multiple_choice">選択肢</option>
                                     <option value="fill_in_the_blank">記述式</option>
                                     <option value="sorting">並び替え</option>
@@ -578,12 +579,12 @@
             </div>
         </div>
     </div>
-    <div id="renameQuizModal" class="modal">
+    <div id="renameQuizInstanceModal" class="modal">
         <div class="modal-content">
             <h2 class="modal-title">クイズ名を変更</h2>
             <div class="form-group">
-                <label for="renameQuizNameInput">新しいクイズ名</label>
-                <input type="text" id="renameQuizNameInput">
+                <label for="renameQuizNameInstanceInput">新しいクイズ名</label>
+                <input type="text" id="renameQuizNameInstanceInput">
             </div>
             <div class="modal-buttons">
                 <button class="modal-button cancel">キャンセル</button>
@@ -591,10 +592,10 @@
             </div>
         </div>
     </div>
-    <div id="deleteQuizModal" class="modal">
+    <div id="deleteQuizInstanceModal" class="modal">
         <div class="modal-content">
             <h2 class="modal-title">クイズを削除</h2>
-            <p>本当に「<span id="deleteQuizName"></span>」を削除しますか？この操作は元に戻せません。</p>
+            <p>本当に「<span id="deleteQuizNameInstance"></span>」を削除しますか？この操作は元に戻せません。</p>
             <div class="modal-buttons">
                 <button class="modal-button cancel">キャンセル</button>
                 <button class="modal-button delete">削除する</button>
@@ -706,14 +707,16 @@
             const backToProjectFromSettings = document.getElementById('backToProjectFromSettings');
             const editQuizzesButton = document.getElementById('editQuizzesButton');
 
-            // New Edit Quiz Modal DOM
+            // Edit Quiz Modal DOM
             const editQuizzesModal = document.getElementById('editQuizzesModal');
             const editQuizList = document.getElementById('editQuizList');
             const closeEditQuizModalButton = document.getElementById('closeEditQuizModalButton');
-            const renameQuizModal = document.getElementById('renameQuizModal');
-            const renameQuizNameInput = document.getElementById('renameQuizNameInput');
-            const deleteQuizModal = document.getElementById('deleteQuizModal');
-            const deleteQuizName = document.getElementById('deleteQuizName');
+            
+            const renameQuizInstanceModal = document.getElementById('renameQuizInstanceModal');
+            const renameQuizNameInstanceInput = document.getElementById('renameQuizNameInstanceInput');
+
+            const deleteQuizInstanceModal = document.getElementById('deleteQuizInstanceModal');
+            const deleteQuizNameInstance = document.getElementById('deleteQuizNameInstance');
             const resetMasteryModal = document.getElementById('resetMasteryModal');
 
 
@@ -1073,7 +1076,14 @@
                     const selectedType = questionType.value;
                     const numQuestions = genQuestionCount.value === 'all' ? '可能な限り多く' : `${genQuestionCount.value}問`;
                     
-                    let basePrompt = `以下の情報に基づいて、高品質な${questionType.options[questionType.selectedIndex].text}形式のクイズを${numQuestions}作成してください。各問題には必ず、詳細な解説(explanation)を付けてください。もし問題文がコードや長文を含む場合は、その部分を long_content プロパティに格納し、question プロパティには「以下の内容について答えなさい」のような短い指示のみを入れてください。画像や図を直接参照して答える問題以外では、image_sourceプロパティをtrueに設定しないでください。選択肢(options)を生成する際、正解(answer)は必ず選択肢リストの中に含め、その位置をランダムにしてください。常に最初の選択肢が正解にならないようにしてください。 **最重要**: 生成される問題の正解（answerやitems）は、提供された情報源と完全に一致し、事実として絶対に正確でなければなりません。誤った情報や無関係な解答を生成しないでください。`;
+                    let basePrompt;
+                    if (selectedType === 'auto_select') {
+                        basePrompt = `以下の情報に基づいて、高品質なクイズを${numQuestions}作成してください。各問題について、内容に最も適した問題形式（"multiple_choice", "multiple_select", "fill_in_the_blank", "sorting"のいずれか）をAIが判断し、JSONの"type"フィールドにその形式名を指定してください。各問題には必ず、詳細な解説(explanation)を付けてください。**最重要**: "answer"フィールドは、問題形式に関わらず、必ず文字列の配列としてください。単一解答の問題（multiple_choice, fill_in_the_blank）の場合は要素が1つの配列、複数解答の問題（multiple_select）の場合は複数の要素を持つ配列にします。`;
+                    } else {
+                         basePrompt = `以下の情報に基づいて、高品質な${questionType.options[questionType.selectedIndex].text}形式のクイズを${numQuestions}作成してください。各問題には必ず、詳細な解説(explanation)を付けてください。`;
+                    }
+                     basePrompt += `もし問題文がコードや長文を含む場合は、その部分を long_content プロパティに格納し、question プロパティには「以下の内容について答えなさい」のような短い指示のみを入れてください。画像や図を直接参照して答える問題以外では、image_sourceプロパティをtrueに設定しないでください。選択肢(options)を生成する際、正解(answer)は必ず選択肢リストの中に含め、その位置をランダムにしてください。常に最初の選択肢が正解にならないようにしてください。 **最重要**: 生成される問題の正解（answerやitems）は、提供された情報源と完全に一致し、事実として絶対に正確でなければなりません。誤った情報や無関係な解答を生成しないでください。`;
+                    
                     if (selectedType === 'fill_in_the_blank') {
                         basePrompt += `答え(answer)は、単語や短い語句だけにしてください。文末の句点(。)や「です」「ます」を含めないでください。`;
                     }
@@ -1102,8 +1112,8 @@
 
                     payload.contents[0].parts.push({ text: finalPrompt + '\n\n' + textContent });
 
-                    uploadedFiles.forEach(file => {
-                        if (file.type === 'image' || file.type === 'pdf') {
+                     uploadedFiles.forEach(file => {
+                        if (file.type === 'image') { // Only send images as inline data now
                             const mimeType = file.content.substring(5, file.content.indexOf(';'));
                             const base64Data = file.content.split(',')[1];
                             payload.contents[0].parts.push({ inlineData: { mimeType, data: base64Data } });
@@ -1121,26 +1131,36 @@
                         required: ["question", "explanation"]
                     };
 
-                    switch(selectedType) {
-                        case 'fill_in_the_blank': 
-                            itemSchema.properties.answer = { type: "STRING" }; 
-                            itemSchema.required.push("answer"); 
-                            break;
-                        case 'sorting': 
-                            itemSchema.properties.items = { type: "ARRAY", items: { type: "STRING" } }; 
-                            itemSchema.required.push("items"); 
-                            break;
-                        case 'multiple_select':
-                            itemSchema.properties.options = { type: "ARRAY", items: { type: "STRING" } };
-                            itemSchema.properties.answer = { type: "ARRAY", items: { type: "STRING" } };
-                            itemSchema.required.push("options", "answer");
-                            break;
-                        default:
-                            itemSchema.properties.options = { type: "ARRAY", items: { type: "STRING" } };
-                            itemSchema.properties.answer = { type: "STRING" };
-                            itemSchema.required.push("options", "answer");
-                            break;
+                    if (selectedType === 'auto_select') {
+                        itemSchema.properties.type = { type: "STRING" };
+                        itemSchema.properties.options = { type: "ARRAY", items: { type: "STRING" } };
+                        itemSchema.properties.answer = { type: "ARRAY", items: { type: "STRING" } };
+                        itemSchema.properties.items = { type: "ARRAY", items: { type: "STRING" } };
+                        itemSchema.required.push("type", "answer");
+                    } else {
+                        itemSchema.properties.type = { type: "STRING" }; // Add type for consistency
+                        switch(selectedType) {
+                            case 'fill_in_the_blank': 
+                                itemSchema.properties.answer = { type: "STRING" }; 
+                                itemSchema.required.push("answer"); 
+                                break;
+                            case 'sorting': 
+                                itemSchema.properties.items = { type: "ARRAY", items: { type: "STRING" } }; 
+                                itemSchema.required.push("items"); 
+                                break;
+                            case 'multiple_select':
+                                itemSchema.properties.options = { type: "ARRAY", items: { type: "STRING" } };
+                                itemSchema.properties.answer = { type: "ARRAY", items: { type: "STRING" } };
+                                itemSchema.required.push("options", "answer");
+                                break;
+                            default: // multiple_choice
+                                itemSchema.properties.options = { type: "ARRAY", items: { type: "STRING" } };
+                                itemSchema.properties.answer = { type: "STRING" };
+                                itemSchema.required.push("options", "answer");
+                                break;
+                        }
                     }
+
 
                     if (isAutoGenre) {
                         payload.generationConfig.responseSchema = {
@@ -1183,10 +1203,29 @@
                     
                     if (result.candidates?.[0]?.content?.parts?.[0]?.text) {
                         const generatedData = JSON.parse(result.candidates[0].content.parts[0].text);
+                        // Post-processing to standardize data structure
+                        const processQuestions = (questions) => {
+                            return questions.map(q => {
+                                let processed = {...q};
+                                if (selectedType !== 'auto_select') {
+                                    processed.type = selectedType;
+                                }
+                                // Standardize answer to be an array for all types
+                                if (!Array.isArray(processed.answer)) {
+                                     processed.answer = [processed.answer];
+                                }
+                                return processed;
+                            });
+                        };
+
                         if (isAutoGenre) {
-                            handleAutoGenreResponse(generatedData.genres, selectedType);
+                            const processedGenres = generatedData.genres.map(genre => ({
+                                ...genre,
+                                quizzes: processQuestions(genre.quizzes)
+                            }));
+                            handleAutoGenreResponse(processedGenres);
                         } else {
-                            tempGeneratedQuestions = generatedData.quizzes.map(q => ({ ...q, type: selectedType }));
+                            tempGeneratedQuestions = processQuestions(generatedData.quizzes);
                             showNameQuizModal();
                         }
                     } else {
@@ -1209,7 +1248,7 @@
                 }
             };
             
-            const handleAutoGenreResponse = (genres, questionType) => {
+            const handleAutoGenreResponse = (genres) => {
                 const project = appState.projects.find(p => p.id === activeProjectId);
                 if (!project || !genres) return;
 
@@ -1219,8 +1258,8 @@
                             id: `quiz_${Date.now()}_${Math.random()}`,
                             name: genre.genre_name,
                             createdAt: new Date().toISOString(),
-                            questions: genre.quizzes.map(q => ({ ...q, type: questionType })),
-                            images: uploadedFiles.filter(f => f.type === 'image' || f.type === 'pdf')
+                            questions: genre.quizzes, // Already processed
+                            images: uploadedFiles.filter(f => f.type === 'image')
                         };
                         project.quizzes.push(newQuiz);
                         project.mastery[newQuiz.id] = {};
@@ -1254,7 +1293,7 @@
                         name: quizName,
                         createdAt: new Date().toISOString(),
                         questions: tempGeneratedQuestions,
-                        images: uploadedFiles.filter(f => f.type === 'image' || f.type === 'pdf')
+                        images: uploadedFiles.filter(f => f.type === 'image')
                     };
                     project.quizzes.push(newQuiz);
                     project.mastery[newQuiz.id] = {};
@@ -1301,13 +1340,17 @@
                     .filter(index => (masteryData[index] || 0) < requiredMasteryCount);
 
                 if (unmasteredIndices.length === 0) {
-                     alert("このクイズのすべての問題を習得しました！");
+                     // This case should be caught by isFullyMastered, but as a fallback
+                     resetMasteryModal.classList.add('show');
                      return;
                 }
                 
                 const shuffledIndices = shuffleArray([...unmasteredIndices]);
-                questionsToAsk = shuffledIndices.map(index => quiz.questions[index]);
-                originalIndices = shuffledIndices;
+                const questionLimit = appState.settings.questionCount;
+                const finalIndices = shuffledIndices.slice(0, questionLimit);
+
+                questionsToAsk = finalIndices.map(index => quiz.questions[index]);
+                originalIndices = finalIndices;
                 
                 currentQuiz = { 
                     ...quiz, 
@@ -1361,7 +1404,7 @@
                             button.innerHTML = option;
                             button.classList.add('option-button');
                             button.dataset.option = option;
-                            button.addEventListener('click', () => submitAnswer(option));
+                            button.addEventListener('click', () => submitAnswer([option]));
                             optionsGridElement.appendChild(button);
                         });
                         break;
@@ -1422,34 +1465,42 @@
                 const submitBtn = document.createElement('button');
                 submitBtn.textContent = '回答';
                 submitBtn.classList.add('btn', 'btn-primary');
-                submitBtn.addEventListener('click', () => submitAnswer());
+                submitBtn.addEventListener('click', () => {
+                    const question = currentQuiz.questions[currentQuiz.currentIndex];
+                    let answer;
+                    switch(question.type) {
+                        case 'multiple_select':
+                            answer = Array.from(optionsGridElement.querySelectorAll('.option-button.selected')).map(btn => btn.dataset.option);
+                            break;
+                        case 'fill_in_the_blank':
+                            answer = [document.getElementById('fillInBlankInput').value];
+                            break;
+                        case 'sorting':
+                             answer = Array.from(document.getElementById('sortingTarget').querySelectorAll('.sorting-item')).map(item => item.textContent);
+                             break;
+                    }
+                    submitAnswer(answer);
+                });
                 submissionArea.appendChild(submitBtn);
             }
 
-            const submitAnswer = (selectedOption = null) => {
+            const submitAnswer = (userAnswer) => {
                 const question = currentQuiz.questions[currentQuiz.currentIndex];
                 if (currentQuiz.answeredQuestions.has(question.question)) return;
 
-                let userAnswer;
                 let isCorrect = false;
 
                 switch(question.type) {
                     case 'multiple_choice':
-                        userAnswer = selectedOption;
-                        isCorrect = userAnswer.toLowerCase().trim() === question.answer.toLowerCase().trim();
+                    case 'fill_in_the_blank':
+                        isCorrect = userAnswer[0].toLowerCase().trim() === question.answer[0].toLowerCase().trim();
                         break;
                     case 'multiple_select':
-                        userAnswer = Array.from(optionsGridElement.querySelectorAll('.option-button.selected')).map(btn => btn.dataset.option);
                         const sortedUserAnswer = [...userAnswer].sort();
                         const sortedCorrectAnswer = [...question.answer].sort();
                         isCorrect = JSON.stringify(sortedUserAnswer) === JSON.stringify(sortedCorrectAnswer);
                         break;
-                    case 'fill_in_the_blank':
-                        userAnswer = document.getElementById('fillInBlankInput').value;
-                        isCorrect = userAnswer.toLowerCase().trim() === question.answer.toLowerCase().trim();
-                        break;
                     case 'sorting':
-                        userAnswer = Array.from(document.getElementById('sortingTarget').querySelectorAll('.sorting-item')).map(item => item.textContent);
                         isCorrect = JSON.stringify(userAnswer) === JSON.stringify(question.items);
                         break;
                 }
@@ -1480,8 +1531,12 @@
 
                 } else {
                     playSound('incorrect');
-                    let correctAnswerText = Array.isArray(question.answer) ? question.answer.join(', ') : question.answer;
-                    if (question.type === 'sorting') correctAnswerText = question.items.join(' → ');
+                    let correctAnswerText;
+                    if (question.type === 'sorting') {
+                        correctAnswerText = question.items.join(' → ');
+                    } else {
+                        correctAnswerText = Array.isArray(question.answer) ? question.answer.join(', ') : question.answer;
+                    }
                     feedbackResultElement.innerHTML = `<strong>不正解...</strong> 正解は「${correctAnswerText}」でした。`;
                     feedbackMessageElement.classList.add('incorrect-feedback');
                     project.mastery[currentQuiz.id][originalIndex] = 0; // Reset consecutive count on incorrect
@@ -1492,9 +1547,9 @@
 
                 if (question.type === 'multiple_choice') {
                     optionsGridElement.querySelectorAll('.option-button').forEach(button => {
-                        if (button.dataset.option === question.answer) {
+                        if (button.dataset.option === question.answer[0]) {
                             button.classList.add('correct');
-                        } else if (button.dataset.option === userAnswer) {
+                        } else if (button.dataset.option === userAnswer[0]) {
                             button.classList.add('incorrect');
                         }
                     });
@@ -1589,9 +1644,10 @@
                 progressBarContainer.style.display = 'block';
                 progressText.style.display = 'block';
                 const total = currentQuiz.questions.length;
-                const progress = total > 0 ? (currentQuiz.currentIndex + 1) / total : 0;
+                const current = currentQuiz.currentIndex + (currentQuiz.answeredQuestions.has(currentQuiz.questions[currentQuiz.currentIndex]?.question) ? 1 : 0);
+                const progress = total > 0 ? current / total : 0;
                 progressBar.style.width = `${progress * 100}%`;
-                progressText.textContent = `${currentQuiz.currentIndex + 1} / ${total} 問目`;
+                progressText.textContent = `${Math.min(currentQuiz.currentIndex + 1, total)} / ${total} 問目`;
             };
 
             const showQuizResult = () => {
@@ -1650,11 +1706,11 @@
             const applyColors = (themeName, isDark) => {
                 const root = document.documentElement;
                 const themes = {
-                      'default': { '--accent-primary': isDark ? '#38bdf8' : '#0ea5e9', '--accent-primary-hover': isDark ? '#0ea5e9' : '#0284c7', '--accent-primary-shadow': isDark ? 'rgba(56, 189, 248, 0.3)' : 'rgba(14, 165, 233, 0.3)', '--themed-text-color': isDark ? '#e0f2fe' : '#0c4a6e' },
-                      'red': { '--accent-primary': isDark ? '#f87171' : '#ef4444', '--accent-primary-hover': isDark ? '#ef4444' : '#dc2626', '--accent-primary-shadow': 'rgba(239, 68, 68, 0.3)', '--themed-text-color': isDark ? '#fca5a5' : '#991b1b' },
-                      'green': { '--accent-primary': isDark ? '#4ade80' : '#10b981', '--accent-primary-hover': isDark ? '#10b981' : '#059669', '--accent-primary-shadow': 'rgba(16, 185, 129, 0.3)', '--themed-text-color': isDark ? '#a7f3d0' : '#065f46' },
-                      'indigo': { '--accent-primary': isDark ? '#818cf8' : '#6366f1', '--accent-primary-hover': isDark ? '#6366f1' : '#4f46e5', '--accent-primary-shadow': 'rgba(99, 102, 241, 0.3)', '--themed-text-color': isDark ? '#c7d2fe' : '#4338ca' }
-               };
+                     'default': { '--accent-primary': isDark ? '#38bdf8' : '#0ea5e9', '--accent-primary-hover': isDark ? '#0ea5e9' : '#0284c7', '--accent-primary-shadow': isDark ? 'rgba(56, 189, 248, 0.3)' : 'rgba(14, 165, 233, 0.3)', '--themed-text-color': isDark ? '#e0f2fe' : '#0c4a6e' },
+                     'red': { '--accent-primary': isDark ? '#f87171' : '#ef4444', '--accent-primary-hover': isDark ? '#ef4444' : '#dc2626', '--accent-primary-shadow': 'rgba(239, 68, 68, 0.3)', '--themed-text-color': isDark ? '#fca5a5' : '#991b1b' },
+                     'green': { '--accent-primary': isDark ? '#4ade80' : '#10b981', '--accent-primary-hover': isDark ? '#10b981' : '#059669', '--accent-primary-shadow': 'rgba(16, 185, 129, 0.3)', '--themed-text-color': isDark ? '#a7f3d0' : '#065f46' },
+                     'indigo': { '--accent-primary': isDark ? '#818cf8' : '#6366f1', '--accent-primary-hover': isDark ? '#6366f1' : '#4f46e5', '--accent-primary-shadow': 'rgba(99, 102, 241, 0.3)', '--themed-text-color': isDark ? '#c7d2fe' : '#4338ca' }
+                };
                 const theme = themes[themeName] || themes.default;
                 Object.entries(theme).forEach(([prop, value]) => root.style.setProperty(prop, value));
                 root.style.setProperty('--progress-bar-bg', root.style.getPropertyValue('--accent-primary'));
@@ -1684,19 +1740,30 @@
                         if (file.type === 'application/pdf') {
                             reader.onload = async (e) => {
                                 try {
-                                    const loadingTask = pdfjsLib.getDocument(e.target.result);
+                                    const loadingTask = pdfjsLib.getDocument({data: atob(e.target.result.split(',')[1])});
                                     const pdf = await loadingTask.promise;
+                                    
+                                    // For thumbnail
                                     const page = await pdf.getPage(1);
                                     const viewport = page.getViewport({ scale: 0.5 });
                                     const canvas = document.createElement('canvas');
                                     canvas.height = viewport.height;
                                     canvas.width = viewport.width;
                                     await page.render({ canvasContext: canvas.getContext('2d'), viewport }).promise;
+                                    const thumbnail = canvas.toDataURL();
+
+                                    // For text extraction
+                                    let allText = '';
+                                    for (let i = 1; i <= pdf.numPages; i++) {
+                                        const page = await pdf.getPage(i);
+                                        const textContent = await page.getTextContent();
+                                        allText += textContent.items.map(item => item.str).join(' ') + '\n';
+                                    }
                                     
-                                    resolve({ name: file.name, type: 'pdf', content: e.target.result, thumbnail: canvas.toDataURL() });
+                                    resolve({ name: file.name, type: 'text', content: allText, thumbnail: thumbnail });
                                 } catch (pdfError) {
-                                    console.error("Failed to process PDF for thumbnail:", pdfError);
-                                    reject(new Error(`PDFのプレビュー作成に失敗しました: ${file.name}`));
+                                    console.error("Failed to process PDF:", pdfError);
+                                    reject(new Error(`PDFの処理に失敗しました: ${file.name}`));
                                 }
                             };
                             reader.readAsDataURL(file);
@@ -1731,13 +1798,9 @@
                     const itemDiv = document.createElement('div');
                     itemDiv.className = 'file-preview-item';
 
-                    if (file.type === 'image') {
+                    if (file.type === 'image' || file.thumbnail) {
                         const img = document.createElement('img');
-                        img.src = file.content;
-                        itemDiv.appendChild(img);
-                    } else if (file.type === 'pdf') {
-                        const img = document.createElement('img');
-                        img.src = file.thumbnail;
+                        img.src = file.thumbnail || file.content;
                         itemDiv.appendChild(img);
                     }
 
@@ -1773,6 +1836,82 @@
                 promptLabel.textContent = 'クイズにしたい内容を入力または貼り付け';
                 promptText.placeholder = '例: 日本の首都は東京です。徳川家康は江戸幕府を開きました...';
             };
+            
+            // --- Edit Quiz Functions ---
+            const showEditQuizzesModal = () => {
+                const project = appState.projects.find(p => p.id === activeProjectId);
+                if (!project) return;
+
+                editQuizList.innerHTML = '';
+                if (project.quizzes.length === 0) {
+                    editQuizList.innerHTML = '<p class="text-gray-400 p-2">このプロジェクトにはまだクイズがありません。</p>';
+                } else {
+                    project.quizzes.forEach(quiz => {
+                        const quizEl = document.createElement('div');
+                        quizEl.className = 'project-item';
+                        quizEl.innerHTML = `
+                            <div class="project-name">${quiz.name}</div>
+                            <button class="project-menu-btn" data-action="rename" data-quiz-id="${quiz.id}">
+                                <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 pointer-events-none" viewBox="0 0 20 20" fill="currentColor"><path d="M13.586 3.586a2 2 0 112.828 2.828l-11.212 11.212-3.536.354.354-3.536L13.586 3.586z" /></svg>
+                            </button>
+                            <button class="project-menu-btn text-red-500" data-action="delete" data-quiz-id="${quiz.id}">
+                                <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 pointer-events-none" viewBox="0 0 20 20" fill="currentColor"><path fill-rule="evenodd" d="M9 2a1 1 0 00-.894.553L7.382 4H4a1 1 0 000 2v10a2 2 0 002 2h8a2 2 0 002-2V6a1 1 0 100-2h-3.382l-.724-1.447A1 1 0 0011 2H9zM7 8a1 1 0 012 0v6a1 1 0 11-2 0V8zm4 0a1 1 0 012 0v6a1 1 0 11-2 0V8z" clip-rule="evenodd" /></svg>
+                            </button>
+                        `;
+                        editQuizList.appendChild(quizEl);
+                    });
+                }
+                editQuizzesModal.classList.add('show');
+            };
+
+            const handleQuizEditActions = (e) => {
+                const action = e.target.dataset.action;
+                const id = e.target.dataset.quizId;
+                if (!action || !id) return;
+
+                quizToEditId = id;
+                const project = appState.projects.find(p => p.id === activeProjectId);
+                const quiz = project?.quizzes.find(q => q.id === quizToEditId);
+                if (!quiz) return;
+
+                if (action === 'rename') {
+                    renameQuizNameInstanceInput.value = quiz.name;
+                    renameQuizInstanceModal.classList.add('show');
+                    renameQuizNameInstanceInput.focus();
+                    renameQuizNameInstanceInput.select();
+                } else if (action === 'delete') {
+                    deleteQuizNameInstance.textContent = quiz.name;
+                    deleteQuizInstanceModal.classList.add('show');
+                }
+            };
+
+            const handleRenameQuiz = () => {
+                const newName = renameQuizNameInstanceInput.value.trim();
+                const project = appState.projects.find(p => p.id === activeProjectId);
+                const quiz = project?.quizzes.find(q => q.id === quizToEditId);
+                if (newName && quiz) {
+                    quiz.name = newName;
+                    saveState();
+                    showEditQuizzesModal(); // Refresh the list
+                    populateQuizSelect(project); // Refresh the main dropdown
+                }
+                renameQuizInstanceModal.classList.remove('show');
+                quizToEditId = null;
+            };
+
+            const handleDeleteQuiz = () => {
+                const project = appState.projects.find(p => p.id === activeProjectId);
+                if (project && quizToEditId) {
+                    project.quizzes = project.quizzes.filter(q => q.id !== quizToEditId);
+                    delete project.mastery[quizToEditId];
+                    saveState();
+                    showEditQuizzesModal(); // Refresh the list
+                    populateQuizSelect(project); // Refresh the main dropdown
+                }
+                deleteQuizInstanceModal.classList.remove('show');
+                quizToEditId = null;
+            };
+
 
             // --- Event Listeners ---
             hamburgerButton.addEventListener('click', toggleSidebar);
@@ -1832,7 +1971,17 @@
                 explanationContentElement.classList.toggle('show'); 
                 toggleExplanationButton.textContent = explanationContentElement.classList.contains('show') ? '解説▲' : '解説▼'; 
             });
-            restartQuizButton.addEventListener('click', () => startQuiz(currentQuiz));
+            
+            restartQuizButton.addEventListener('click', () => {
+                const project = appState.projects.find(p => p.id === activeProjectId);
+                if (project && currentQuiz) {
+                    const originalQuiz = project.quizzes.find(q => q.id === currentQuiz.id);
+                    if (originalQuiz) {
+                        startQuiz(originalQuiz);
+                    }
+                }
+            });
+
             backToProjectButton.addEventListener('click', () => setActiveProject(activeProjectId));
             
             projectSettingsButton.addEventListener('click', () => settingsScreen.classList.add('active'));
@@ -1874,6 +2023,19 @@
                 saveState();
             });
 
+            // --- Edit Quiz Listeners ---
+            editQuizzesButton.addEventListener('click', showEditQuizzesModal);
+            closeEditQuizModalButton.addEventListener('click', () => editQuizzesModal.classList.remove('show'));
+            editQuizList.addEventListener('click', handleQuizEditActions);
+
+            renameQuizInstanceModal.querySelector('.save').addEventListener('click', handleRenameQuiz);
+            renameQuizInstanceModal.querySelector('.cancel').addEventListener('click', () => renameQuizInstanceModal.classList.remove('show'));
+            renameQuizNameInstanceInput.addEventListener('keydown', (e) => { if (e.key === 'Enter') handleRenameQuiz(); });
+
+            deleteQuizInstanceModal.querySelector('.delete').addEventListener('click', handleDeleteQuiz);
+            deleteQuizInstanceModal.querySelector('.cancel').addEventListener('click', () => deleteQuizInstanceModal.classList.remove('show'));
+
+            
             // --- Initialization ---
             const init = () => {
                 pdfjsLib.GlobalWorkerOptions.workerSrc = `https://cdnjs.cloudflare.com/ajax/libs/pdf.js/2.11.338/pdf.worker.min.js`;
@@ -1898,7 +2060,10 @@
                 const projectExists = appState.projects.some(p => p.id === lastActiveProjectId);
                 if (lastActiveProjectId && projectExists) {
                     setActiveProject(lastActiveProjectId);
-                } else {
+                } else if (appState.projects.length > 0) {
+                    setActiveProject(appState.projects[0].id);
+                }
+                else {
                     switchScreen('welcome');
                 }
                 renderProjectList();
