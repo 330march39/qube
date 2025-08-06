@@ -271,6 +271,12 @@
         .slider:before { position: absolute; content: ""; height: 26px; width: 26px; left: 4px; bottom: 4px; background-color: white; transition: .4s; border-radius: 50%; }
         input:checked + .slider { background-color: var(--accent-primary); }
         input:checked + .slider:before { transform: translateX(26px); }
+        
+        #settingsScreen select {
+    　　background-color: var(--bg-secondary);
+        color: var(--text-primary);
+        border-color: var(--border-color);
+        }
 
         /* Edit Quiz Modal Styles */
         #editQuizzesModal .modal-content { max-width: 600px; }
@@ -1074,7 +1080,7 @@
                 let payload;
 
                 try {
-                    const apiKey = ""; 
+                    const apiKey = "AIzaSyAmL3qPv1Zr0URta9hE0a4QCveWOfonBHc"; 
 
                     const isAutoGenre = autoGenreCheckbox.checked;
                     const selectedType = questionType.value;
