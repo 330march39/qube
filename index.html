@@ -17,7 +17,6 @@
     <script src="https://cdn.tailwindcss.com"></script>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=Noto+Sans+JP:wght@400;500;700&display=swap" rel="stylesheet">
     <script src="https://cdnjs.cloudflare.com/ajax/libs/tone/14.8.49/Tone.min.js"></script>
-    <!-- PDF.js is no longer needed for client-side text extraction -->
     <style>
         /* --- Base Variables from Qube --- */
         :root {
@@ -151,7 +150,7 @@
         .project-menu-btn:hover { background-color: rgba(0,0,0,0.1); }
         .project-menu { position: absolute; top: 100%; right: 5px; background-color: var(--bg-secondary); border: 1px solid var(--border-color); border-radius: 8px; box-shadow: 0 4px 12px rgba(0,0,0,0.1); z-index: 1100; display: none; min-width: 120px; margin-top: 4px;}
         .project-menu.show { display: block; }
-        .project-menu-item { padding: 8px 16px; cursor: pointer; }
+        .project-menu-item { padding: 8px 16px; cursor: pointer; display: flex; align-items: center;}
         .project-menu-item:hover { background-color: var(--bg-tertiary); }
         .project-menu-item.delete { color: #ef4444; }
 
@@ -439,10 +438,9 @@
             
             <div id="screenContainer">
                 <!-- Welcome Screen -->
-                <div id="welcomeScreen" class="screen active text-center p-8 rounded-lg">
-                    <h2 class="text-4xl font-bold mb-4" style="color: var(--accent-primary);">Qubeへようこそ！</h2>
+                <div id="welcomeScreen" class="screen active flex-col justify-center items-center text-center p-8 rounded-lg">
+                    <img src="iconsp.png" alt="Qube Logo" class="w-48 h-48 mb-6">
                     <p class="text-xl mb-8" style="color: var(--text-secondary);">AIの力で、あなたの学習を次のレベルへ。</p>
-                    <p class="mb-8" style="color: var(--text-primary);">左のメニューから「新しいプロジェクトを作成」して、<br>あなただけのオリジナルクイズ作りを始めましょう。</p>
                     <button id="getStartedButton" class="btn btn-primary text-lg px-8 py-3">さっそく始める</button>
                 </div>
 
@@ -896,7 +894,7 @@
                     questionCount: 5,
                     shuffleQuestions: true,
                     showProgress: true,
-                    masteryMode: false, // Renamed to "Drill Mode" in UI
+                    masteryMode: false,
                 }
             };
             let activeProjectId = null;
@@ -909,10 +907,10 @@
             
             // --- Sound Effects ---
             const sounds = {
-                correct: new Tone.Synth({ oscillator: { type: 'sine' }, envelope: { attack: 0.005, decay: 0.1, sustain: 0.3, release: 1 } }).toDestination(),
-                incorrect: new Tone.FMSynth({ harmonicity: 1.5, modulationIndex: 10, oscillator: { type: "sawtooth" }, envelope: { attack: 0.01, decay: 0.3, sustain: 0.01, release: 0.1 } }).toDestination(),
-                click: new Tone.Synth({ oscillator: { type: 'triangle' }, envelope: { attack: 0.005, decay: 0.1, sustain: 0.01, release: 0.1 } }).toDestination(),
-                fanfare: new Tone.PolySynth(Tone.Synth).toDestination(),
+                correct: new Tone.Synth({ volume: -6, oscillator: { type: 'sine' }, envelope: { attack: 0.005, decay: 0.1, sustain: 0.3, release: 1 } }).toDestination(),
+                incorrect: new Tone.FMSynth({ volume: 0, harmonicity: 1.5, modulationIndex: 10, oscillator: { type: "sawtooth" }, envelope: { attack: 0.01, decay: 0.3, sustain: 0.01, release: 0.1 } }).toDestination(),
+                click: new Tone.Synth({ volume: -9, oscillator: { type: 'triangle' }, envelope: { attack: 0.005, decay: 0.1, sustain: 0.01, release: 0.1 } }).toDestination(),
+                fanfare: new Tone.PolySynth(Tone.Synth, { volume: -4 }).toDestination(),
             };
             
             const updateVolume = (level) => {
@@ -922,10 +920,12 @@
                     db = -Infinity; // Mute
                 } else {
                     // Map 1-100 to a decibel range of -30dB to 0dB for a better perceived volume scale
-                    db = (numberLevel - 1) * (30 / 99) - 30;
+                    db = (numberLevel / 100) * 30 - 30;
                 }
-                Object.values(sounds).forEach(sound => {
-                    sound.volume.value = db;
+                Object.values(sounds).forEach((sound, index) => {
+                    // Make 'incorrect' sound relatively louder
+                    const isIncorrect = Object.keys(sounds)[index] === 'incorrect';
+                    sound.volume.value = db + (isIncorrect ? 6 : 0);
                 });
                 appState.settings.soundVolume = numberLevel;
             };
@@ -963,6 +963,7 @@
                     if (appState.projects) {
                         appState.projects.forEach(p => {
                             if (!p.mastery) p.mastery = {};
+                            if (p.isPinned === undefined) p.isPinned = false;
                         });
                     }
                 }
@@ -1005,7 +1006,8 @@
                     name: projectName, 
                     quizzes: [],
                     mastery: {},
-                    lastPlayedQuizId: null
+                    lastPlayedQuizId: null,
+                    isPinned: false
                 };
                 appState.projects.unshift(newProject);
                 saveState();
@@ -1021,15 +1023,24 @@
                     projectListEl.innerHTML = '<p class="text-gray-400 p-2">まだプロジェクトがありません。</p>';
                     return;
                 }
-                appState.projects.forEach(p => {
+                
+                // Sort projects: pinned first, then by their original order
+                const sortedProjects = [...appState.projects].sort((a, b) => (b.isPinned ? 1 : 0) - (a.isPinned ? 1 : 0));
+
+                sortedProjects.forEach(p => {
                     const projectEl = document.createElement('div');
                     projectEl.className = `project-item ${p.id === activeProjectId ? 'active' : ''}`;
                     projectEl.dataset.projectId = p.id;
                     projectEl.draggable = true;
 
+                    let pinIcon = '';
+                    if (p.isPinned) {
+                        pinIcon = `<svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4 mr-2 flex-shrink-0" style="color: var(--accent-primary);" viewBox="0 0 20 20" fill="currentColor"><path fill-rule="evenodd" d="M13.477 2.523a.75.75 0 01.023 1.06L10 7.15l-3.5-3.571a.75.75 0 011.037-1.08l3.5 3.571 3.5-3.571a.75.75 0 011.08.023zM4.5 5.5a.5.5 0 00-.5.5v9a.5.5 0 001 0v-9a.5.5 0 00-.5-.5z" clip-rule="evenodd" /></svg>`;
+                    }
+
                     const nameEl = document.createElement('div');
-                    nameEl.textContent = p.name;
-                    nameEl.className = 'project-name';
+                    nameEl.innerHTML = pinIcon + p.name;
+                    nameEl.className = 'project-name flex items-center';
                     
                     const menuBtn = document.createElement('button');
                     menuBtn.innerHTML = `<svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" viewBox="0 0 20 20" fill="currentColor"><path d="M10 6a2 2 0 110-4 2 2 0 010 4zM10 12a2 2 0 110-4 2 2 0 010 4zM10 18a2 2 0 110-4 2 2 0 010 4z" /></svg>`;
@@ -1054,9 +1065,15 @@
             
             const showProjectMenu = (projectId, projectItemElement) => {
                 document.querySelectorAll('.project-menu').forEach(m => m.remove());
+                const project = appState.projects.find(p => p.id === projectId);
+                if (!project) return;
+
+                const pinActionText = project.isPinned ? 'ピンを外す' : 'ピン留めする';
+
                 const menu = document.createElement('div');
                 menu.className = 'project-menu';
                 menu.innerHTML = `
+                    <div class="project-menu-item" data-action="pin" data-project-id="${projectId}">${pinActionText}</div>
                     <div class="project-menu-item" data-action="rename" data-project-id="${projectId}">名前を変更</div>
                     <div class="project-menu-item delete" data-action="delete" data-project-id="${projectId}">削除</div>
                 `;
@@ -1075,11 +1092,21 @@
                     const action = e.target.dataset.action;
                     if (action === 'rename') showRenameProjectModal(projectId);
                     else if (action === 'delete') showDeleteProjectModal(projectId);
+                    else if (action === 'pin') toggleProjectPin(projectId);
                     menu.remove();
                     document.body.removeEventListener('click', closeMenu, true);
                 });
 
                 setTimeout(() => document.body.addEventListener('click', closeMenu, true), 0);
+            };
+
+            const toggleProjectPin = (projectId) => {
+                const project = appState.projects.find(p => p.id === projectId);
+                if (project) {
+                    project.isPinned = !project.isPinned;
+                    saveState();
+                    renderProjectList();
+                }
             };
 
             const showRenameProjectModal = (projectId) => {
@@ -1164,8 +1191,10 @@
                 projectListEl.addEventListener('drop', (e) => {
                     e.preventDefault();
                     const newOrderIds = Array.from(projectListEl.querySelectorAll('.project-item')).map(item => item.dataset.projectId);
+                    // This reorders the original array based on the new DOM order
                     appState.projects.sort((a, b) => newOrderIds.indexOf(a.id) - newOrderIds.indexOf(b.id));
                     saveState();
+                    renderProjectList(); // Re-render to enforce pinning sort visually
                 });
             };
 
@@ -1225,11 +1254,12 @@
             };
 
             const shuffleArray = (array) => {
-                for (let i = array.length - 1; i > 0; i--) {
+                const newArr = [...array];
+                for (let i = newArr.length - 1; i > 0; i--) {
                     const j = Math.floor(Math.random() * (i + 1));
-                    [array[i], array[j]] = [array[j], array[i]];
+                    [newArr[i], newArr[j]] = [newArr[j], newArr[i]];
                 }
-                return array;
+                return newArr;
             };
             
             // --- Quiz Generation (Qube Core) ---
@@ -1528,8 +1558,6 @@
 
 
                 if(question.image_source && currentQuiz.images && currentQuiz.images.length > 0) {
-                    // This assumes the first image is for the first question needing one, etc.
-                    // A more robust system would map images to questions by ID or index.
                     const imageForQuestion = currentQuiz.images.find(img => question.question.includes(img.name.split('.')[0]));
                     if(imageForQuestion) {
                         questionImage.src = imageForQuestion.content;
@@ -1544,7 +1572,7 @@
 
                 switch(question.type) {
                     case 'multiple_choice':
-                        shuffleArray([...question.options]).forEach(option => {
+                        (appState.settings.shuffleQuestions ? shuffleArray([...question.options]) : [...question.options]).forEach(option => {
                             const button = document.createElement('button');
                             button.innerHTML = option;
                             button.classList.add('option-button');
@@ -1554,7 +1582,7 @@
                         });
                         break;
                     case 'multiple_select':
-                        question.options.forEach(option => {
+                        (appState.settings.shuffleQuestions ? shuffleArray([...question.options]) : [...question.options]).forEach(option => {
                             const button = document.createElement('button');
                             button.innerHTML = option;
                             button.classList.add('option-button');
@@ -1582,7 +1610,7 @@
                                 </div>
                             </div>`;
                         const sourceContainer = document.getElementById('sortingSource');
-                        const shuffledItems = [...question.items].sort(() => Math.random() - 0.5);
+                        const shuffledItems = shuffleArray([...question.items]);
                         shuffledItems.forEach(itemText => {
                             const div = document.createElement('div');
                             div.innerHTML = itemText;
@@ -1789,10 +1817,10 @@
                 progressBarContainer.style.display = 'block';
                 progressText.style.display = 'block';
                 const total = currentQuiz.questions.length;
-                const current = currentQuiz.currentIndex + (currentQuiz.answeredQuestions.has(currentQuiz.questions[currentQuiz.currentIndex]?.question) ? 1 : 0);
+                const current = currentQuiz.currentIndex + 1;
                 const progress = total > 0 ? current / total : 0;
                 progressBar.style.width = `${progress * 100}%`;
-                progressText.textContent = `${Math.min(currentQuiz.currentIndex + 1, total)} / ${total} 問目`;
+                progressText.textContent = `${Math.min(current, total)} / ${total} 問目`;
             };
 
             const showQuizResult = () => {
@@ -2318,7 +2346,7 @@
                     splashScreen.addEventListener('transitionend', () => {
                         splashScreen.style.display = 'none';
                     }, { once: true });
-                }, 1200);
+                }, 1500);
 
                 // Check for ToS agreement
                 if (!localStorage.getItem('qube_tos_agreed')) {
