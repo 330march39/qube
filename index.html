@@ -274,8 +274,12 @@
 
         /* Edit Quiz Modal Styles */
         #editQuizzesModal .modal-content { max-width: 600px; }
-        #editQuizList .project-item { padding-left: 16px; } /* Indent quiz items */
-
+        #editQuizList .project-item { padding-left: 0; } /* Remove indent */
+        .drag-handle { touch-action: none; cursor: move; padding: 8px; }
+        #editQuizList .project-item.dragging {
+            opacity: 0.5;
+            background: var(--bg-tertiary);
+        }
 
         @media (min-width: 640px) { 
             .options-grid { grid-template-columns: 1fr 1fr; }
@@ -1070,7 +1074,7 @@
                 let payload;
 
                 try {
-                    const apiKey = "AIzaSyAmL3qPv1Zr0URta9hE0a4QCveWOfonBHc"; 
+                    const apiKey = ""; 
 
                     const isAutoGenre = autoGenreCheckbox.checked;
                     const selectedType = questionType.value;
@@ -1113,7 +1117,7 @@
                     payload.contents[0].parts.push({ text: finalPrompt + '\n\n' + textContent });
 
                      uploadedFiles.forEach(file => {
-                        if (file.type === 'image') { // Only send images as inline data now
+                        if (file.type === 'image' || file.type === 'pdf') {
                             const mimeType = file.content.substring(5, file.content.indexOf(';'));
                             const base64Data = file.content.split(',')[1];
                             payload.contents[0].parts.push({ inlineData: { mimeType, data: base64Data } });
@@ -1740,30 +1744,19 @@
                         if (file.type === 'application/pdf') {
                             reader.onload = async (e) => {
                                 try {
-                                    const loadingTask = pdfjsLib.getDocument({data: atob(e.target.result.split(',')[1])});
+                                    const loadingTask = pdfjsLib.getDocument(e.target.result);
                                     const pdf = await loadingTask.promise;
-                                    
-                                    // For thumbnail
                                     const page = await pdf.getPage(1);
                                     const viewport = page.getViewport({ scale: 0.5 });
                                     const canvas = document.createElement('canvas');
                                     canvas.height = viewport.height;
                                     canvas.width = viewport.width;
                                     await page.render({ canvasContext: canvas.getContext('2d'), viewport }).promise;
-                                    const thumbnail = canvas.toDataURL();
-
-                                    // For text extraction
-                                    let allText = '';
-                                    for (let i = 1; i <= pdf.numPages; i++) {
-                                        const page = await pdf.getPage(i);
-                                        const textContent = await page.getTextContent();
-                                        allText += textContent.items.map(item => item.str).join(' ') + '\n';
-                                    }
                                     
-                                    resolve({ name: file.name, type: 'text', content: allText, thumbnail: thumbnail });
+                                    resolve({ name: file.name, type: 'pdf', content: e.target.result, thumbnail: canvas.toDataURL() });
                                 } catch (pdfError) {
-                                    console.error("Failed to process PDF:", pdfError);
-                                    reject(new Error(`PDFの処理に失敗しました: ${file.name}`));
+                                    console.error("Failed to process PDF for thumbnail:", pdfError);
+                                    reject(new Error(`PDFのプレビュー作成に失敗しました: ${file.name}`));
                                 }
                             };
                             reader.readAsDataURL(file);
@@ -1849,7 +1842,12 @@
                     project.quizzes.forEach(quiz => {
                         const quizEl = document.createElement('div');
                         quizEl.className = 'project-item';
+                        quizEl.draggable = true;
+                        quizEl.dataset.quizId = quiz.id;
                         quizEl.innerHTML = `
+                            <span class="drag-handle">
+                                <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 text-gray-400 pointer-events-none" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16M4 18h16" /></svg>
+                            </span>
                             <div class="project-name">${quiz.name}</div>
                             <button class="project-menu-btn" data-action="rename" data-quiz-id="${quiz.id}">
                                 <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 pointer-events-none" viewBox="0 0 20 20" fill="currentColor"><path d="M13.586 3.586a2 2 0 112.828 2.828l-11.212 11.212-3.536.354.354-3.536L13.586 3.586z" /></svg>
@@ -1860,8 +1858,40 @@
                         `;
                         editQuizList.appendChild(quizEl);
                     });
+                    addQuizDragDropListeners();
                 }
                 editQuizzesModal.classList.add('show');
+            };
+
+            const addQuizDragDropListeners = () => {
+                let draggedItem = null;
+                editQuizList.querySelectorAll('.project-item').forEach(item => {
+                    item.addEventListener('dragstart', (e) => {
+                        draggedItem = item;
+                        setTimeout(() => item.classList.add('dragging'), 0);
+                    });
+                    item.addEventListener('dragend', () => {
+                        if (draggedItem) draggedItem.classList.remove('dragging');
+                        draggedItem = null;
+                    });
+                });
+                editQuizList.addEventListener('dragover', (e) => {
+                    e.preventDefault();
+                    const afterElement = getDragAfterElement(editQuizList, e.clientY);
+                    if (draggedItem) {
+                        if (afterElement == null) editQuizList.appendChild(draggedItem);
+                        else editQuizList.insertBefore(draggedItem, afterElement);
+                    }
+                });
+                editQuizList.addEventListener('drop', (e) => {
+                    e.preventDefault();
+                    const project = appState.projects.find(p => p.id === activeProjectId);
+                    if (!project) return;
+                    const newOrderIds = Array.from(editQuizList.querySelectorAll('.project-item')).map(item => item.dataset.quizId);
+                    project.quizzes.sort((a, b) => newOrderIds.indexOf(a.id) - newOrderIds.indexOf(b.id));
+                    saveState();
+                    populateQuizSelect(project);
+                });
             };
 
             const handleQuizEditActions = (e) => {
@@ -2024,7 +2054,10 @@
             });
 
             // --- Edit Quiz Listeners ---
-            editQuizzesButton.addEventListener('click', showEditQuizzesModal);
+            editQuizzesButton.addEventListener('click', () => {
+                settingsScreen.classList.remove('active');
+                showEditQuizzesModal();
+            });
             closeEditQuizModalButton.addEventListener('click', () => editQuizzesModal.classList.remove('show'));
             editQuizList.addEventListener('click', handleQuizEditActions);
 
