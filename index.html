@@ -8,7 +8,7 @@
     <link rel="apple-touch-icon" href="icon.png">
     <!-- PWA settings -->
     <link rel="manifest" href="manifest.json">
-    <link rel="apple-touch-icon" href="icon.png">
+    <link rel="apple-touch-icon" href="icon-192x192.png">
     <meta name="apple-mobile-web-app-capable" content="yes">
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
     <meta name="apple-mobile-web-app-title" content="Qube">
@@ -51,6 +51,7 @@
             --themed-text-color: #0c4a6e;
 
             /* Safe Area Insets */
+            --safe-area-inset-top: env(safe-area-inset-top, 0px);
             --safe-area-inset-bottom: env(safe-area-inset-bottom, 1rem);
         }
 
@@ -114,13 +115,13 @@
 
         /* --- Qube Base Layout --- */
         .main-container { display: flex; height: 100vh; width: 100%; }
-        #sidebar { width: 280px; background-color: var(--bg-secondary); border-right: 1px solid var(--border-color); padding: 20px; display: flex; flex-direction: column; transition: transform 0.3s ease, box-shadow 0.3s ease; transform: translateX(-100%); position: fixed; top: 0; left: 0; height: 100%; z-index: 1000; }
+        #sidebar { width: 280px; background-color: var(--bg-secondary); border-right: 1px solid var(--border-color); padding: 20px; display: flex; flex-direction: column; transition: transform 0.3s ease, box-shadow 0.3s ease; transform: translateX(-100%); position: fixed; top: 0; left: 0; height: 100%; z-index: 1000; padding-top: var(--safe-area-inset-top); }
         #sidebar.open { transform: translateX(0); box-shadow: 0 0 40px rgba(0,0,0,0.2); }
         
         #mainContent { flex-grow: 1; display: flex; flex-direction: column; height: 100vh; transition: margin-left 0.3s ease; }
         body.sidebar-open-desktop #mainContent { margin-left: 280px; }
         
-        #mainContent > header { padding: 20px 20px 0 20px; }
+        #mainContent > header { padding: 20px 20px 0 20px; padding-top: calc(20px + var(--safe-area-inset-top)); }
         #screenContainer { flex-grow: 1; overflow-y: auto; padding: 20px; padding-bottom: calc(20px + var(--safe-area-inset-bottom)); }
 
         @media (max-width: 767px) { 
@@ -132,14 +133,14 @@
         .screen.active { display: flex; }
 
         /* --- Project List Enhancements --- */
-        .project-item { display: flex; align-items: center; justify-content: space-between; padding: 8px; border-radius: 8px; cursor: pointer; transition: background-color 0.2s; }
+        .project-item { position: relative; display: flex; align-items: center; justify-content: space-between; padding: 8px; border-radius: 8px; cursor: pointer; transition: background-color 0.2s; }
         .project-item:hover { background-color: var(--bg-tertiary); }
         .project-item.active { background-color: var(--bg-tertiary); font-weight: bold; }
         .project-item.dragging { opacity: 0.7; background-color: var(--accent-primary); color: white; box-shadow: 0 8px 20px rgba(0,0,0,0.2); z-index: 10; }
         .project-name { flex-grow: 1; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
         .project-menu-btn { padding: 4px; border-radius: 50%; flex-shrink: 0; }
         .project-menu-btn:hover { background-color: rgba(0,0,0,0.1); }
-        .project-menu { position: absolute; right: 20px; background-color: var(--bg-secondary); border: 1px solid var(--border-color); border-radius: 8px; box-shadow: 0 4px 12px rgba(0,0,0,0.1); z-index: 1100; display: none; min-width: 120px;}
+        .project-menu { position: absolute; top: 100%; right: 5px; background-color: var(--bg-secondary); border: 1px solid var(--border-color); border-radius: 8px; box-shadow: 0 4px 12px rgba(0,0,0,0.1); z-index: 1100; display: none; min-width: 120px; margin-top: 4px;}
         .project-menu.show { display: block; }
         .project-menu-item { padding: 8px 16px; cursor: pointer; }
         .project-menu-item:hover { background-color: var(--bg-tertiary); }
@@ -375,7 +376,7 @@
                         <button id="backToProjectStartBtn" class="btn mb-4 text-sm" style="background-color: transparent; color: var(--text-secondary); padding: 4px 8px;">← プロジェクトに戻る</button>
                         
                         <div class="form-group">
-                             <label>ファイルをアップロード</label>
+                             <label>ファイルをアップロード (PDF, TXT, MD)</label>
                              <div id="fileDropArea" class="w-full p-8 border-2 border-dashed rounded-lg text-center cursor-pointer hover:border-sky-500">
                                  <p class="text-gray-500">ここにファイルをドラッグ＆ドロップ<br>またはクリックして選択</p>
                                  <input type="file" class="hidden" id="fileUpload" accept=".txt,.md,.text,.pdf,image/*" multiple>
@@ -898,13 +899,13 @@
 
                     menuBtn.addEventListener('click', (e) => {
                         e.stopPropagation();
-                        showProjectMenu(p.id, e.currentTarget);
+                        showProjectMenu(p.id, e.currentTarget.parentElement);
                     });
                 });
                 addProjectDragDropListeners();
             };
             
-            const showProjectMenu = (projectId, button) => {
+            const showProjectMenu = (projectId, projectItemElement) => {
                 document.querySelectorAll('.project-menu').forEach(m => m.remove());
                 const menu = document.createElement('div');
                 menu.className = 'project-menu';
@@ -912,17 +913,17 @@
                     <div class="project-menu-item" data-action="rename" data-project-id="${projectId}">名前を変更</div>
                     <div class="project-menu-item delete" data-action="delete" data-project-id="${projectId}">削除</div>
                 `;
-                document.body.appendChild(menu);
-                const rect = button.getBoundingClientRect();
-                menu.style.top = `${rect.bottom}px`;
-                menu.style.right = `${window.innerWidth - rect.right - rect.width}px`;
+                projectItemElement.appendChild(menu);
+                
                 menu.classList.add('show');
+                
                 const closeMenu = (e) => {
                     if (!menu.contains(e.target)) {
                         menu.remove();
                         document.body.removeEventListener('click', closeMenu, true);
                     }
                 };
+
                 menu.addEventListener('click', (e) => {
                     const action = e.target.dataset.action;
                     if (action === 'rename') showRenameProjectModal(projectId);
@@ -930,6 +931,7 @@
                     menu.remove();
                     document.body.removeEventListener('click', closeMenu, true);
                 });
+
                 setTimeout(() => document.body.addEventListener('click', closeMenu, true), 0);
             };
 
@@ -1116,19 +1118,19 @@
                     
                     let basePrompt;
                     if (selectedType === 'auto_select') {
-                        basePrompt = `以下の情報に基づいて、高品質なクイズを${numQuestions}作成してください。各問題について、内容に最も適した問題形式（"multiple_choice", "multiple_select", "fill_in_the_blank", "sorting"のいずれか）をAIが判断し、JSONの"type"フィールドにその形式名を指定してください。各問題には必ず、詳細な解説(explanation)を付けてください。**最重要**: "answer"フィールドは、問題形式に関わらず、必ず文字列の配列としてください。単一解答の問題（multiple_choice, fill_in_the_blank）の場合は要素が1つの配列、複数解答の問題（multiple_select）の場合は複数の要素を持つ配列にします。`;
+                        basePrompt = `以下の情報に基づき、質の高いクイズを${numQuestions}作成してください。各問題には、内容に最適な形式("multiple_choice", "multiple_select", "fill_in_the_blank", "sorting")をAIが判断し、"type"に指定してください。各問題には必ず詳細な解説(explanation)を付けてください。**重要**: "answer"は、必ず文字列の配列にしてください。`;
                     } else {
-                         basePrompt = `以下の情報に基づいて、高品質な${questionType.options[questionType.selectedIndex].text}形式のクイズを${numQuestions}作成してください。各問題には必ず、詳細な解説(explanation)を付けてください。`;
+                         basePrompt = `以下の情報に基づき、質の高い${questionType.options[questionType.selectedIndex].text}形式のクイズを${numQuestions}作成してください。各問題には必ず詳細な解説(explanation)を付けてください。`;
                     }
-                     basePrompt += `もし問題文がコードや長文を含む場合は、その部分を long_content プロパティに格納し、question プロパティには「以下の内容について答えなさい」のような短い指示のみを入れてください。画像や図を直接参照して答える問題以外では、image_sourceプロパティをtrueに設定しないでください。選択肢(options)を生成する際、正解(answer)は必ず選択肢リストの中に含め、その位置をランダムにしてください。常に最初の選択肢が正解にならないようにしてください。 **最重要**: 生成される問題の正解（answerやitems）は、提供された情報源と完全に一致し、事実として絶対に正確でなければなりません。誤った情報や無関係な解答を生成しないでください。`;
+                     basePrompt += `問題文がコードや長文の場合、long_contentに格納し、questionは短い指示のみにしてください。画像問題以外ではimage_sourceをtrueにしないでください。選択肢(options)を生成する際、正解(answer)は必ず選択肢に含め、ランダムに配置してください。生成される問題の正解は、提供された情報源と完全に一致し、事実として正確でなければなりません。`;
                     
                     if (selectedType === 'fill_in_the_blank') {
-                        basePrompt += `答え(answer)は、単語や短い語句だけにしてください。文末の句点(。)や「です」「ます」を含めないでください。`;
+                        basePrompt += `答え(answer)は、単語や短い語句のみとし、句読点や「ですます」調は含めないでください。`;
                     }
                     
                     let finalPrompt = '';
                     if (isAutoGenre) {
-                        finalPrompt = `提供された情報を分析し、内容を複数のジャンルやトピック(例: レッスン、ユニット、章など)に分類してください。各ジャンルの名前(genre_name)は、「Unit 1」や「レッスン2」のように、できるだけ短く簡潔な名前にしてください。その後、各ジャンルごとに、以下の指示に従ってクイズを作成してください。\n\n指示:\n${basePrompt}`;
+                        finalPrompt = `提供情報を複数のジャンル(例: ユニット、章)に分類し、各ジャンル名を短く(genre_name)設定してください。その後、各ジャンルごとに以下の指示に従ってクイズを作成してください。\n\n指示:\n${basePrompt}`;
                     } else {
                         finalPrompt = basePrompt;
                     }
@@ -1143,7 +1145,7 @@
                         textContent += `ユーザーからのテキスト指示: 「${promptText.value}」\n\n`;
                     }
                      uploadedFiles.forEach(file => {
-                        if (file.type === 'text') {
+                        if (file.type === 'text' || file.type === 'pdf') { // PDF content is now text
                             textContent += `ファイル「${file.name}」の内容:\n${file.content}\n\n`;
                         }
                     });
@@ -1151,7 +1153,7 @@
                     payload.contents[0].parts.push({ text: finalPrompt + '\n\n' + textContent });
 
                      uploadedFiles.forEach(file => {
-                        if (file.type === 'image' || file.type === 'pdf') {
+                        if (file.type === 'image') { // Only send images as inlineData
                             const mimeType = file.content.substring(5, file.content.indexOf(';'));
                             const base64Data = file.content.split(',')[1];
                             payload.contents[0].parts.push({ inlineData: { mimeType, data: base64Data } });
@@ -1778,24 +1780,25 @@
                         reader.onerror = (err) => reject(err);
 
                         if (file.type === 'application/pdf') {
-                            reader.onload = async (e) => {
+                            const fileReader = new FileReader();
+                            fileReader.onload = async function() {
                                 try {
-                                    const loadingTask = pdfjsLib.getDocument(e.target.result);
+                                    const typedarray = new Uint8Array(this.result);
+                                    const loadingTask = pdfjsLib.getDocument(typedarray);
                                     const pdf = await loadingTask.promise;
-                                    const page = await pdf.getPage(1);
-                                    const viewport = page.getViewport({ scale: 0.5 });
-                                    const canvas = document.createElement('canvas');
-                                    canvas.height = viewport.height;
-                                    canvas.width = viewport.width;
-                                    await page.render({ canvasContext: canvas.getContext('2d'), viewport }).promise;
-                                    
-                                    resolve({ name: file.name, type: 'pdf', content: e.target.result, thumbnail: canvas.toDataURL() });
+                                    let fullText = '';
+                                    for (let i = 1; i <= pdf.numPages; i++) {
+                                        const page = await pdf.getPage(i);
+                                        const textContent = await page.getTextContent();
+                                        fullText += textContent.items.map(item => item.str).join(' ') + '\n';
+                                    }
+                                    resolve({ name: file.name, type: 'pdf', content: fullText });
                                 } catch (pdfError) {
-                                    console.error("Failed to process PDF for thumbnail:", pdfError);
-                                    reject(new Error(`PDFのプレビュー作成に失敗しました: ${file.name}`));
+                                    console.error("Failed to process PDF:", pdfError);
+                                    reject(new Error(`PDFのテキスト抽出に失敗しました: ${file.name}`));
                                 }
                             };
-                            reader.readAsDataURL(file);
+                            fileReader.readAsArrayBuffer(file);
                         } else if (file.type.startsWith('text/') || file.name.endsWith('.md')) {
                             reader.onload = (e) => resolve({ name: file.name, type: 'text', content: e.target.result });
                             reader.readAsText(file);
@@ -1803,7 +1806,7 @@
                             reader.onload = (e) => resolve({ name: file.name, type: 'image', content: e.target.result });
                             reader.readAsDataURL(file);
                         } else {
-                            resolve(null);
+                            resolve(null); // Ignore unsupported files
                         }
                     });
                 });
@@ -1827,10 +1830,14 @@
                     const itemDiv = document.createElement('div');
                     itemDiv.className = 'file-preview-item';
 
-                    if (file.type === 'image' || file.thumbnail) {
+                    if (file.type === 'image') {
                         const img = document.createElement('img');
-                        img.src = file.thumbnail || file.content;
+                        img.src = file.content;
                         itemDiv.appendChild(img);
+                    } else { // For PDF and Text, show a generic icon
+                        const icon = document.createElement('div');
+                        icon.innerHTML = `<svg xmlns="http://www.w3.org/2000/svg" class="h-12 w-12 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" /></svg>`;
+                        itemDiv.appendChild(icon);
                     }
 
                     const p = document.createElement('p');
