@@ -406,7 +406,7 @@
 </head>
 <body>
     <!-- Splash Screen -->
-    <div id="splashScreen" class="splash-screen" style="display: flex;">
+    <div id="splashScreen" class="splash-screen">
         <img src="iconsp.png" alt="Qube Logo" id="splashLogo">
         <h1 class="text-5xl font-bold" style="color: var(--accent-primary);">Qube</h1>
     </div>
@@ -415,10 +415,7 @@
     <div class="main-container">
         <!-- Sidebar -->
         <aside id="sidebar">
-            <div class="flex items-center gap-3 mb-6">
-                <img src="iconp.png" alt="Qube Logo" class="h-8 w-8" onerror="this.style.display='none'; this.nextElementSibling.style.display='block'">
-                <h2 class="text-2xl font-bold" style="color: var(--accent-primary); display:none;">Qube</h2>
-            </div>
+            <h2 class="text-2xl font-bold mb-6" style="color: var(--accent-primary);">Qube</h2>
             <button id="newProjectButton" class="btn btn-primary w-full mb-6">新しいプロジェクトを作成</button>
             <h3 class="text-lg font-semibold mb-3 text-gray-500">プロジェクト一覧</h3>
             <div id="projectList" class="flex-grow overflow-y-auto space-y-1 pr-2">
@@ -430,20 +427,15 @@
         <!-- Main Content -->
         <main id="mainContent">
             <header class="flex items-center justify-between mb-8">
-                 <div class="flex-1">
+                 <div class="flex items-center gap-2">
                     <button id="hamburgerButton" class="p-2 rounded-md">
                         <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16M4 18h16" /></svg>
                     </button>
                 </div>
-                <div class="flex-1 text-center">
-                    <h1 id="projectTitle" class="text-3xl font-bold truncate px-2" style="color: var(--text-primary);">Qube</h1>
-                </div>
-                <div class="flex-1 flex justify-end items-center gap-2">
-                    <button id="interruptButton" class="btn hidden bg-red-500 text-white text-sm py-2 px-4">中断</button>
-                    <button id="projectSettingsButton" class="p-2 rounded-md invisible">
-                            <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z" /><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" /></svg>
-                    </button>
-                </div>
+                <h1 id="projectTitle" class="text-3xl font-bold text-center absolute left-1/2 -translate-x-1/2" style="color: var(--text-primary);">Qube</h1>
+                <button id="projectSettingsButton" class="p-2 rounded-md invisible">
+                        <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z" /><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" /></svg>
+                </button>
             </header>
             
             <div id="screenContainer">
@@ -855,7 +847,11 @@
             const explanationTextElement = explanationContentElement.querySelector('.explanation-text');
             const toggleExplanationButton = document.getElementById('toggleExplanationButton');
             const nextButton = document.getElementById('nextButton');
-            const interruptButton = document.getElementById('interruptButton');
+            const interruptButton = document.createElement('button'); // Create button dynamically
+            interruptButton.id = 'interruptButton';
+            interruptButton.className = 'btn hidden bg-red-500 text-white text-sm py-1 px-3';
+            interruptButton.textContent = '中断';
+            document.querySelector('#mainContent > header').appendChild(interruptButton);
 
             const progressBarContainer = document.querySelector('.progress-container');
             const progressBar = document.getElementById('progressBar');
@@ -988,7 +984,6 @@
                 if (screens[screenName]) screens[screenName].classList.add('active');
                 projectSettingsButton.classList.toggle('invisible', screenName === 'quiz' || screenName === 'welcome');
                 interruptButton.classList.toggle('hidden', screenName !== 'quiz');
-                hamburgerButton.classList.toggle('hidden', screenName === 'quiz');
                 
                 if (screenName === 'quiz') {
                     projectTitle.textContent = currentQuiz?.name || "クイズ";
@@ -1055,7 +1050,7 @@
 
                     let pinIcon = '';
                     if (p.isPinned) {
-                        pinIcon = `<span class="mr-2">📌</span>`;
+                        pinIcon = `<svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4 mr-2 flex-shrink-0" style="color: var(--accent-primary);" viewBox="0 0 20 20" fill="currentColor"><path fill-rule="evenodd" d="M10 3a1 1 0 011 1v5.068l4.243 4.243a1 1 0 01-1.414 1.414L10 11.414l-3.828 3.828a1 1 0 01-1.414-1.414L8 9.586V4a1 1 0 011-1z" clip-rule="evenodd" /><path d="M4 14a1 1 0 011-1h10a1 1 0 110 2H5a1 1 0 01-1-1z" /></svg>`;
                     }
 
                     const nameEl = document.createElement('div');
@@ -1188,57 +1183,34 @@
 
             const addProjectDragDropListeners = () => {
                 let draggedItem = null;
-                
-                const handleDragStart = (item) => {
-                    draggedItem = item;
-                    setTimeout(() => item.classList.add('dragging'), 0);
-                };
-
-                const handleDragEnd = () => {
-                    if (draggedItem) {
-                        draggedItem.classList.remove('dragging');
-                    }
-                    draggedItem = null;
-                };
-
-                const handleDragOver = (e) => {
+                projectListEl.querySelectorAll('.project-item').forEach(item => {
+                    item.addEventListener('dragstart', (e) => {
+                        draggedItem = item;
+                        setTimeout(() => item.classList.add('dragging'), 0);
+                    });
+                    item.addEventListener('dragend', () => {
+                        setTimeout(() => {
+                            if (draggedItem) draggedItem.classList.remove('dragging');
+                            draggedItem = null;
+                        }, 0);
+                    });
+                });
+                projectListEl.addEventListener('dragover', (e) => {
                     e.preventDefault();
-                    const afterElement = getDragAfterElement(projectListEl, e.clientY || e.touches[0].clientY);
+                    const afterElement = getDragAfterElement(projectListEl, e.clientY);
                     if (draggedItem) {
-                        if (afterElement == null) {
-                            projectListEl.appendChild(draggedItem);
-                        } else {
-                            projectListEl.insertBefore(draggedItem, afterElement);
-                        }
+                        if (afterElement == null) projectListEl.appendChild(draggedItem);
+                        else projectListEl.insertBefore(draggedItem, afterElement);
                     }
-                };
-
-                const handleDrop = (e) => {
+                });
+                projectListEl.addEventListener('drop', (e) => {
                     e.preventDefault();
-                    if (!draggedItem) return;
                     const newOrderIds = Array.from(projectListEl.querySelectorAll('.project-item')).map(item => item.dataset.projectId);
+                    // This reorders the original array based on the new DOM order
                     appState.projects.sort((a, b) => newOrderIds.indexOf(a.id) - newOrderIds.indexOf(b.id));
                     saveState();
-                    renderProjectList();
-                };
-
-                projectListEl.querySelectorAll('.project-item').forEach(item => {
-                    item.addEventListener('dragstart', () => handleDragStart(item));
-                    item.addEventListener('dragend', handleDragEnd);
-                    item.addEventListener('touchstart', (e) => {
-                        handleDragStart(item);
-                        // For touch, we need to manually add move/end listeners
-                        document.addEventListener('touchmove', handleDragOver, { passive: false });
-                        document.addEventListener('touchend', () => {
-                            handleDrop(e);
-                            handleDragEnd();
-                            document.removeEventListener('touchmove', handleDragOver);
-                        }, { once: true });
-                    }, { passive: false });
+                    renderProjectList(); // Re-render to enforce pinning sort visually
                 });
-
-                projectListEl.addEventListener('dragover', handleDragOver);
-                projectListEl.addEventListener('drop', handleDrop);
             };
 
             const getDragAfterElement = (container, y) => {
@@ -1330,7 +1302,7 @@
                 let payload;
 
                 try {
-                    const apiKey = "AIzaSyAmL3qPv1Zr0URta9hE0a4QCveWOfonBHc"; // API Key is managed by the environment
+                    const apiKey = ""; // API Key is managed by the environment
 
                     const isAutoGenre = autoGenreCheckbox.checked;
                     const selectedType = questionType.value;
@@ -1860,7 +1832,7 @@
                 progressText.style.display = 'block';
                 const total = currentQuiz.questions.length;
                 const current = currentQuiz.currentIndex + 1;
-                const progress = total > 0 ? (currentQuiz.currentIndex / total) : 0;
+                const progress = total > 0 ? current / total : 0;
                 progressBar.style.width = `${progress * 100}%`;
                 progressText.textContent = `${Math.min(current, total)} / ${total} 問目`;
             };
@@ -2095,59 +2067,60 @@
 
             const addQuizDragDropListeners = () => {
                 let draggedItem = null;
-                
-                const handleDragStart = (item) => {
-                    draggedItem = item;
-                    setTimeout(() => item.classList.add('dragging'), 0);
-                };
 
-                const handleDragEnd = () => {
-                    if (draggedItem) {
-                        draggedItem.classList.remove('dragging');
-                    }
-                    draggedItem = null;
-                };
-
-                const handleDragOver = (e) => {
+                // --- MOUSE DRAG & DROP ---
+                editQuizList.querySelectorAll('.project-item').forEach(item => {
+                    item.addEventListener('dragstart', (e) => {
+                        draggedItem = item;
+                        setTimeout(() => item.classList.add('dragging'), 0);
+                    });
+                    item.addEventListener('dragend', () => {
+                        if (draggedItem) draggedItem.classList.remove('dragging');
+                        draggedItem = null;
+                    });
+                });
+                editQuizList.addEventListener('dragover', (e) => {
                     e.preventDefault();
-                    const afterElement = getDragAfterElement(editQuizList, e.clientY || e.touches[0].clientY);
+                    const afterElement = getDragAfterElement(editQuizList, e.clientY);
                     if (draggedItem) {
-                        if (afterElement == null) {
-                            editQuizList.appendChild(draggedItem);
-                        } else {
-                            editQuizList.insertBefore(draggedItem, afterElement);
-                        }
+                        if (afterElement == null) editQuizList.appendChild(draggedItem);
+                        else editQuizList.insertBefore(draggedItem, afterElement);
                     }
-                };
-
-                const handleDrop = (e) => {
+                });
+                editQuizList.addEventListener('drop', (e) => {
                     e.preventDefault();
                     if (!draggedItem) return;
-                    const newOrderIds = Array.from(editQuizList.querySelectorAll('.project-item')).map(item => item.dataset.quizId);
-                    const project = appState.projects.find(p => p.id === activeProjectId);
-                    if (project) {
-                        project.quizzes.sort((a, b) => newOrderIds.indexOf(a.id) - newOrderIds.indexOf(b.id));
-                        saveState();
-                        populateQuizSelect(project);
-                    }
-                };
-
-                editQuizList.querySelectorAll('.project-item').forEach(item => {
-                    item.addEventListener('dragstart', () => handleDragStart(item));
-                    item.addEventListener('dragend', handleDragEnd);
-                    item.addEventListener('touchstart', (e) => {
-                        handleDragStart(item);
-                        document.addEventListener('touchmove', handleDragOver, { passive: false });
-                        document.addEventListener('touchend', () => {
-                            handleDrop(e);
-                            handleDragEnd();
-                            document.removeEventListener('touchmove', handleDragOver);
-                        }, { once: true });
-                    }, { passive: false });
+                    updateQuizOrder();
                 });
 
-                editQuizList.addEventListener('dragover', handleDragOver);
-                editQuizList.addEventListener('drop', handleDrop);
+                // --- TOUCH DRAG & DROP ---
+                let touchDraggedItem = null;
+                const touchStart = (e) => {
+                    if (!e.target.classList.contains('drag-handle') && !e.target.closest('.drag-handle')) return;
+                    e.preventDefault();
+                    touchDraggedItem = e.target.closest('.project-item');
+                    touchDraggedItem.classList.add('dragging');
+                    document.addEventListener('touchmove', touchMove, { passive: false });
+                    document.addEventListener('touchend', touchEnd, { once: true });
+                };
+                const touchMove = (e) => {
+                    if (!touchDraggedItem) return;
+                    e.preventDefault();
+                    const y = e.touches[0].clientY;
+                    const afterElement = getDragAfterElement(editQuizList, y);
+                    if (afterElement == null) editQuizList.appendChild(touchDraggedItem);
+                    else editQuizList.insertBefore(touchDraggedItem, afterElement);
+                };
+                const touchEnd = () => {
+                    if (!touchDraggedItem) return;
+                    touchDraggedItem.classList.remove('dragging');
+                    touchDraggedItem = null;
+                    updateQuizOrder();
+                    document.removeEventListener('touchmove', touchMove);
+                };
+                
+                editQuizList.removeEventListener('touchstart', touchStart); // Clean up previous listeners
+                editQuizList.addEventListener('touchstart', touchStart, { passive: false });
             };
 
             const handleQuizEditActions = (e) => {
