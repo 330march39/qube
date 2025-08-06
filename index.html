@@ -17,15 +17,14 @@
     <script src="https://cdn.tailwindcss.com"></script>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=Noto+Sans+JP:wght@400;500;700&display=swap" rel="stylesheet">
     <script src="https://cdnjs.cloudflare.com/ajax/libs/tone/14.8.49/Tone.min.js"></script>
-    <!-- PDF.js for PDF processing -->
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/2.11.338/pdf.min.js"></script>
+    <!-- PDF.js is no longer needed for client-side text extraction -->
     <style>
         /* --- Base Variables from Qube --- */
         :root {
             --bg-primary: #f0f9ff;
             --bg-secondary: #ffffff;
             --bg-tertiary: #e0f2fe;
-            --bg-welcome: #ffffff; /* New variable for welcome screen */
+            --bg-welcome: #ffffff;
             --text-primary: #1e293b;
             --text-secondary: #64748b;
             --accent-primary: #0ea5e9;
@@ -60,7 +59,7 @@
             --bg-primary: #0f172a;
             --bg-secondary: #1e293b;
             --bg-tertiary: #0c4a6e;
-            --bg-welcome: #1e293b; /* New variable for welcome screen */
+            --bg-welcome: #1e293b;
             --text-primary: #e2e8f0;
             --text-secondary: #94a3b8;
             --accent-primary: #38bdf8;
@@ -467,10 +466,10 @@
                         <button id="backToProjectStartBtn" class="btn mb-4 text-sm" style="background-color: transparent; color: var(--text-secondary); padding: 4px 8px;">← プロジェクトに戻る</button>
                         
                         <div class="form-group">
-                             <label>ファイルをアップロード (PDF, TXT, MD)</label>
+                             <label>ファイルをアップロード</label>
                              <div id="fileDropArea" class="w-full p-8 border-2 border-dashed rounded-lg text-center cursor-pointer hover:border-sky-500">
                                  <p class="text-gray-500">ここにファイルをドラッグ＆ドロップ<br>またはクリックして選択</p>
-                                 <input type="file" class="hidden" id="fileUpload" accept=".txt,.md,.text,.pdf,image/*" multiple>
+                                 <input type="file" class="hidden" id="fileUpload" multiple>
                              </div>
                              <div id="filePreviewContainer"></div>
                         </div>
@@ -592,16 +591,7 @@
             </div>
             <div class="settings-option">
                 <div class="settings-option-label">
-                    <label for="enableSoundToggle">効果音</label>
-                </div>
-                <label class="toggle-switch">
-                    <input type="checkbox" id="enableSoundToggle">
-                    <span class="slider"></span>
-                </label>
-            </div>
-            <div class="settings-option">
-                <div class="settings-option-label">
-                    <label for="soundVolumeSlider">効果音の音量</label>
+                    <label for="soundVolumeSlider">効果音</label>
                 </div>
                 <input type="range" id="soundVolumeSlider" min="0" max="100">
             </div>
@@ -618,6 +608,15 @@
             </div>
             <div class="settings-option">
                 <div class="settings-option-label">
+                    <label for="shuffleQuestionsToggle">シャッフル出題</label>
+                </div>
+                <label class="toggle-switch">
+                    <input type="checkbox" id="shuffleQuestionsToggle">
+                    <span class="slider"></span>
+                </label>
+            </div>
+            <div class="settings-option">
+                <div class="settings-option-label">
                     <label for="showProgressToggle">進捗状況を表示</label>
                 </div>
                 <label class="toggle-switch">
@@ -627,7 +626,7 @@
             </div>
             <div class="settings-option">
                 <div class="settings-option-label">
-                    <label for="masteryModeToggle">習得モード</label>
+                    <label for="masteryModeToggle">特訓モード</label>
                     <p>2回連続で正解するまで「習得済み」になりません。</p>
                 </div>
                 <label class="toggle-switch">
@@ -860,9 +859,9 @@
             // Settings DOM
             const darkModeToggle = document.getElementById('darkModeToggle');
             const themeColorCircles = document.querySelectorAll('.color-circle');
-            const enableSoundToggle = document.getElementById('enableSoundToggle');
             const soundVolumeSlider = document.getElementById('soundVolumeSlider');
             const questionCountSelect = document.getElementById('questionCountSelect');
+            const shuffleQuestionsToggle = document.getElementById('shuffleQuestionsToggle');
             const showProgressToggle = document.getElementById('showProgressToggle');
             const masteryModeToggle = document.getElementById('masteryModeToggle');
             const backToProjectFromSettings = document.getElementById('backToProjectFromSettings');
@@ -893,18 +892,18 @@
                 settings: {
                     darkMode: false,
                     themeColor: 'default',
-                    enableSound: true,
-                    soundVolume: 75, // Default volume at 75%
+                    soundVolume: 75,
                     questionCount: 5,
+                    shuffleQuestions: true,
                     showProgress: true,
-                    masteryMode: false,
+                    masteryMode: false, // Renamed to "Drill Mode" in UI
                 }
             };
             let activeProjectId = null;
             let currentQuiz = null; 
             let confettiAnimationId;
             let tempGeneratedQuestions = null;
-            let uploadedFiles = []; // Array of {name, type, content, thumbnail?}
+            let uploadedFiles = []; // Array of { name, content: <base64_data_url>, mimeType: <string> }
             let projectToEditId = null;
             let quizToEditId = null; // For renaming/deleting specific quizzes
             
@@ -932,7 +931,7 @@
             };
 
             async function playSound(type) {
-                if (!appState.settings.enableSound) return;
+                if (appState.settings.soundVolume === 0) return;
                 if (Tone.context.state !== 'running') await Tone.start();
                 const now = Tone.now();
                 try {
@@ -1249,7 +1248,7 @@
                 const warningTimeout = setTimeout(() => {
                     generationWarning.textContent = '生成に時間がかかる可能性があります...';
                     generationWarning.classList.remove('hidden');
-                }, 10000);
+                }, 15000); // Increased timeout
 
                 buttonText.textContent = '生成中...';
                 spinner.classList.remove('hidden');
@@ -1264,91 +1263,50 @@
                     const selectedType = questionType.value;
                     const numQuestions = genQuestionCount.value === 'all' ? '可能な限り多く' : `${genQuestionCount.value}問`;
                     
-                    let basePrompt;
-                    if (selectedType === 'auto_select') {
-                        basePrompt = `以下の情報に基づき、質の高いクイズを${numQuestions}作成してください。各問題には、内容に最適な形式("multiple_choice", "multiple_select", "fill_in_the_blank", "sorting")をAIが判断し、"type"に指定してください。各問題には必ず詳細な解説(explanation)を付けてください。**重要**: "answer"は、必ず文字列の配列にしてください。`;
-                    } else {
-                         basePrompt = `以下の情報に基づき、質の高い${questionType.options[questionType.selectedIndex].text}形式のクイズを${numQuestions}作成してください。各問題には必ず詳細な解説(explanation)を付けてください。`;
-                    }
-                     basePrompt += `問題文がコードや長文の場合、long_contentに格納し、questionは短い指示のみにしてください。画像問題以外ではimage_sourceをtrueにしないでください。選択肢(options)を生成する際、正解(answer)は必ず選択肢に含め、ランダムに配置してください。生成される問題の正解は、提供された情報源と完全に一致し、事実として正確でなければなりません。`;
-                    
-                    if (selectedType === 'fill_in_the_blank') {
-                        basePrompt += `答え(answer)は、単語や短い語句のみとし、句読点や「ですます」調は含めないでください。`;
-                    }
-                    
-                    let finalPrompt = '';
+                    // Simplified, unified prompt for better performance and reliability
+                    let basePrompt = `提供されたテキストとファイルの内容を分析し、質の高いクイズを${numQuestions}作成してください。`;
                     if (isAutoGenre) {
-                        finalPrompt = `提供情報を複数のジャンル(例: ユニット、章)に分類し、各ジャンル名を短く(genre_name)設定してください。その後、各ジャンルごとに以下の指示に従ってクイズを作成してください。\n\n指示:\n${basePrompt}`;
-                    } else {
-                        finalPrompt = basePrompt;
+                         basePrompt += `内容を複数のジャンルに分け、各ジャンルごとに問題を作成してください。`;
                     }
+                     basePrompt += `各問題には、内容に最適な形式("multiple_choice", "multiple_select", "fill_in_the_blank", "sorting")をAIが判断して指定し、必ず詳細な解説を付けてください。`;
+                    if (selectedType !== 'auto_select') {
+                        basePrompt += `問題形式は「${questionType.options[questionType.selectedIndex].text}」に統一してください。`
+                    }
+                     basePrompt += `生成される問題は、提供された情報源と完全に一致し、事実として正確でなければなりません。`;
                     
                     payload = {
                         contents: [{ role: "user", parts: [] }],
                         generationConfig: { responseMimeType: "application/json" }
                     };
                     
-                    let textContent = '';
+                    const parts = [{ text: basePrompt }];
                     if (promptText.value.trim()) {
-                        textContent += `ユーザーからのテキスト指示: 「${promptText.value}」\n\n`;
+                        parts.push({ text: `\n\n--- テキスト内容 ---\n${promptText.value}` });
                     }
                      uploadedFiles.forEach(file => {
-                        if (file.type === 'text' || file.type === 'pdf') { // PDF content is now text
-                            textContent += `ファイル「${file.name}」の内容:\n${file.content}\n\n`;
-                        }
+                        parts.push({
+                            inlineData: {
+                                mimeType: file.mimeType,
+                                data: file.content.split(',')[1] // Extract base64 data
+                            }
+                        });
                     });
-
-                    payload.contents[0].parts.push({ text: finalPrompt + '\n\n' + textContent });
-
-                     uploadedFiles.forEach(file => {
-                        if (file.type === 'image') { // Only send images as inlineData
-                            const mimeType = file.content.substring(5, file.content.indexOf(';'));
-                            const base64Data = file.content.split(',')[1];
-                            payload.contents[0].parts.push({ inlineData: { mimeType, data: base64Data } });
-                        }
-                    });
+                    payload.contents[0].parts = parts;
                     
                     let itemSchema = {
                         type: "OBJECT",
                         properties: {
                             question: { type: "STRING" },
+                            type: { type: "STRING" },
+                            options: { type: "ARRAY", items: { type: "STRING" } },
+                            items: { type: "ARRAY", items: { type: "STRING" } },
+                            answer: { type: "ARRAY", items: { type: "STRING" } },
                             explanation: { type: "STRING" },
-                            image_source: { type: "BOOLEAN" },
-                            long_content: { type: "STRING" }
+                            long_content: { type: "STRING" },
+                            image_source: { type: "BOOLEAN" }
                         },
-                        required: ["question", "explanation"]
+                        required: ["question", "type", "answer", "explanation"]
                     };
-
-                    if (selectedType === 'auto_select') {
-                        itemSchema.properties.type = { type: "STRING" };
-                        itemSchema.properties.options = { type: "ARRAY", items: { type: "STRING" } };
-                        itemSchema.properties.answer = { type: "ARRAY", items: { type: "STRING" } };
-                        itemSchema.properties.items = { type: "ARRAY", items: { type: "STRING" } };
-                        itemSchema.required.push("type", "answer");
-                    } else {
-                        itemSchema.properties.type = { type: "STRING" }; // Add type for consistency
-                        switch(selectedType) {
-                            case 'fill_in_the_blank': 
-                                itemSchema.properties.answer = { type: "STRING" }; 
-                                itemSchema.required.push("answer"); 
-                                break;
-                            case 'sorting': 
-                                itemSchema.properties.items = { type: "ARRAY", items: { type: "STRING" } }; 
-                                itemSchema.required.push("items"); 
-                                break;
-                            case 'multiple_select':
-                                itemSchema.properties.options = { type: "ARRAY", items: { type: "STRING" } };
-                                itemSchema.properties.answer = { type: "ARRAY", items: { type: "STRING" } };
-                                itemSchema.required.push("options", "answer");
-                                break;
-                            default: // multiple_choice
-                                itemSchema.properties.options = { type: "ARRAY", items: { type: "STRING" } };
-                                itemSchema.properties.answer = { type: "STRING" };
-                                itemSchema.required.push("options", "answer");
-                                break;
-                        }
-                    }
-
 
                     if (isAutoGenre) {
                         payload.generationConfig.responseSchema = {
@@ -1391,30 +1349,28 @@
                     
                     if (result.candidates?.[0]?.content?.parts?.[0]?.text) {
                         const generatedData = JSON.parse(result.candidates[0].content.parts[0].text);
-                        // Post-processing to standardize data structure
+                        
                         const processQuestions = (questions) => {
                             return questions.map(q => {
                                 let processed = {...q};
-                                if (selectedType !== 'auto_select') {
-                                    processed.type = selectedType;
-                                }
-                                // Standardize answer to be an array for all types
                                 if (!Array.isArray(processed.answer)) {
-                                     processed.answer = [processed.answer];
+                                     processed.answer = [String(processed.answer)];
                                 }
                                 return processed;
                             });
                         };
 
-                        if (isAutoGenre) {
+                        if (isAutoGenre && generatedData.genres) {
                             const processedGenres = generatedData.genres.map(genre => ({
                                 ...genre,
-                                quizzes: processQuestions(genre.quizzes)
+                                quizzes: processQuestions(genre.quizzes || [])
                             }));
                             handleAutoGenreResponse(processedGenres);
-                        } else {
+                        } else if (generatedData.quizzes) {
                             tempGeneratedQuestions = processQuestions(generatedData.quizzes);
                             showNameQuizModal();
+                        } else {
+                            throw new Error("AIからの応答が期待された形式ではありません。");
                         }
                     } else {
                          console.error("Invalid API response structure:", result);
@@ -1446,8 +1402,8 @@
                             id: `quiz_${Date.now()}_${Math.random()}`,
                             name: genre.genre_name,
                             createdAt: new Date().toISOString(),
-                            questions: genre.quizzes, // Already processed
-                            images: uploadedFiles.filter(f => f.type === 'image')
+                            questions: genre.quizzes,
+                            images: uploadedFiles.filter(f => f.mimeType.startsWith('image/'))
                         };
                         project.quizzes.push(newQuiz);
                         project.mastery[newQuiz.id] = {};
@@ -1481,7 +1437,7 @@
                         name: quizName,
                         createdAt: new Date().toISOString(),
                         questions: tempGeneratedQuestions,
-                        images: uploadedFiles.filter(f => f.type === 'image')
+                        images: uploadedFiles.filter(f => f.mimeType.startsWith('image/'))
                     };
                     project.quizzes.push(newQuiz);
                     project.mastery[newQuiz.id] = {};
@@ -1503,47 +1459,38 @@
                 
                 const requiredMasteryCount = appState.settings.masteryMode ? 2 : 1;
                 const masteryData = (project.mastery && project.mastery[quiz.id]) ? project.mastery[quiz.id] : {};
-                const masteredCount = Object.values(masteryData).filter(count => count >= requiredMasteryCount).length;
-                const isFullyMastered = masteredCount === quiz.questions.length && quiz.questions.length > 0;
-
-                if (isFullyMastered) {
-                    resetMasteryModal.classList.add('show');
-                    resetMasteryModal.querySelector('.reset').onclick = () => {
-                        project.mastery[quiz.id] = {};
-                        saveState();
-                        resetMasteryModal.classList.remove('show');
-                        startQuiz(quiz); // Restart the quiz after resetting
-                    };
-                    resetMasteryModal.querySelector('.cancel').onclick = () => {
-                        resetMasteryModal.classList.remove('show');
-                    };
-                    return;
-                }
-
-                let questionsToAsk = quiz.questions;
-                let originalIndices = quiz.questions.map((_, i) => i);
-
-                const unmasteredIndices = quiz.questions
+                
+                let unmasteredIndices = quiz.questions
                     .map((_, index) => index)
                     .filter(index => (masteryData[index] || 0) < requiredMasteryCount);
 
                 if (unmasteredIndices.length === 0) {
-                     // This case should be caught by isFullyMastered, but as a fallback
                      resetMasteryModal.classList.add('show');
+                     resetMasteryModal.querySelector('.reset').onclick = () => {
+                         project.mastery[quiz.id] = {};
+                         saveState();
+                         resetMasteryModal.classList.remove('show');
+                         startQuiz(quiz);
+                     };
+                     resetMasteryModal.querySelector('.cancel').onclick = () => {
+                         resetMasteryModal.classList.remove('show');
+                     };
                      return;
                 }
                 
-                const shuffledIndices = shuffleArray([...unmasteredIndices]);
-                const questionLimit = appState.settings.questionCount;
-                const finalIndices = shuffledIndices.slice(0, questionLimit);
+                const finalIndices = appState.settings.shuffleQuestions 
+                    ? shuffleArray([...unmasteredIndices]) 
+                    : unmasteredIndices;
 
-                questionsToAsk = finalIndices.map(index => quiz.questions[index]);
-                originalIndices = finalIndices;
+                const questionLimit = appState.settings.questionCount;
+                const questionsToAskIndices = finalIndices.slice(0, questionLimit);
+
+                const questionsToAsk = questionsToAskIndices.map(index => quiz.questions[index]);
                 
                 currentQuiz = { 
                     ...quiz, 
                     questions: questionsToAsk,
-                    originalIndices: originalIndices,
+                    originalIndices: questionsToAskIndices,
                     currentIndex: 0, 
                     score: 0, 
                     answeredQuestions: new Set() 
@@ -1564,7 +1511,6 @@
                     return;
                 }
 
-                // Sorting bug fix: Re-clone the options grid element to clear old event listeners
                 const parent = optionsGridElement.parentNode;
                 const newGrid = optionsGridElement.cloneNode(false);
                 parent.replaceChild(newGrid, optionsGridElement);
@@ -1582,8 +1528,13 @@
 
 
                 if(question.image_source && currentQuiz.images && currentQuiz.images.length > 0) {
-                    questionImage.src = currentQuiz.images[0].content;
-                    questionImage.classList.remove('hidden');
+                    // This assumes the first image is for the first question needing one, etc.
+                    // A more robust system would map images to questions by ID or index.
+                    const imageForQuestion = currentQuiz.images.find(img => question.question.includes(img.name.split('.')[0]));
+                    if(imageForQuestion) {
+                        questionImage.src = imageForQuestion.content;
+                        questionImage.classList.remove('hidden');
+                    }
                 }
 
                 if (question.long_content) {
@@ -1956,45 +1907,21 @@
             const handleFileSelect = async (files) => {
                 fileUpload.disabled = true;
                 const filePromises = Array.from(files).map(file => {
-                    return new Promise(async (resolve, reject) => {
+                    return new Promise((resolve, reject) => {
                         const reader = new FileReader();
+                        reader.onload = (e) => resolve({ 
+                            name: file.name, 
+                            content: e.target.result, // This is a data URL (e.g., "data:image/png;base64,iVBOR...")
+                            mimeType: file.type 
+                        });
                         reader.onerror = (err) => reject(err);
-
-                        if (file.type === 'application/pdf') {
-                            const fileReader = new FileReader();
-                            fileReader.onload = async function() {
-                                try {
-                                    const typedarray = new Uint8Array(this.result);
-                                    const loadingTask = pdfjsLib.getDocument(typedarray);
-                                    const pdf = await loadingTask.promise;
-                                    let fullText = '';
-                                    for (let i = 1; i <= pdf.numPages; i++) {
-                                        const page = await pdf.getPage(i);
-                                        const textContent = await page.getTextContent();
-                                        fullText += textContent.items.map(item => item.str).join(' ') + '\n';
-                                    }
-                                    resolve({ name: file.name, type: 'pdf', content: fullText });
-                                } catch (pdfError) {
-                                    console.error("Failed to process PDF:", pdfError);
-                                    reject(new Error(`PDFのテキスト抽出に失敗しました: ${file.name}`));
-                                }
-                            };
-                            fileReader.readAsArrayBuffer(file);
-                        } else if (file.type.startsWith('text/') || file.name.endsWith('.md')) {
-                            reader.onload = (e) => resolve({ name: file.name, type: 'text', content: e.target.result });
-                            reader.readAsText(file);
-                        } else if (file.type.startsWith('image/')) {
-                            reader.onload = (e) => resolve({ name: file.name, type: 'image', content: e.target.result });
-                            reader.readAsDataURL(file);
-                        } else {
-                            resolve(null); // Ignore unsupported files
-                        }
+                        reader.readAsDataURL(file); // Read ANY file as a data URL
                     });
                 });
 
                 try {
                     const results = await Promise.all(filePromises);
-                    uploadedFiles.push(...results.filter(r => r !== null));
+                    uploadedFiles.push(...results);
                     await updateUIAfterFileUpload();
                 } catch (err) {
                     generationError.textContent = `ファイルの読み込みに失敗しました: ${err.message}`;
@@ -2011,11 +1938,11 @@
                     const itemDiv = document.createElement('div');
                     itemDiv.className = 'file-preview-item';
 
-                    if (file.type === 'image') {
+                    if (file.mimeType.startsWith('image/')) {
                         const img = document.createElement('img');
                         img.src = file.content;
                         itemDiv.appendChild(img);
-                    } else { // For PDF and Text, show a generic icon
+                    } else { // For PDF, PPTX, and any other file, show a generic icon
                         const icon = document.createElement('div');
                         icon.innerHTML = `<svg xmlns="http://www.w3.org/2000/svg" class="h-12 w-12 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" /></svg>`;
                         itemDiv.appendChild(icon);
@@ -2296,16 +2223,16 @@
                 });
             });
             
-            enableSoundToggle.addEventListener('change', (e) => {
-                appState.settings.enableSound = e.target.checked;
-                saveState();
-            });
-
             soundVolumeSlider.addEventListener('input', (e) => updateVolume(e.target.value));
             soundVolumeSlider.addEventListener('change', saveState);
             
             questionCountSelect.addEventListener('change', (e) => {
                 appState.settings.questionCount = parseInt(e.target.value, 10);
+                saveState();
+            });
+
+            shuffleQuestionsToggle.addEventListener('change', (e) => {
+                appState.settings.shuffleQuestions = e.target.checked;
                 saveState();
             });
 
@@ -2354,7 +2281,6 @@
                     splashLogo.nextElementSibling.style.display = 'block';
                 };
 
-                pdfjsLib.GlobalWorkerOptions.workerSrc = `https://cdnjs.cloudflare.com/ajax/libs/pdf.js/2.11.338/pdf.worker.min.js`;
                 loadState();
                 
                 // Apply loaded settings to UI
@@ -2365,11 +2291,11 @@
                 themeColorCircles.forEach(c => c.classList.remove('selected'));
                 document.querySelector(`.color-circle[data-theme="${settings.themeColor}"]`)?.classList.add('selected');
                 
-                enableSoundToggle.checked = settings.enableSound;
                 soundVolumeSlider.value = settings.soundVolume;
                 updateVolume(settings.soundVolume); // Set initial volume for Tone.js
 
                 questionCountSelect.value = settings.questionCount;
+                shuffleQuestionsToggle.checked = settings.shuffleQuestions;
                 showProgressToggle.checked = settings.showProgress;
                 masteryModeToggle.checked = settings.masteryMode;
 
