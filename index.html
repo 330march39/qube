@@ -454,7 +454,7 @@
             <div id="screenContainer">
                 <!-- Welcome Screen -->
                 <div id="welcomeScreen" class="screen active flex-col justify-center items-center text-center p-8 rounded-lg">
-                    <h2 class="text-4xl font-bold mb-6" style="color: var(--themed-text-color);">学習を始めましょう！</h2>
+                    <img src="iconsp.png" alt="Qube Logo" class="w-48 h-48 mb-6">
                     <p class="text-xl mb-8" style="color: var(--text-secondary);">AIの力で、あなたの学習を次のレベルへ。</p>
                     <button id="getStartedButton" class="btn btn-primary text-lg px-8 py-3">さっそく始める</button>
                 </div>
@@ -995,10 +995,18 @@
 
             // --- UI & State Management Functions ---
             // NEW: Helper to update the main header title with text or the logo
-            const updateProjectTitle = (text) => {
-                const defaultTitleHTML = `<img src="iconsp.png" alt="Qube Logo" class="h-10" onerror="this.style.display='none'; this.nextElementSibling.style.display='block';"><span style="display:none;">Qube</span>`;
-                if (!text || text === 'Qube') {
+             const updateProjectTitle = (text) => {
+                // MODIFIED: Welcome screen title changed to text
+                const welcomeTitleHTML = `<span>学習を始めましょう！</span>`;
+                const defaultTitleHTML = `<img src="iconsp.png" alt="Qube Logo" class="h-10 w-16" onerror="this.style.display='none'; this.nextElementSibling.style.display='block';"><span style="display:none;">Qube</span>`;
+                
+                // Welcome screen displays "学習を始めましょう！"
+                if (screens.welcome.classList.contains('active')) {
+                    projectTitle.innerHTML = welcomeTitleHTML;
+                // No active project displays the Qube logo
+                } else if (!text || text === 'Qube') {
                     projectTitle.innerHTML = defaultTitleHTML;
+                // Active project displays its name
                 } else {
                     projectTitle.innerHTML = `<span>${text}</span>`;
                 }
