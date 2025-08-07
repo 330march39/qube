@@ -135,7 +135,7 @@
         #mainContent > header { position: relative; display: flex; align-items: center; justify-content: space-between; padding: 20px; padding-top: calc(20px + var(--safe-area-inset-top)); min-height: 80px; }
         #projectTitle {
             flex-grow: 1;
-            width: 60%;
+            /*width: 60%;*/
             text-align: center;
             font-weight: 700;
             /* Default font size */
@@ -320,7 +320,18 @@
         .explanation-text { font-weight: 400; font-size: 0.95rem; }
         .toggle-explanation-button { background-color: var(--accent-primary); color: white; padding: 6px 12px; border-radius: 8px; font-size: 0.8rem; cursor: pointer; transition: background-color 0.3s ease, transform 0.2s ease; flex-shrink: 0; border: none; }
         .navigation-buttons { display: flex; justify-content: flex-end; margin-top: 20px; flex-wrap: wrap; gap: 10px; }
-        
+         .btn-sm {
+            padding: 4px 12px;
+            font-size: 0.875rem; /* text-sm */
+        }
+
+        .btn-danger {
+            background-color: #ef4444; /* bg-red-500 */
+            color: white;
+        }
+        .btn-danger:hover:not(:disabled) {
+            background-color: #dc2626; /* bg-red-600 */
+        }
         /* --- Integrated Result Screen Styles --- */
         .result-container { text-align: center; max-width: 600px; margin: 2rem auto; }
         .score-area { font-size: 1.8rem; font-weight: 800; color: var(--score-color); margin-top: 25px; }
@@ -483,7 +494,7 @@
     </div>
     <h1 id="projectTitle" style="color: var(--text-primary);"></h1>
     <div class="flex items-center gap-2 w-16 justify-end">
-         <button id="interruptButton" class="btn hidden ...">中断</button>
+         <button id="interruptButton" class="btn btn-sm btn-danger hidden">中断</button>
          <button id="projectSettingsButton" class="p-2 rounded-md invisible">
             </button>
     </div>
