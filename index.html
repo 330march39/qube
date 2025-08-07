@@ -132,16 +132,34 @@
         #mainContent { flex-grow: 1; display: flex; flex-direction: column; height: 100vh; transition: margin-left 0.3s ease; }
         body.sidebar-open-desktop #mainContent { margin-left: 280px; }
         
-        #mainContent > header { position: relative; display: flex; align-items: center; justify-content: space-between; padding: 20px 20px 0 20px; padding-top: calc(20px + var(--safe-area-inset-top)); }
-        #screenContainer { flex-grow: 1; overflow-y: auto; padding: 20px; padding-bottom: calc(20px + var(--safe-area-inset-bottom)); }
+        #mainContent > header { position: relative; display: flex; align-items: center; justify-content: space-between; padding: 20px; padding-top: calc(20px + var(--safe-area-inset-top)); min-height: 80px; }
+        #projectTitle {
+            position: absolute;
+            left: 50%;
+            transform: translateX(-50%);
+            width: 60%;
+            text-align: center;
+            font-weight: 700;
+            /* Default font size */
+            font-size: 1.875rem; /* text-3xl */
+            line-height: 1.25;
+            white-space: nowrap;
+        }
+        #screenContainer { flex-grow: 1; overflow-y: auto; padding: 20px; padding-bottom: calc(20px + var(--safe-area-inset-bottom)); display: flex; flex-direction: column; }
 
         @media (max-width: 767px) { 
             body.sidebar-open-desktop #mainContent { margin-left: 0; }
+            #projectTitle { width: 50%; font-size: 1.5rem; /* text-2xl */ }
         }
         .sidebar-overlay { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.5); z-index: 999; }
         .sidebar-overlay.active { display: block; }
-        .screen { display: none; flex-direction: column; }
+        .screen { display: none; flex-direction: column; width: 100%; }
         .screen.active { display: flex; }
+        /* MODIFIED: Center the start screen content */
+        #projectStartScreen.active {
+            justify-content: center;
+        }
+
 
         /* --- Project List Enhancements --- */
         .project-item { position: relative; display: flex; align-items: center; justify-content: space-between; padding: 8px; border-radius: 8px; cursor: pointer; transition: background-color 0.2s; }
@@ -268,15 +286,16 @@
         /* --- Integrated Quiz Screen Styles --- */
         .quiz-container { max-width: 800px; margin-left: auto; margin-right: auto; width: 100%; }
         #quizHeader { display: flex; flex-direction: column; gap: 1rem; }
-        #quizTitleArea { display: flex; justify-content: center; align-items: center; }
-        #quizTitle { font-size: 1.5rem; font-weight: 700; color: var(--themed-text-color); text-align: center; }
+        #quizTitleArea { display: flex; justify-content: center; align-items: center; min-height: 80px; }
+        #quizTitle { font-size: 1.5rem; font-weight: 700; color: var(--themed-text-color); text-align: center; line-height: 1.3; }
         .progress-container { width: 100%; background-color: #e2e8f0; border-radius: 10px; height: 15px; overflow: hidden; box-shadow: inset 0 1px 3px rgba(0,0,0,0.1); }
         .progress-bar { height: 100%; width: 0%; background-color: var(--progress-bar-bg); border-radius: 10px; transition: width 0.4s ease-in-out; }
         .progress-text { font-size: 1rem; font-weight: 600; color: var(--text-primary); transition: color 0.3s ease; text-align: center; }
         .question-area { min-height: 100px; display: flex; flex-direction: column; justify-content: center; align-items: center; transition: background-color 0.3s ease; text-align: left; margin-top: 1.5rem;}
         #questionImage { max-height: 200px; border-radius: 8px; margin-top: 1rem; }
         .question-text { font-size: 1.25rem; font-weight: 500; color: var(--themed-text-color); margin-bottom: 10px; transition: color 0.3s ease; width: 100%; text-align:center; }
-        #longContentBox { display: none; width: 100%; max-height: 250px; overflow-y: auto; background-color: var(--button-bg-default); border: 1px solid var(--border-color); padding: 1rem; border-radius: 8px; margin-bottom: 1rem; white-space: pre-wrap; font-family: monospace; font-size: 0.9rem; }
+        /* MODIFIED: Font changed for readability */
+        #longContentBox { display: none; width: 100%; max-height: 250px; overflow-y: auto; background-color: var(--button-bg-default); border: 1px solid var(--border-color); padding: 1rem; border-radius: 8px; margin-bottom: 1rem; white-space: pre-wrap; font-family: inherit; font-size: 1rem; }
         .options-grid { display: grid; grid-template-columns: 1fr; gap: 12px; margin-top: 15px; }
         .options-grid.options-grid-full-width { grid-template-columns: 1fr; }
         .option-button { background-color: var(--button-bg-default); color: var(--button-text-default); padding: 14px 20px; border-radius: 12px; font-size: 1rem; font-weight: 500; cursor: pointer; transition: all 0.3s ease; border: 2px solid var(--button-border-default); text-align: left; box-shadow: 0 4px 8px rgba(0, 0, 0, 0.08); line-height: 1.5; }
@@ -291,7 +310,9 @@
         .feedback-message { margin-top: 1.5rem; font-size: 1rem; text-align: left; padding: 1rem 1.5rem; border-radius: 12px; background-color: var(--feedback-bg); border: 1px solid var(--feedback-border); box-shadow: inset 0 1px 3px rgba(0,0,0,0.05); line-height: 1.5; }
         .feedback-message.correct-feedback { color: var(--correct-feedback-text); border-color: var(--correct-feedback-border); }
         .feedback-message.incorrect-feedback { color: var(--incorrect-feedback-text); border-color: var(--incorrect-feedback-border); }
+        /* MODIFIED: Button moved to the right */
         .feedback-header { display: flex; justify-content: space-between; align-items: center; gap: 15px; min-height: 24px; flex-wrap: wrap; }
+        #feedbackResult { flex-grow: 1; }
         .feedback-result strong { font-size: 1.1rem; }
         .explanation-content { max-height: 0; overflow: hidden; transition: max-height 0.4s ease-out, padding-top 0.4s ease-out, margin-top 0.4s ease-out; padding-top: 0; margin-top: 0; }
         .explanation-content.show { max-height: 200px; padding-top: 10px; margin-top: 10px; border-top: 1px solid var(--border-color); }
@@ -326,22 +347,24 @@
             opacity: 1;
             visibility: visible;
         }
+        /* MODIFIED: Reduced padding and max-height */
         #settingsScreen .settings-container, #editQuizzesModal .modal-content {
             background-color: var(--bg-secondary);
-            padding: 30px;
+            padding: 24px;
             border-radius: 16px;
             box-shadow: 0 10px 30px rgba(0, 0, 0, 0.2);
             max-width: 700px;
             width: 90%;
             transform: translateY(-20px) scale(0.95);
             transition: transform 0.3s ease, background-color 0.3s ease;
-            max-height: 90vh;
+            max-height: 85vh;
             overflow-y: auto;
         }
         #settingsScreen.active .settings-container, #editQuizzesModal.show .modal-content {
             transform: translateY(0) scale(1);
         }
-        .settings-option { display: flex; justify-content: space-between; align-items: center; padding: 16px 0; border-bottom: 1px solid var(--border-color); flex-wrap: nowrap; gap: 1rem;}
+        /* MODIFIED: Reduced padding */
+        .settings-option { display: flex; justify-content: space-between; align-items: center; padding: 12px 0; border-bottom: 1px solid var(--border-color); flex-wrap: nowrap; gap: 1rem;}
         .settings-option:last-child { border-bottom: none; }
         .settings-option-label { display: flex; flex-direction: column; align-items: flex-start; flex-grow: 1; min-width: 0; }
         .settings-option-label label { font-size: 1.1rem; color: var(--text-primary); font-weight: 600; }
@@ -438,7 +461,6 @@
     <div class="main-container">
         <!-- Sidebar -->
         <aside id="sidebar">
-            <!-- Sidebar Header with Logo -->
             <div class="flex items-center mb-6 h-10">
                 <img src="iconp.png" alt="Qube Logo" class="h-11 w-28" onerror="this.style.display='none'; this.nextElementSibling.style.display='block';">
                 <h2 class="text-2xl font-bold ml-2" style="color: var(--accent-primary); display: none;">Qube</h2>
@@ -453,21 +475,20 @@
 
         <!-- Main Content -->
         <main id="mainContent">
-            <header class="flex items-center justify-between">
+            <header>
                 <div class="flex items-center gap-2">
                     <button id="hamburgerButton" class="p-2 rounded-md">
                         <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16M4 18h16" /></svg>
                     </button>
-                    <!-- FIXED: Moved interrupt button here from JS for consistency -->
-                    <button id="interruptButton" class="btn hidden bg-red-500 text-white text-sm py-1 px-3 rounded-md">中断</button>
                 </div>
-                <!-- Project Title container for dynamic content (logo or text) -->
-                <h1 id="projectTitle" class="text-3xl font-bold text-center absolute left-1/2 -translate-x-1/2 flex items-center justify-center h-12" style="color: var(--text-primary);">
-                    <!-- Content is set by JavaScript -->
-                </h1>
-                <button id="projectSettingsButton" class="p-2 rounded-md invisible">
+                <h1 id="projectTitle" style="color: var(--text-primary);"></h1>
+                <!-- MODIFIED: Grouped right-side buttons -->
+                <div class="flex items-center gap-2">
+                    <button id="interruptButton" class="btn hidden bg-red-500 text-white text-sm py-1 px-3 rounded-md">中断</button>
+                    <button id="projectSettingsButton" class="p-2 rounded-md invisible">
                         <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z" /><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" /></svg>
-                </button>
+                    </button>
+                </div>
             </header>
             
             <div id="screenContainer">
@@ -478,9 +499,9 @@
                     <button id="getStartedButton" class="btn btn-primary text-lg px-8 py-3">さっそく始める</button>
                 </div>
 
-                <!-- Project Start Screen (New) -->
+                <!-- Project Start Screen -->
                 <div id="projectStartScreen" class="screen">
-                    <div class="start-screen-container p-8 rounded-lg">
+                    <div class="start-screen-container">
                         <h2 class="text-3xl font-bold mb-6">学習を開始</h2>
                         <div class="form-group">
                             <label for="quizSelect" class="text-left">作成済みクイズから選ぶ</label>
@@ -495,14 +516,10 @@
                 <!-- Quiz Generation Screen -->
                 <div id="generationScreen" class="screen">
                     <div class="max-w-3xl mx-auto w-full">
-                        
-                        <!-- Tabs for Generate/Import -->
                         <div class="flex border-b border-gray-200 dark:border-gray-700 mb-6">
                             <button id="generateTabButton" class="tab-button active">新しく生成する</button>
                             <button id="importTabButton" class="tab-button">外部から読み込む</button>
                         </div>
-
-                        <!-- Generate UI Container -->
                         <div id="generateProjectContainer">
                              <div class="form-group">
                                 <label>ファイルをアップロード</label>
@@ -512,14 +529,11 @@
                                 </div>
                                 <div id="filePreviewContainer"></div>
                             </div>
-
                             <div class="divider">または</div>
-
                             <div class="form-group">
                                 <label id="promptLabel" for="promptText">クイズにしたい内容を入力または貼り付け</label>
                                 <textarea id="promptText" placeholder="例: 日本の首都は東京です。徳川家康は江戸幕府を開きました..."></textarea>
                             </div>
-                            
                             <div class="grid md:grid-cols-2 gap-4 mt-8">
                                 <div class="form-group">
                                     <label for="genQuestionCount">問題数</label>
@@ -552,11 +566,8 @@
                             </button>
                             <p id="generationWarning" class="text-red-500 text-sm mt-2 text-center hidden"></p>
                             <p id="generationError" class="text-red-500 text-sm mt-2 text-center hidden"></p>
-                            <!-- FIXED: Added back button for better navigation -->
                             <button id="backToProjectStartBtn" class="btn w-full mt-4" style="background-color: var(--button-bg-default); color: var(--button-text-default); border: 1px solid var(--border-color);">プロジェクトに戻る</button>
                         </div>
-                        
-                        <!-- Import UI Container -->
                         <div id="importProjectContainer">
                             <div class="form-group">
                                 <label for="importFileInput">共有ファイル (.txt) を選択</label>
@@ -565,11 +576,10 @@
                             <button id="importProjectButton" class="btn btn-primary w-full mt-4 py-3 text-lg">プロジェクトを読み込む</button>
                             <p id="importStatusMessage" class="text-sm mt-2 text-center"></p>
                         </div>
-
                     </div>
                 </div>
 
-                <!-- Quiz Screen (New UI) -->
+                <!-- Quiz Screen -->
                 <div id="quizScreen" class="screen">
                     <div class="quiz-container">
                         <div id="quizHeader">
@@ -603,7 +613,7 @@
                     </div>
                 </div>
 
-                <!-- Result Screen (New UI) -->
+                <!-- Result Screen -->
                 <div id="resultScreen" class="screen">
                     <div class="result-container">
                         <h2 class="text-2xl font-bold mb-4" style="color: var(--score-color);">クイズ結果</h2>
@@ -619,7 +629,7 @@
         </main>
     </div>
 
-    <!-- Settings Screen (Now a Modal) -->
+    <!-- Settings Screen (Modal) -->
     <div id="settingsScreen" class="screen">
          <div class="settings-container">
             <h2 class="text-2xl font-bold mb-4 text-center">設定</h2>
@@ -647,7 +657,11 @@
                 <div class="settings-option-label">
                     <label for="soundVolumeSlider">効果音</label>
                 </div>
-                <input type="range" id="soundVolumeSlider" min="0" max="100">
+                <!-- MODIFIED: Added container for slider and status text -->
+                <div class="flex items-center gap-2">
+                    <span id="volumeStatus" class="text-sm text-gray-500 w-8 text-right"></span>
+                    <input type="range" id="soundVolumeSlider" min="0" max="100">
+                </div>
             </div>
              <div class="settings-option">
                 <div class="settings-option-label">
@@ -688,16 +702,16 @@
                     <span class="slider"></span>
                 </label>
             </div>
-             <div class="settings-option">
-                <button id="editQuizzesButton" class="btn w-full">作成済みクイズを編集する</button>
-            </div>
-            <!-- FIXED: Removed duplicate button block -->
+            <!-- MODIFIED: Reordered items -->
             <div class="settings-option">
                 <div class="settings-option-label">
                     <label>プロジェクトの共有</label>
                     <p>現在のプロジェクトを書き出して共有します。</p>
                 </div>
                 <button id="exportProjectButton" class="btn">書き出す</button>
+            </div>
+             <div class="settings-option">
+                <button id="editQuizzesButton" class="btn w-full">作成済みクイズを編集する</button>
             </div>
             <button id="backToProjectFromSettings" class="btn btn-primary mt-8 w-full">閉じる</button>
         </div>
@@ -858,7 +872,6 @@
 
             const generateQuizButton = document.getElementById('generateQuizButton');
             const generateNewQuizBtn = document.getElementById('generateNewQuizBtn');
-            // FIXED: Added button reference
             const backToProjectStartBtn = document.getElementById('backToProjectStartBtn');
             const promptText = document.getElementById('promptText');
             const promptLabel = document.getElementById('promptLabel');
@@ -921,7 +934,6 @@
             const toggleExplanationButton = document.getElementById('toggleExplanationButton');
             const nextButton = document.getElementById('nextButton');
             
-            // FIXED: Button is now in HTML, just get reference
             const interruptButton = document.getElementById('interruptButton');
 
             const progressBarContainer = document.querySelector('.progress-container');
@@ -937,6 +949,8 @@
             const darkModeToggle = document.getElementById('darkModeToggle');
             const themeColorCircles = document.querySelectorAll('.color-circle');
             const soundVolumeSlider = document.getElementById('soundVolumeSlider');
+            // MODIFIED: Added reference for volume status text
+            const volumeStatus = document.getElementById('volumeStatus');
             const questionCountSelect = document.getElementById('questionCountSelect');
             const shuffleQuestionsToggle = document.getElementById('shuffleQuestionsToggle');
             const showProgressToggle = document.getElementById('showProgressToggle');
@@ -980,9 +994,9 @@
             let currentQuiz = null; 
             let confettiAnimationId;
             let tempGeneratedQuestions = null;
-            let uploadedFiles = []; // Array of { name, content: <base64_data_url>, mimeType: <string> }
+            let uploadedFiles = [];
             let projectToEditId = null;
-            let quizToEditId = null; // For renaming/deleting specific quizzes
+            let quizToEditId = null;
             
             // --- Sound Effects ---
             const sounds = {
@@ -997,15 +1011,18 @@
                 let db;
                 if (numberLevel === 0) {
                     db = -Infinity; // Mute
+                    // MODIFIED: Show "Off" text
+                    volumeStatus.textContent = 'オフ';
                 } else {
-                    // Map 1-100 to a decibel range of -25dB to +5dB for a better perceived volume scale
                     db = (numberLevel / 100) * 30 - 25;
+                    // MODIFIED: Clear text
+                    volumeStatus.textContent = '';
                 }
                 
                 sounds.correct.volume.value = db;
                 sounds.click.volume.value = db - 4;
                 sounds.fanfare.volume.value = db;
-                sounds.incorrect.volume.value = db + 6; // Make incorrect sound relatively louder
+                sounds.incorrect.volume.value = db + 6;
                 
                 appState.settings.soundVolume = numberLevel;
             };
@@ -1036,7 +1053,6 @@
                 const savedData = localStorage.getItem('qube_app_data');
                 if (savedData) {
                     const loadedState = JSON.parse(savedData);
-                    // Merge loaded settings with defaults to prevent errors if new settings are added
                     appState.settings = { ...appState.settings, ...loadedState.settings };
                     appState.projects = loadedState.projects || [];
 
@@ -1050,16 +1066,41 @@
             };
 
             // --- UI & State Management Functions ---
+
+            // MODIFIED: New function to dynamically adjust font size
+            const adjustTitleFontSize = (element, text, minSize = 1.0, defaultSize = 1.875, twoLineSize = 1.25) => {
+                if (!element) return;
+                element.textContent = text;
+                element.style.fontSize = `${defaultSize}rem`;
+                element.style.whiteSpace = 'nowrap';
+
+                const containerWidth = element.parentElement.clientWidth * (window.innerWidth < 767 ? 0.45 : 0.55); // Use a percentage of parent width
+                let currentSize = defaultSize;
+
+                // Shrink font size to fit on one line
+                while (element.scrollWidth > containerWidth && currentSize > minSize) {
+                    currentSize -= 0.1;
+                    element.style.fontSize = `${currentSize}rem`;
+                }
+
+                // If it still overflows, allow wrapping
+                if (element.scrollWidth > containerWidth) {
+                    element.style.whiteSpace = 'normal';
+                    element.style.fontSize = `${twoLineSize}rem`;
+                }
+            };
+
             const updateProjectTitle = (text) => {
-                const welcomeTitleHTML = `<span>学習を始めましょう！</span>`;
-                const defaultTitleHTML = `<img src="iconsp.png" alt="Qube Logo" class="h-10 w-16" onerror="this.style.display='none'; this.nextElementSibling.style.display='block';"><span style="display:none;">Qube</span>`;
+                const defaultTitleHTML = `<img src="iconsp.png" alt="Qube Logo" class="h-10 w-16 mx-auto" onerror="this.style.display='none'; this.nextElementSibling.style.display='block';"><span style="display:none;">Qube</span>`;
                 
                 if (screens.welcome.classList.contains('active')) {
-                    projectTitle.innerHTML = welcomeTitleHTML;
+                    adjustTitleFontSize(projectTitle, '学習を始めましょう！');
                 } else if (!text || text === 'Qube') {
                     projectTitle.innerHTML = defaultTitleHTML;
+                    projectTitle.style.fontSize = ''; // Reset style
+                    projectTitle.style.whiteSpace = '';
                 } else {
-                    projectTitle.innerHTML = `<span>${text}</span>`;
+                    adjustTitleFontSize(projectTitle, text);
                 }
             };
 
@@ -1072,7 +1113,7 @@
                 interruptButton.classList.toggle('hidden', screenName !== 'quiz');
                 
                 if (screenName === 'quiz') {
-                    updateProjectTitle(currentQuiz?.name || "クイズ");
+                    adjustTitleFontSize(quizTitleEl, currentQuiz?.name || "クイズ", 1.0, 1.5, 1.1);
                 } else {
                     const project = appState.projects.find(p => p.id === activeProjectId);
                     updateProjectTitle(project?.name || 'Qube');
@@ -1191,7 +1232,7 @@
                 };
 
                 menu.addEventListener('click', (e) => {
-                    const action = e.target.dataset.action;
+                    const action = e.target.closest('.project-menu-item')?.dataset.action;
                     if (action === 'rename') showRenameProjectModal(projectId);
                     else if (action === 'delete') showDeleteProjectModal(projectId);
                     else if (action === 'pin') toggleProjectPin(projectId);
@@ -1294,10 +1335,9 @@
                 projectListEl.addEventListener('drop', (e) => {
                     e.preventDefault();
                     const newOrderIds = Array.from(projectListEl.querySelectorAll('.project-item')).map(item => item.dataset.projectId);
-                    // This reorders the original array based on the new DOM order
                     appState.projects.sort((a, b) => newOrderIds.indexOf(a.id) - newOrderIds.indexOf(b.id));
                     saveState();
-                    renderProjectList(); // Re-render to enforce pinning sort visually
+                    renderProjectList();
                 });
             };
 
@@ -1319,7 +1359,6 @@
                 const project = appState.projects.find(p => p.id === projectId);
                 if (project) {
                     updateProjectTitle(project.name);
-                    // FIXED: If project has no quizzes, go to generation screen
                     if (project.quizzes.length === 0) {
                         switchScreen('generate'); 
                     } else {
@@ -1391,13 +1430,12 @@
                 let payload;
 
                 try {
-                    const apiKey = "AIzaSyAmL3qPv1Zr0URta9hE0a4QCveWOfonBHc"; // API Key is managed by the environment
+                    const apiKey = "AIzaSyAmL3qPv1Zr0URta9hE0a4QCveWOfonBHc";
 
                     const isAutoGenre = autoGenreCheckbox.checked;
                     const selectedType = questionType.value;
                     const numQuestions = genQuestionCount.value === 'all' ? '可能な限り多く' : `${genQuestionCount.value}問`;
                     
-                    // Unified prompt for better performance and reliability
                     let basePrompt = `提供されたテキストと画像の内容を分析し、質の高いクイズを${numQuestions}作成してください。画像群がPDFの連続したページである可能性も考慮し、全体の文脈を理解して問題を作成してください。`;
                     if (isAutoGenre) {
                          basePrompt += `内容を複数のジャンルに分け、各ジャンルごとに問題を作成してください。`;
@@ -1421,7 +1459,7 @@
                         parts.push({
                             inlineData: {
                                 mimeType: file.mimeType,
-                                data: file.content.split(',')[1] // Extract base64 data
+                                data: file.content.split(',')[1]
                             }
                         });
                     });
@@ -1818,7 +1856,7 @@
                     }
                     feedbackResultElement.innerHTML = `<strong>不正解...</strong> 正解は「${correctAnswerText}」でした。`;
                     feedbackMessageElement.classList.add('incorrect-feedback');
-                    project.mastery[currentQuiz.id][originalIndex] = 0; // Reset consecutive count on incorrect
+                    project.mastery[currentQuiz.id][originalIndex] = 0;
                 }
                 saveState();
                 
@@ -1981,7 +2019,6 @@
                 confettiAnimationId = requestAnimationFrame(animate);
             };
             
-            // --- Helper function to convert hex to RGB ---
             const hexToRgb = (hex) => {
                 let result = /^#?([a-f\d]{2})([a-f\d]{2})([a-f\d]{2})$/i.exec(hex);
                 return result ? {
@@ -2010,7 +2047,6 @@
                 root.style.setProperty('--accent-primary-shadow', `rgba(${rgb.r}, ${rgb.g}, ${rgb.b}, 0.3)`);
                 root.style.setProperty('--progress-bar-bg', accentColor);
                 
-                // Set theme-derived backgrounds
                 if (isDark) {
                     root.style.setProperty('--themed-text-color', `rgba(${rgb.r}, ${rgb.g}, ${rgb.b}, 0.9)`);
                     root.style.setProperty('--bg-tertiary', `rgba(${rgb.r}, ${rgb.g}, ${rgb.b}, 0.2)`);
@@ -2026,7 +2062,6 @@
                 appState.settings.darkMode = isDark;
                 document.body.classList.toggle('dark-mode', isDark);
                 applyColors(appState.settings.themeColor, isDark);
-                // Update status bar color on toggle
                 document.querySelector('meta[name="theme-color"]').content = isDark ? '#0f172a' : '#f0f9ff';
                 saveState();
             };
@@ -2046,7 +2081,6 @@
                     return new Promise((resolve, reject) => {
                         const reader = new FileReader();
                         
-                        // If the file is a PDF, convert it to images
                         if (file.type === 'application/pdf') {
                             reader.onload = async (e) => {
                                 try {
@@ -2057,19 +2091,15 @@
                                     for (let i = 1; i <= pdf.numPages; i++) {
                                         pagePromises.push((async (pageNum) => {
                                             const page = await pdf.getPage(pageNum);
-                                            const viewport = page.getViewport({ scale: 1.5 }); // Adjust image resolution
-                                            
+                                            const viewport = page.getViewport({ scale: 1.5 });
                                             const canvas = document.createElement('canvas');
                                             const context = canvas.getContext('2d');
                                             canvas.height = viewport.height;
                                             canvas.width = viewport.width;
-                                            
                                             await page.render({ canvasContext: context, viewport: viewport }).promise;
-                                            
-                                            // Return the converted image
                                             return {
                                                 name: `${file.name} (ページ ${pageNum})`,
-                                                content: canvas.toDataURL('image/png'), // PNG data URL
+                                                content: canvas.toDataURL('image/png'),
                                                 mimeType: 'image/png'
                                             };
                                         })(i));
@@ -2081,8 +2111,6 @@
                             };
                             reader.onerror = (err) => reject(err);
                             reader.readAsArrayBuffer(file);
-                        
-                        // Process other files (like images) directly
                         } else {
                             reader.onload = (e) => resolve([{ 
                                 name: file.name, 
@@ -2097,7 +2125,6 @@
 
                 try {
                     const results = await Promise.all(filePromises);
-                    // Flatten the results as PDF conversion returns a nested array
                     const flattenedResults = results.flat(); 
                     uploadedFiles.push(...flattenedResults);
                     await updateUIAfterFileUpload();
@@ -2113,16 +2140,15 @@
 
             const updateUIAfterFileUpload = async () => {
                 filePreviewContainer.innerHTML = '';
-                for (const [index, file] of uploadedFiles.entries()) {
+                for (const file of uploadedFiles) {
                     const itemDiv = document.createElement('div');
                     itemDiv.className = 'file-preview-item';
 
-                    // Since file.content will now always be an image data URL, branch by MIME type
                     if (file.mimeType.startsWith('image/')) {
                         const img = document.createElement('img');
                         img.src = file.content;
                         itemDiv.appendChild(img);
-                    } else { // Fallback for non-image files
+                    } else {
                         const icon = document.createElement('div');
                         icon.innerHTML = `<svg xmlns="http://www.w3.org/2000/svg" class="h-12 w-12 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" /></svg>`;
                         itemDiv.appendChild(icon);
@@ -2138,13 +2164,11 @@
                     removeBtn.innerHTML = '&times;';
                     removeBtn.onclick = (e) => {
                         e.stopPropagation();
-                        // Correctly remove the file from the uploadedFiles array
-                        const fileToRemove = uploadedFiles.find(f => f.name === file.name && f.content === file.content);
-                        const fileIndex = uploadedFiles.indexOf(fileToRemove);
+                        const fileIndex = uploadedFiles.findIndex(f => f.name === file.name && f.content === file.content);
                         if(fileIndex > -1){
                             uploadedFiles.splice(fileIndex, 1);
                         }
-                        updateUIAfterFileUpload(); // Redraw UI
+                        updateUIAfterFileUpload();
                     };
                     itemDiv.appendChild(removeBtn);
                     filePreviewContainer.appendChild(itemDiv);
@@ -2167,28 +2191,44 @@
             };
             
             // --- Import/Export Functions ---
-            const handleExportProject = (projectId) => {
+            const handleExportProject = async (projectId) => {
                 const projectToExport = appState.projects.find(p => p.id === projectId);
                 if (!projectToExport) {
                     alert('エクスポート対象のプロジェクトが見つかりません。');
                     return;
                 }
 
-                // Create a clean copy for export, removing runtime state
                 const exportableProject = JSON.parse(JSON.stringify(projectToExport));
                 delete exportableProject.isPinned;
                 delete exportableProject.lastPlayedQuizId;
 
                 const projectJson = JSON.stringify(exportableProject);
                 const blob = new Blob([projectJson], { type: 'text/plain' });
-                const url = URL.createObjectURL(blob);
-                const a = document.createElement('a');
-                a.href = url;
-                a.download = `${projectToExport.name}.txt`;
-                document.body.appendChild(a);
-                a.click();
-                document.body.removeChild(a);
-                URL.revokeObjectURL(url);
+                const fileName = `${projectToExport.name}.txt`;
+                const file = new File([blob], fileName, { type: 'text/plain' });
+
+                // MODIFIED: Use Web Share API if available
+                if (navigator.share && navigator.canShare && navigator.canShare({ files: [file] })) {
+                    try {
+                        await navigator.share({
+                            title: projectToExport.name,
+                            text: `Qubeプロジェクト: ${projectToExport.name}`,
+                            files: [file],
+                        });
+                    } catch (error) {
+                        console.log('共有がキャンセルされたか、失敗しました:', error);
+                    }
+                } else {
+                    // Fallback to download
+                    const url = URL.createObjectURL(blob);
+                    const a = document.createElement('a');
+                    a.href = url;
+                    a.download = fileName;
+                    document.body.appendChild(a);
+                    a.click();
+                    document.body.removeChild(a);
+                    URL.revokeObjectURL(url);
+                }
             };
 
             const handleImportProject = () => {
@@ -2210,7 +2250,6 @@
                             throw new Error('無効なファイル形式です。');
                         }
 
-                        // Assign a new ID to prevent conflicts
                         importedProject.id = `proj_${Date.now()}`;
                         importedProject.isPinned = false;
                         importedProject.lastPlayedQuizId = null;
@@ -2223,7 +2262,7 @@
                         
                         importStatusMessage.textContent = `「${importedProject.name}」を正常に読み込みました。`;
                         importStatusMessage.style.color = 'green';
-                        importFileInput.value = ''; // Reset file input
+                        importFileInput.value = '';
 
                     } catch (error) {
                         console.error("Import failed:", error);
@@ -2284,7 +2323,6 @@
             const addQuizDragDropListeners = () => {
                 let draggedItem = null;
 
-                // --- MOUSE DRAG & DROP ---
                 editQuizList.querySelectorAll('.project-item').forEach(item => {
                     item.addEventListener('dragstart', (e) => {
                         draggedItem = item;
@@ -2309,12 +2347,12 @@
                     updateQuizOrder();
                 });
 
-                // --- TOUCH DRAG & DROP ---
                 let touchDraggedItem = null;
                 const touchStart = (e) => {
-                    if (!e.target.classList.contains('drag-handle') && !e.target.closest('.drag-handle')) return;
+                    const handle = e.target.closest('.drag-handle');
+                    if (!handle) return;
                     e.preventDefault();
-                    touchDraggedItem = e.target.closest('.project-item');
+                    touchDraggedItem = handle.closest('.project-item');
                     touchDraggedItem.classList.add('dragging');
                     document.addEventListener('touchmove', touchMove, { passive: false });
                     document.addEventListener('touchend', touchEnd, { once: true });
@@ -2335,7 +2373,7 @@
                     document.removeEventListener('touchmove', touchMove);
                 };
                 
-                editQuizList.removeEventListener('touchstart', touchStart); // Clean up previous listeners
+                editQuizList.removeEventListener('touchstart', touchStart);
                 editQuizList.addEventListener('touchstart', touchStart, { passive: false });
             };
 
@@ -2370,8 +2408,8 @@
                 if (newName && quiz) {
                     quiz.name = newName;
                     saveState();
-                    showEditQuizzesModal(); // Refresh the list
-                    populateQuizSelect(project); // Refresh the main dropdown
+                    showEditQuizzesModal();
+                    populateQuizSelect(project);
                 }
                 renameQuizInstanceModal.classList.remove('show');
                 quizToEditId = null;
@@ -2384,13 +2422,12 @@
                     delete project.mastery[quizToEditId];
                     saveState();
                     
-                    // FIXED: If last quiz is deleted, go to generation screen
                     if (project.quizzes.length === 0) {
                         editQuizzesModal.classList.remove('show');
-                        switchScreen('generate');
+                        setActiveProject(project.id);
                     } else {
-                        showEditQuizzesModal(); // Refresh the list
-                        populateQuizSelect(project); // Refresh the main dropdown
+                        showEditQuizzesModal();
+                        populateQuizSelect(project);
                     }
                 }
                 deleteQuizInstanceModal.classList.remove('show');
@@ -2418,7 +2455,6 @@
                 promptText.value = '';
                 switchScreen('generate');
             });
-            // FIXED: Added event listener for the new back button
             backToProjectStartBtn.addEventListener('click', () => setActiveProject(activeProjectId));
             generateQuizButton.addEventListener('click', handleGenerateQuiz);
 
@@ -2563,6 +2599,16 @@
                 }
             });
 
+            // --- Window Resize Listener ---
+            window.addEventListener('resize', () => {
+                if (currentQuiz) {
+                     adjustTitleFontSize(quizTitleEl, currentQuiz.name, 1.0, 1.5, 1.1);
+                } else {
+                    const project = appState.projects.find(p => p.id === activeProjectId);
+                    updateProjectTitle(project?.name || 'Qube');
+                }
+            });
+
 
             // --- Initialization ---
             const init = () => {
@@ -2575,7 +2621,6 @@
 
                 loadState();
                 
-                // Apply loaded settings to UI
                 const { settings } = appState;
                 setDarkMode(settings.darkMode);
                 darkModeToggle.checked = settings.darkMode;
@@ -2584,14 +2629,13 @@
                 document.querySelector(`.color-circle[data-theme="${settings.themeColor}"]`)?.classList.add('selected');
                 
                 soundVolumeSlider.value = settings.soundVolume;
-                updateVolume(settings.soundVolume); // Set initial volume for Tone.js
+                updateVolume(settings.soundVolume);
 
                 questionCountSelect.value = settings.questionCount;
                 shuffleQuestionsToggle.checked = settings.shuffleQuestions;
                 showProgressToggle.checked = settings.showProgress;
                 masteryModeToggle.checked = settings.masteryMode;
 
-                // Restore last session
                 const lastActiveProjectId = localStorage.getItem('qube_lastActiveProjectId');
                 const projectExists = appState.projects.some(p => p.id === lastActiveProjectId);
                 if (lastActiveProjectId && projectExists) {
@@ -2604,7 +2648,6 @@
                 }
                 renderProjectList();
                 
-                // Hide splash screen after a delay
                 setTimeout(() => {
                     splashScreen.classList.add('hidden');
                     splashScreen.addEventListener('transitionend', () => {
@@ -2612,17 +2655,14 @@
                     }, { once: true });
                 }, 1500);
 
-                // Check for ToS agreement
                 if (!localStorage.getItem('qube_tos_agreed')) {
                     tosModal.classList.add('show');
                 }
 
-                // Check for PWA prompt on iOS
                 const isIOS = /iPad|iPhone|iPod/.test(navigator.userAgent) && !window.MSStream;
                 const isInStandaloneMode = window.matchMedia('(display-mode: standalone)').matches;
                 if (isIOS && !isInStandaloneMode && !localStorage.getItem('qube_add_to_home_screen_dismissed')) {
                     const iosShareIconContainer = document.getElementById('iosShareIconContainer');
-                    // FIXED: Correct SVG for iOS Share Icon (Box with arrow pointing up)
                     iosShareIconContainer.innerHTML = `<svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-8l-4-4m0 0L8 8m4-4v12" /></svg>`;
                     setTimeout(() => {
                         addToHomeScreenPopup.style.display = 'block';
