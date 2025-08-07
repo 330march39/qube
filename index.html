@@ -135,7 +135,7 @@
         #mainContent > header { position: relative; display: flex; align-items: center; justify-content: space-between; padding: 20px; padding-top: calc(20px + var(--safe-area-inset-top)); min-height: 80px; }
         #projectTitle {
             flex-grow: 1;
-            /*width: 60%;*/
+            min-width: 0;
             text-align: center;
             font-weight: 700;
             /* Default font size */
@@ -487,16 +487,14 @@
 
         <!-- Main Content -->
         <main id="mainContent">
-            <header>
-    <div class="flex items-center gap-2 w-16 justify-start">
-        <button id="hamburgerButton" class="p-2 rounded-md">
-            </button>
+           <header>
+    <div class="flex items-center gap-2 w-16 justify-start flex-shrink-0">
+        <button id="hamburgerButton" ...>...</button>
     </div>
-    <h1 id="projectTitle" style="color: var(--text-primary);"></h1>
-    <div class="flex items-center gap-2 w-16 justify-end">
-         <button id="interruptButton" class="btn btn-sm btn-danger hidden">中断</button>
-         <button id="projectSettingsButton" class="p-2 rounded-md invisible">
-            </button>
+    <h1 id="projectTitle" ...></h1>
+    <div class="flex items-center gap-2 w-16 justify-end flex-shrink-0">
+        <button id="interruptButton" ...>...</button>
+        <button id="projectSettingsButton" ...>...</button>
     </div>
 </header>
             
