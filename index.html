@@ -1521,6 +1521,9 @@
 
             // --- Quiz Gameplay ---
             const startQuiz = (quiz) => {
+                if (sidebar.classList.contains('open')) {
+                    toggleSidebar();
+                }
                 document.querySelectorAll('.project-menu').forEach(m => m.remove());
                 if (!quiz || !quiz.questions || quiz.questions.length === 0) return;
 
