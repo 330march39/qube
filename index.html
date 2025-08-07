@@ -17,6 +17,9 @@
     <script src="https://cdn.tailwindcss.com"></script>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=Noto+Sans+JP:wght@400;500;700&display=swap" rel="stylesheet">
     <script src="https://cdnjs.cloudflare.com/ajax/libs/tone/14.8.49/Tone.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/2.16.105/pdf.min.js"></script>
+    <script>pdfjsLib.GlobalWorkerOptions.workerSrc = `https://cdnjs.cloudflare.com/ajax/libs/pdf.js/2.16.105/pdf.worker.min.js`;</script>
+
     <style>
         /* --- Base Variables from Qube --- */
         :root {
@@ -417,7 +420,7 @@
         <aside id="sidebar">
             <!-- MODIFIED: Sidebar Header with Logo -->
             <div class="flex items-center mb-6 h-10">
-                <img src="iconp.png" alt="Qube Logo" class="h-15 w-35" onerror="this.style.display='none'; this.nextElementSibling.style.display='block';">
+                <img src="iconp.png" alt="Qube Logo" class="h-10 w-27" onerror="this.style.display='none'; this.nextElementSibling.style.display='block';">
                 <h2 class="text-2xl font-bold ml-2" style="color: var(--accent-primary); display: none;">Qube</h2>
             </div>
             <button id="newProjectButton" class="btn btn-primary w-full mb-6">新しいプロジェクトを作成</button>
@@ -1332,7 +1335,7 @@
                     const numQuestions = genQuestionCount.value === 'all' ? '可能な限り多く' : `${genQuestionCount.value}問`;
                     
                     // Simplified, unified prompt for better performance and reliability
-                    let basePrompt = `提供されたテキストとファイルの内容を分析し、質の高いクイズを${numQuestions}作成してください。`;
+                    let basePrompt = `提供されたテキストと画像の内容を分析し、質の高いクイズを${numQuestions}作成してください。画像群がPDFのページである可能性も考慮し、文脈を理解して問題を作成してください。`;
                     if (isAutoGenre) {
                          basePrompt += `内容を複数のジャンルに分け、各ジャンルごとに問題を作成してください。`;
                     }
@@ -1971,25 +1974,70 @@
             // --- File Upload Logic ---
             const handleFileSelect = async (files) => {
                 fileUpload.disabled = true;
+                generationError.classList.add('hidden');
+
                 const filePromises = Array.from(files).map(file => {
                     return new Promise((resolve, reject) => {
                         const reader = new FileReader();
-                        reader.onload = (e) => resolve({ 
-                            name: file.name, 
-                            content: e.target.result, // This is a data URL (e.g., "data:image/png;base64,iVBOR...")
-                            mimeType: file.type 
-                        });
-                        reader.onerror = (err) => reject(err);
-                        reader.readAsDataURL(file); // Read ANY file as a data URL
+                        
+                        // ファイルがPDFの場合、画像に変換する
+                        if (file.type === 'application/pdf') {
+                            reader.onload = async (e) => {
+                                try {
+                                    const pdfData = new Uint8Array(e.target.result);
+                                    const pdf = await pdfjsLib.getDocument({ data: pdfData }).promise;
+                                    const pagePromises = [];
+
+                                    for (let i = 1; i <= pdf.numPages; i++) {
+                                        pagePromises.push((async (pageNum) => {
+                                            const page = await pdf.getPage(pageNum);
+                                            const viewport = page.getViewport({ scale: 1.5 }); // 画像の解像度を調整
+                                            
+                                            const canvas = document.createElement('canvas');
+                                            const context = canvas.getContext('2d');
+                                            canvas.height = viewport.height;
+                                            canvas.width = viewport.width;
+                                            
+                                            await page.render({ canvasContext: context, viewport: viewport }).promise;
+                                            
+                                            // 変換した画像を返す
+                                            return {
+                                                name: `${file.name} (ページ ${pageNum})`,
+                                                content: canvas.toDataURL('image/png'), // PNG形式のデータURL
+                                                mimeType: 'image/png'
+                                            };
+                                        })(i));
+                                    }
+                                    resolve(Promise.all(pagePromises));
+                                } catch (pdfError) {
+                                    reject(pdfError);
+                                }
+                            };
+                            reader.onerror = (err) => reject(err);
+                            reader.readAsArrayBuffer(file);
+                        
+                        // PDF以外（画像など）のファイルはそのまま処理
+                        } else {
+                            reader.onload = (e) => resolve([{ 
+                                name: file.name, 
+                                content: e.target.result,
+                                mimeType: file.type 
+                            }]);
+                            reader.onerror = (err) => reject(err);
+                            reader.readAsDataURL(file);
+                        }
                     });
                 });
 
                 try {
                     const results = await Promise.all(filePromises);
-                    uploadedFiles.push(...results);
+                    // 結果がネストされているのでフラットにする
+                    const flattenedResults = results.flat(); 
+                    uploadedFiles.push(...flattenedResults);
                     await updateUIAfterFileUpload();
                 } catch (err) {
-                    generationError.textContent = `ファイルの読み込みに失敗しました: ${err.message}`;
+                    console.error("ファイル処理エラー:", err);
+                    generationError.textContent = `ファイルの処理に失敗しました: ${err.message}`;
                     generationError.classList.remove('hidden');
                 } finally {
                     fileUpload.value = '';
@@ -2003,11 +2051,12 @@
                     const itemDiv = document.createElement('div');
                     itemDiv.className = 'file-preview-item';
 
+                    // file.content が常に画像データURLを持つようになったため、MIMEタイプで分岐する
                     if (file.mimeType.startsWith('image/')) {
                         const img = document.createElement('img');
                         img.src = file.content;
                         itemDiv.appendChild(img);
-                    } else { // For PDF, PPTX, and any other file, show a generic icon
+                    } else { // 念のため、画像以外のファイル用の汎用アイコン表示も残す
                         const icon = document.createElement('div');
                         icon.innerHTML = `<svg xmlns="http://www.w3.org/2000/svg" class="h-12 w-12 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" /></svg>`;
                         itemDiv.appendChild(icon);
@@ -2015,7 +2064,7 @@
 
                     const p = document.createElement('p');
                     p.className = 'file-name';
-                    p.textContent = file.name;
+                    p.textContent = file.name; // ここで "ファイル名 (ページ X)" が表示される
                     itemDiv.appendChild(p);
                     
                     const removeBtn = document.createElement('button');
@@ -2023,8 +2072,13 @@
                     removeBtn.innerHTML = '&times;';
                     removeBtn.onclick = (e) => {
                         e.stopPropagation();
-                        uploadedFiles.splice(index, 1);
-                        updateUIAfterFileUpload();
+                        // uploadedFiles 配列から正しくファイルを削除する
+                        const fileToRemove = uploadedFiles.find(f => f.name === file.name && f.content === file.content);
+                        const fileIndex = uploadedFiles.indexOf(fileToRemove);
+                        if(fileIndex > -1){
+                            uploadedFiles.splice(fileIndex, 1);
+                        }
+                        updateUIAfterFileUpload(); // UIを再描画
                     };
                     itemDiv.appendChild(removeBtn);
                     filePreviewContainer.appendChild(itemDiv);
