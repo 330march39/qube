@@ -104,10 +104,8 @@
             width: 100%;
             height: 100%;
             background-color: var(--bg-primary);
-            display: flex;
-            flex-direction: column;
-            justify-content: center;
-            align-items: center;
+            display: grid;
+            place-content: center;
             z-index: 9999;
             transition: opacity 0.9s ease-out;
             will-change: opacity;
@@ -116,13 +114,34 @@
             opacity: 0;
             pointer-events: none;
         }
-        .splash-screen img {
+        .splash-logo-container {
+            position: relative;
             width: 228px;
             height: 228px;
         }
-        .splash-screen h1 {
-            display: none; /* Hidden by default, shown on image error */
+        .splash-logo-container img, .splash-logo-container h1 {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            margin: 0;
         }
+        .splash-logo-container img {
+            width: 100%;
+            height: 100%;
+        }
+        .splash-logo-container h1 {
+            display: none;
+        }
+        .splash-logo-container img:not([src]),
+        .splash-logo-container img[src=""] {
+            display: none;
+        }
+        .splash-logo-container img:not([src]) + h1,
+        .splash-logo-container img[src=""] + h1 {
+            display: block;
+        }
+
 
         /* --- Qube Base Layout --- */
         .main-container { display: flex; height: 100vh; width: 100%; }
@@ -132,29 +151,44 @@
         #mainContent { flex-grow: 1; display: flex; flex-direction: column; height: 100vh; transition: margin-left 0.3s ease; }
         body.sidebar-open-desktop #mainContent { margin-left: 280px; }
         
-        #mainContent > header { position: relative; display: flex; align-items: center; justify-content: space-between; padding: 20px; padding-top: calc(20px + var(--safe-area-inset-top)); min-height: 80px; }
+        #mainContent > header { 
+            position: relative; 
+            display: flex; 
+            align-items: center; 
+            justify-content: space-between; 
+            padding: 20px; 
+            padding-top: calc(20px + var(--safe-area-inset-top)); 
+            min-height: 80px;
+        }
         #projectTitle {
-            flex-grow: 1;
-            min-width: 0;
+            position: absolute;
+            left: 50%;
+            transform: translateX(-50%);
+            width: 100%;
+            max-width: 600px;
             text-align: center;
             font-weight: 700;
-            /* Default font size */
             font-size: 1.875rem; /* text-3xl */
             line-height: 1.25;
             white-space: nowrap;
+            padding: 0 70px; 
+            box-sizing: border-box;
         }
+        
         #screenContainer { flex-grow: 1; overflow-y: auto; padding: 20px; padding-bottom: calc(20px + var(--safe-area-inset-bottom)); display: flex; flex-direction: column; }
 
         @media (max-width: 767px) { 
             body.sidebar-open-desktop #mainContent { margin-left: 0; }
-            #projectTitle { width: 50%; font-size: 1.5rem; /* text-2xl */ }
+            #projectTitle { font-size: 1.5rem; /* text-2xl */ }
         }
         .sidebar-overlay { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.5); z-index: 999; }
         .sidebar-overlay.active { display: block; }
         .screen { display: none; flex-direction: column; width: 100%; }
         .screen.active { display: flex; }
-        /* MODIFIED: Center the start screen content */
-       
+        #projectStartScreen.active {
+            justify-content: center;
+        }
+
 
         /* --- Project List Enhancements --- */
         .project-item { position: relative; display: flex; align-items: center; justify-content: space-between; padding: 8px; border-radius: 8px; cursor: pointer; transition: background-color 0.2s; }
@@ -177,6 +211,9 @@
         .btn-primary:hover:not(:disabled) { background-color: var(--accent-primary-hover); transform: translateY(-2px); }
         .btn-lg { padding: 15px 30px; font-size: 1.1rem; }
         .btn:disabled { opacity: 0.7; cursor: not-allowed; }
+        .btn-sm { padding: 4px 12px; font-size: 0.875rem; }
+        .btn-danger { background-color: #ef4444; color: white; }
+        .btn-danger:hover:not(:disabled) { background-color: #dc2626; }
         .form-group { margin-bottom: 20px; }
         .form-group label { display: block; margin-bottom: 8px; font-weight: 600; color: var(--text-secondary); }
         .form-group input, .form-group select, .form-group textarea { width: 100%; padding: 12px; border-radius: 8px; border: 1px solid var(--border-color); background-color: var(--bg-secondary); color: var(--text-primary); font-size: 1rem; }
@@ -260,12 +297,12 @@
             transition: background-color 0.3s ease;
         }
         .start-screen-container { 
-    max-width: 600px; 
-    text-align: center; 
-    margin: auto; /* これで安全に中央ぞろえになります */
-    padding: 3rem; /* p-12相当の余白を追加 */
-    border-radius: 1rem; /* rounded-2xl相当の角丸を追加 */
-}
+            max-width: 600px; 
+            text-align: center; 
+            margin: auto;
+            padding: 3rem;
+            border-radius: 1rem;
+        }
         .start-screen-container h2 { color: var(--themed-text-color); }
         .start-screen-container .form-group select {
             appearance: none;
@@ -295,7 +332,6 @@
         .question-area { min-height: 100px; display: flex; flex-direction: column; justify-content: center; align-items: center; transition: background-color 0.3s ease; text-align: left; margin-top: 1.5rem;}
         #questionImage { max-height: 200px; border-radius: 8px; margin-top: 1rem; }
         .question-text { font-size: 1.25rem; font-weight: 500; color: var(--themed-text-color); margin-bottom: 10px; transition: color 0.3s ease; width: 100%; text-align:center; }
-        /* MODIFIED: Font changed for readability */
         #longContentBox { display: none; width: 100%; max-height: 250px; overflow-y: auto; background-color: var(--button-bg-default); border: 1px solid var(--border-color); padding: 1rem; border-radius: 8px; margin-bottom: 1rem; white-space: pre-wrap; font-family: inherit; font-size: 1rem; }
         .options-grid { display: grid; grid-template-columns: 1fr; gap: 12px; margin-top: 15px; }
         .options-grid.options-grid-full-width { grid-template-columns: 1fr; }
@@ -311,7 +347,6 @@
         .feedback-message { margin-top: 1.5rem; font-size: 1rem; text-align: left; padding: 1rem 1.5rem; border-radius: 12px; background-color: var(--feedback-bg); border: 1px solid var(--feedback-border); box-shadow: inset 0 1px 3px rgba(0,0,0,0.05); line-height: 1.5; }
         .feedback-message.correct-feedback { color: var(--correct-feedback-text); border-color: var(--correct-feedback-border); }
         .feedback-message.incorrect-feedback { color: var(--incorrect-feedback-text); border-color: var(--incorrect-feedback-border); }
-        /* MODIFIED: Button moved to the right */
         .feedback-header { display: flex; justify-content: space-between; align-items: center; gap: 15px; min-height: 24px; flex-wrap: wrap; }
         #feedbackResult { flex-grow: 1; }
         .feedback-result strong { font-size: 1.1rem; }
@@ -320,18 +355,7 @@
         .explanation-text { font-weight: 400; font-size: 0.95rem; }
         .toggle-explanation-button { background-color: var(--accent-primary); color: white; padding: 6px 12px; border-radius: 8px; font-size: 0.8rem; cursor: pointer; transition: background-color 0.3s ease, transform 0.2s ease; flex-shrink: 0; border: none; }
         .navigation-buttons { display: flex; justify-content: flex-end; margin-top: 20px; flex-wrap: wrap; gap: 10px; }
-         .btn-sm {
-            padding: 4px 12px;
-            font-size: 0.875rem; /* text-sm */
-        }
-
-        .btn-danger {
-            background-color: #ef4444; /* bg-red-500 */
-            color: white;
-        }
-        .btn-danger:hover:not(:disabled) {
-            background-color: #dc2626; /* bg-red-600 */
-        }
+        
         /* --- Integrated Result Screen Styles --- */
         .result-container { text-align: center; max-width: 600px; margin: 2rem auto; }
         .score-area { font-size: 1.8rem; font-weight: 800; color: var(--score-color); margin-top: 25px; }
@@ -359,7 +383,6 @@
             opacity: 1;
             visibility: visible;
         }
-        /* MODIFIED: Reduced padding and max-height */
         #settingsScreen .settings-container, #editQuizzesModal .modal-content {
             background-color: var(--bg-secondary);
             padding: 24px;
@@ -375,7 +398,6 @@
         #settingsScreen.active .settings-container, #editQuizzesModal.show .modal-content {
             transform: translateY(0) scale(1);
         }
-        /* MODIFIED: Reduced padding */
         .settings-option { display: flex; justify-content: space-between; align-items: center; padding: 16px 0; border-bottom: 1px solid var(--border-color); flex-wrap: nowrap; gap: 1rem;}
         .settings-option:last-child { border-bottom: none; }
         .settings-option-label { display: flex; flex-direction: column; align-items: flex-start; flex-grow: 1; min-width: 0; }
@@ -465,8 +487,10 @@
 <body>
     <!-- Splash Screen -->
     <div id="splashScreen" class="splash-screen">
-        <img src="iconsp.png" alt="Qube Logo" id="splashLogo" onerror="this.style.display='none'; this.nextElementSibling.style.display='block';">
-        <h1 class="text-5xl font-bold" style="color: var(--accent-primary);">Qube</h1>
+        <div class="splash-logo-container">
+            <img src="iconsp.png" alt="Qube Logo">
+            <h1 class="text-5xl font-bold" style="color: var(--accent-primary);">Qube</h1>
+        </div>
     </div>
 
     <div id="confettiContainer" class="confetti-container"></div>
@@ -487,16 +511,20 @@
 
         <!-- Main Content -->
         <main id="mainContent">
-           <header>
-    <div class="flex items-center gap-2 w-16 justify-start flex-shrink-0">
-        <button id="hamburgerButton" ...>...</button>
-    </div>
-    <h1 id="projectTitle" ...></h1>
-    <div class="flex items-center gap-2 w-16 justify-end flex-shrink-0">
-        <button id="interruptButton" ...>...</button>
-        <button id="projectSettingsButton" ...>...</button>
-    </div>
-</header>
+            <header>
+                <div class="flex items-center gap-2">
+                    <button id="hamburgerButton" class="p-2 rounded-md">
+                        <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16M4 18h16" /></svg>
+                    </button>
+                </div>
+                <h1 id="projectTitle" style="color: var(--text-primary);"></h1>
+                <div class="flex items-center gap-2">
+                     <button id="interruptButton" class="btn btn-sm btn-danger hidden">中断</button>
+                     <button id="projectSettingsButton" class="p-2 rounded-md invisible">
+                        <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z" /><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" /></svg>
+                     </button>
+                </div>
+            </header>
             
             <div id="screenContainer">
                 <!-- Welcome Screen -->
@@ -638,7 +666,7 @@
 
     <!-- Settings Screen (Modal) -->
     <div id="settingsScreen" class="screen">
-         <div class="settings-container">
+        <div class="settings-container">
             <h2 class="text-2xl font-bold mb-4 text-center">設定</h2>
             <div class="settings-option">
                 <div class="settings-option-label">
@@ -664,7 +692,6 @@
                 <div class="settings-option-label">
                     <label for="soundVolumeSlider">効果音</label>
                 </div>
-                <!-- MODIFIED: Added container for slider and status text -->
                 <div class="flex items-center gap-2">
                     <span id="volumeStatus" class="text-sm text-gray-500 w-8 text-right"></span>
                     <input type="range" id="soundVolumeSlider" min="0" max="100">
@@ -709,7 +736,6 @@
                     <span class="slider"></span>
                 </label>
             </div>
-            <!-- MODIFIED: Reordered items -->
             <div class="settings-option">
                 <div class="settings-option-label">
                     <label>プロジェクトの共有</label>
@@ -723,7 +749,7 @@
             <button id="backToProjectFromSettings" class="btn btn-primary mt-8 w-full">閉じる</button>
         </div>
     </div>
-
+    
     <!-- Modals -->
     <div id="newProjectModal" class="modal">
         <div class="modal-content">
@@ -785,12 +811,10 @@
         </div>
     </div>
     
-    <!-- New Modals for Quiz Editing -->
     <div id="editQuizzesModal" class="modal">
         <div class="modal-content">
             <h2 class="modal-title">クイズの編集</h2>
             <div id="editQuizList" class="space-y-2">
-                <!-- Quiz items will be dynamically inserted here -->
             </div>
             <div class="modal-buttons">
                 <button id="closeEditQuizModalButton" class="modal-button cancel">閉じる</button>
@@ -831,7 +855,6 @@
         </div>
     </div>
 
-    <!-- Terms of Service Modal -->
     <div id="tosModal" class="modal">
         <div class="modal-content">
             <h2 class="modal-title">利用規約</h2>
@@ -847,7 +870,6 @@
         </div>
     </div>
 
-    <!-- Add to Home Screen Popup for iOS -->
     <div id="addToHomeScreenPopup" class="text-sm">
         <button id="closeAddToHomeScreen">&times;</button>
         <p class="font-bold mb-2">ホーム画面に追加してアプリとして使おう！</p>
@@ -956,7 +978,6 @@
             const darkModeToggle = document.getElementById('darkModeToggle');
             const themeColorCircles = document.querySelectorAll('.color-circle');
             const soundVolumeSlider = document.getElementById('soundVolumeSlider');
-            // MODIFIED: Added reference for volume status text
             const volumeStatus = document.getElementById('volumeStatus');
             const questionCountSelect = document.getElementById('questionCountSelect');
             const shuffleQuestionsToggle = document.getElementById('shuffleQuestionsToggle');
@@ -1018,11 +1039,9 @@
                 let db;
                 if (numberLevel === 0) {
                     db = -Infinity; // Mute
-                    // MODIFIED: Show "Off" text
                     volumeStatus.textContent = 'オフ';
                 } else {
                     db = (numberLevel / 100) * 30 - 25;
-                    // MODIFIED: Clear text
                     volumeStatus.textContent = '';
                 }
                 
@@ -1073,24 +1092,20 @@
             };
 
             // --- UI & State Management Functions ---
-
-            // MODIFIED: New function to dynamically adjust font size
             const adjustTitleFontSize = (element, text, minSize = 1.0, defaultSize = 1.875, twoLineSize = 1.25) => {
                 if (!element) return;
                 element.textContent = text;
                 element.style.fontSize = `${defaultSize}rem`;
                 element.style.whiteSpace = 'nowrap';
 
-                const containerWidth = element.parentElement.clientWidth * (window.innerWidth < 767 ? 0.45 : 0.55); // Use a percentage of parent width
+                const containerWidth = element.clientWidth;
                 let currentSize = defaultSize;
 
-                // Shrink font size to fit on one line
                 while (element.scrollWidth > containerWidth && currentSize > minSize) {
                     currentSize -= 0.1;
                     element.style.fontSize = `${currentSize}rem`;
                 }
 
-                // If it still overflows, allow wrapping
                 if (element.scrollWidth > containerWidth) {
                     element.style.whiteSpace = 'normal';
                     element.style.fontSize = `${twoLineSize}rem`;
@@ -1104,7 +1119,7 @@
                     adjustTitleFontSize(projectTitle, '学習を始めましょう！');
                 } else if (!text || text === 'Qube') {
                     projectTitle.innerHTML = defaultTitleHTML;
-                    projectTitle.style.fontSize = ''; // Reset style
+                    projectTitle.style.fontSize = '';
                     projectTitle.style.whiteSpace = '';
                 } else {
                     adjustTitleFontSize(projectTitle, text);
@@ -2214,7 +2229,6 @@
                 const fileName = `${projectToExport.name}.txt`;
                 const file = new File([blob], fileName, { type: 'text/plain' });
 
-                // MODIFIED: Use Web Share API if available
                 if (navigator.share && navigator.canShare && navigator.canShare({ files: [file] })) {
                     try {
                         await navigator.share({
@@ -2226,7 +2240,6 @@
                         console.log('共有がキャンセルされたか、失敗しました:', error);
                     }
                 } else {
-                    // Fallback to download
                     const url = URL.createObjectURL(blob);
                     const a = document.createElement('a');
                     a.href = url;
@@ -2620,12 +2633,7 @@
             // --- Initialization ---
             const init = () => {
                 const splashScreen = document.getElementById('splashScreen');
-                const splashLogo = document.getElementById('splashLogo');
-                splashLogo.onerror = () => {
-                    splashLogo.style.display = 'none';
-                    splashLogo.nextElementSibling.style.display = 'block';
-                };
-
+                
                 loadState();
                 
                 const { settings } = appState;
