@@ -51,6 +51,8 @@
             --score-color: #0c4a6e;
             --score-comment-color: #0369a1;
             --themed-text-color: #0c4a6e;
+            --ai-tutor-user-bg: #e0f2fe;
+            --ai-tutor-ai-bg: #f1f5f9;
 
             /* Safe Area Insets */
             --safe-area-inset-top: env(safe-area-inset-top, 0px);
@@ -86,6 +88,8 @@
             --score-color: #e0f2fe;
             --score-comment-color: #7dd3fc;
             --themed-text-color: #e0f2fe;
+            --ai-tutor-user-bg: #0c4a6e;
+            --ai-tutor-ai-bg: #334155;
         }
         
         body {
@@ -475,6 +479,132 @@
             display: none;
         }
 
+        /* --- AI Tutor Styles --- */
+        #aiTutorScreen .quiz-container { max-width: 800px; }
+        .ai-tutor-question-container {
+            background-color: var(--feedback-bg);
+            border: 1px solid var(--button-border-default);
+            border-radius: 12px;
+            padding: 15px;
+            text-align: left;
+            margin-bottom: 15px;
+        }
+        .ai-tutor-question-container p {
+            color: var(--text-primary);
+            font-size: 1rem;
+            line-height: 1.6;
+        }
+        .ai-tutor-question-container .correct-answer {
+            font-weight: 700;
+            color: var(--correct-feedback-text);
+            background-color: var(--correct-option-bg);
+            padding: 2px 6px;
+            border-radius: 6px;
+        }
+        #toggleOtherOptionsButton {
+            font-size: 0.85rem;
+            font-weight: 600;
+            color: var(--text-secondary);
+            cursor: pointer;
+            margin-top: 10px;
+            background: none;
+            border: none;
+            padding: 0;
+        }
+        #otherOptionsContainer {
+            margin-top: 8px;
+            padding-top: 8px;
+            border-top: 1px dashed var(--button-border-default);
+            color: var(--text-secondary);
+            font-size: 0.9rem;
+        }
+        #aiTutorChatLog {
+            height: 300px;
+            overflow-y: auto;
+            border: 1px solid var(--button-border-default);
+            border-radius: 12px;
+            padding: 15px;
+            text-align: left;
+            display: flex;
+            flex-direction: column;
+            gap: 12px;
+            background-color: var(--bg-primary);
+        }
+        .chat-message {
+            padding: 10px 15px;
+            border-radius: 15px;
+            max-width: 85%;
+            line-height: 1.6;
+            color: var(--text-primary);
+            word-wrap: break-word;
+        }
+        .chat-message.user {
+            background-color: var(--ai-tutor-user-bg);
+            align-self: flex-end;
+            border-bottom-right-radius: 3px;
+        }
+        .chat-message.ai {
+            background-color: var(--ai-tutor-ai-bg);
+            align-self: flex-start;
+            border-bottom-left-radius: 3px;
+        }
+        .chat-message.loading {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+        .dot-flashing {
+            position: relative;
+            width: 5px; height: 5px;
+            border-radius: 5px;
+            background-color: var(--text-secondary);
+            color: var(--text-secondary);
+            animation: dotFlashing 1s infinite linear alternate;
+            animation-delay: .5s;
+        }
+        .dot-flashing::before, .dot-flashing::after {
+            content: ''; display: inline-block; position: absolute; top: 0;
+        }
+        .dot-flashing::before {
+            left: -10px; width: 5px; height: 5px; border-radius: 5px;
+            background-color: var(--text-secondary); color: var(--text-secondary);
+            animation: dotFlashing 1s infinite alternate;
+            animation-delay: 0s;
+        }
+        .dot-flashing::after {
+            left: 10px; width: 5px; height: 5px; border-radius: 5px;
+            background-color: var(--text-secondary); color: var(--text-secondary);
+            animation: dotFlashing 1s infinite alternate;
+            animation-delay: 1s;
+        }
+        @keyframes dotFlashing {
+            0% { background-color: var(--text-secondary); }
+            50%, 100% { background-color: rgba(156, 163, 175, 0.2); }
+        }
+        #aiTutorInputForm {
+            display: flex; gap: 10px; margin-top: 15px; flex-wrap: wrap;
+        }
+        #aiTutorInput {
+            flex-grow: 1; min-width: 150px; padding: 12px; border-radius: 8px;
+            border: 1px solid var(--border-color); font-size: 1rem;
+            background-color: var(--bg-secondary); color: var(--text-primary);
+        }
+        #voiceInputButton {
+            flex-shrink: 0; width: 48px; height: 48px; border-radius: 8px;
+            background-color: var(--button-bg-default); border: 1px solid var(--border-color);
+            display: flex; justify-content: center; align-items: center;
+            cursor: pointer; transition: all 0.2s ease;
+        }
+        #voiceInputButton:hover { background-color: var(--border-color); }
+        #voiceInputButton.recording { background-color: #f87171; border-color: #ef4444; }
+        #voiceInputButton.recording svg { color: white; animation: pulse 1.5s infinite; }
+        @keyframes pulse {
+            0% { transform: scale(1); }
+            50% { transform: scale(1.1); }
+            100% { transform: scale(1); }
+        }
+        #aiTutorSubmitButton { flex-shrink: 0; height: 48px; }
+
 
         @media (min-width: 640px) { 
             .options-grid { grid-template-columns: 1fr 1fr; }
@@ -521,7 +651,7 @@
                 <div class="flex items-center gap-2">
                      <button id="interruptButton" class="btn btn-sm btn-danger hidden">中断</button>
                      <button id="projectSettingsButton" class="p-2 rounded-md invisible">
-                        <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z" /><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" /></svg>
+                         <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z" /><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" /></svg>
                      </button>
                 </div>
             </header>
@@ -543,6 +673,7 @@
                             <select id="quizSelect"></select>
                         </div>
                         <button id="startSelectedQuizButton" class="btn btn-primary btn-lg w-full">選択したクイズを開始</button>
+                        <button id="aiTutorButton" class="btn btn-lg w-full mt-4" style="background-color: #10b981; color: white;">🤖 AIチューターと話す</button>
                         <div class="divider">または</div>
                         <button id="generateNewQuizBtn" class="btn btn-lg w-full" style="background-color: var(--button-bg-default); color: var(--button-text-default); border: 1px solid var(--border-color);">新しいクイズをAIで生成</button>
                     </div>
@@ -645,6 +776,29 @@
                         <div class="navigation-buttons">
                             <button id="nextButton" class="btn btn-primary">次の問題</button>
                         </div>
+                    </div>
+                </div>
+
+                <!-- AI Tutor Screen -->
+                <div id="aiTutorScreen" class="screen">
+                    <div class="quiz-container">
+                         <div class="ai-tutor-question-container">
+                            <p id="aiTutorQuestionText"></p>
+                            <button id="toggleOtherOptionsButton">他の選択肢を見る▼</button>
+                            <div id="otherOptionsContainer" style="display: none;"></div>
+                        </div>
+                        <div id="aiTutorChatLog"></div>
+                        <form id="aiTutorInputForm">
+                            <input type="text" id="aiTutorInput" placeholder="なぜこの答えになるか説明してみよう！" autocomplete="off">
+                            <button type="button" id="voiceInputButton">
+                                <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="color: var(--text-secondary);">
+                                    <path d="M12 1a3 3 0 0 0-3 3v8a3 3 0 0 0 6 0V4a3 3 0 0 0-3-3z"></path>
+                                    <path d="M19 10v2a7 7 0 0 1-14 0v-2"></path>
+                                    <line x1="12" y1="19" x2="12" y2="23"></line>
+                                </svg>
+                            </button>
+                            <button type="submit" id="aiTutorSubmitButton" class="btn btn-primary">送信</button>
+                        </form>
                     </div>
                 </div>
 
@@ -896,6 +1050,7 @@
                 generate: document.getElementById('generationScreen'),
                 quiz: document.getElementById('quizScreen'),
                 result: document.getElementById('resultScreen'),
+                aiTutor: document.getElementById('aiTutorScreen'), // AI Tutor screen added
             };
             const settingsScreen = document.getElementById('settingsScreen');
 
@@ -1004,6 +1159,17 @@
             const addToHomeScreenPopup = document.getElementById('addToHomeScreenPopup');
             const closeAddToHomeScreen = document.getElementById('closeAddToHomeScreen');
 
+            // --- AI Tutor DOM Elements ---
+            const aiTutorButton = document.getElementById('aiTutorButton');
+            const aiTutorQuestionText = document.getElementById('aiTutorQuestionText');
+            const aiTutorChatLog = document.getElementById('aiTutorChatLog');
+            const aiTutorInputForm = document.getElementById('aiTutorInputForm');
+            const aiTutorInput = document.getElementById('aiTutorInput');
+            const aiTutorSubmitButton = document.getElementById('aiTutorSubmitButton');
+            const voiceInputButton = document.getElementById('voiceInputButton');
+            const toggleOtherOptionsButton = document.getElementById('toggleOtherOptionsButton');
+            const otherOptionsContainer = document.getElementById('otherOptionsContainer');
+
 
             // --- App State ---
             let appState = {
@@ -1025,6 +1191,10 @@
             let uploadedFiles = [];
             let projectToEditId = null;
             let quizToEditId = null;
+            // AI Tutor State
+            let aiChatHistory = [];
+            let speechRecognition;
+            let isRecording = false;
             
             // --- Sound Effects ---
             const sounds = {
@@ -1032,6 +1202,8 @@
                 incorrect: new Tone.FMSynth({ volume: 4, harmonicity: 1.5, modulationIndex: 10, oscillator: { type: "sawtooth" }, envelope: { attack: 0.01, decay: 0.3, sustain: 0.01, release: 0.1 } }).toDestination(),
                 click: new Tone.Synth({ volume: -5, oscillator: { type: 'triangle' }, envelope: { attack: 0.005, decay: 0.1, sustain: 0.01, release: 0.1 } }).toDestination(),
                 fanfare: new Tone.PolySynth(Tone.Synth, { volume: 0 }).toDestination(),
+                micOn: new Tone.Synth({ volume: -15, oscillator: { type: 'sine' }, envelope: { attack: 0.01, decay: 0.1, release: 0.1 } }).toDestination(),
+                micOff: new Tone.Synth({ volume: -15, oscillator: { type: 'sine' }, envelope: { attack: 0.01, decay: 0.2, release: 0.2 } }).toDestination(),
             };
             
             const updateVolume = (level) => {
@@ -1049,6 +1221,8 @@
                 sounds.click.volume.value = db - 4;
                 sounds.fanfare.volume.value = db;
                 sounds.incorrect.volume.value = db + 6;
+                sounds.micOn.volume.value = db - 5;
+                sounds.micOff.volume.value = db - 5;
                 
                 appState.settings.soundVolume = numberLevel;
             };
@@ -1067,6 +1241,8 @@
                                 sounds.fanfare.triggerAttackRelease(note, "8n", now + i * 0.15);
                             });
                             break;
+                        case 'micOn': sounds.micOn.triggerAttackRelease("E5", "16n", now); break;
+                        case 'micOff': sounds.micOff.triggerAttackRelease("C5", "16n", now); break;
                     }
                 } catch (error) { console.error("Sound playback failed:", error); }
             }
@@ -1117,6 +1293,8 @@
                 
                 if (screens.welcome.classList.contains('active')) {
                     adjustTitleFontSize(projectTitle, '学習を始めましょう！');
+                } else if (screens.aiTutor.classList.contains('active')) {
+                    adjustTitleFontSize(projectTitle, '🤖 AIチューター');
                 } else if (!text || text === 'Qube') {
                     projectTitle.innerHTML = defaultTitleHTML;
                     projectTitle.style.fontSize = '';
@@ -1130,9 +1308,13 @@
                 Object.values(screens).forEach(s => s.classList.remove('active'));
                 if (screens[screenName]) screens[screenName].classList.add('active');
                 
-                hamburgerButton.classList.toggle('hidden', screenName === 'quiz');
-                projectSettingsButton.classList.toggle('invisible', screenName === 'quiz' || screenName === 'welcome' || screenName === 'generate');
-                interruptButton.classList.toggle('hidden', screenName !== 'quiz');
+                const isQuizOrTutor = screenName === 'quiz' || screenName === 'aiTutor';
+                hamburgerButton.classList.toggle('hidden', isQuizOrTutor);
+                projectSettingsButton.classList.toggle('invisible', isQuizOrTutor || screenName === 'welcome' || screenName === 'generate');
+                interruptButton.classList.toggle('hidden', !isQuizOrTutor);
+                if(isQuizOrTutor) {
+                    interruptButton.textContent = screenName === 'aiTutor' ? '終了' : '中断';
+                }
                 
                 if (screenName === 'quiz') {
                     adjustTitleFontSize(quizTitleEl, currentQuiz?.name || "クイズ", 1.0, 1.5, 1.1);
@@ -1399,6 +1581,7 @@
                     option.disabled = true;
                     quizSelect.appendChild(option);
                     startSelectedQuizButton.disabled = true;
+                    aiTutorButton.disabled = true;
                 } else {
                     const requiredMasteryCount = appState.settings.masteryMode ? 2 : 1;
                     project.quizzes.forEach(quiz => {
@@ -1412,6 +1595,7 @@
                         quizSelect.appendChild(option);
                     });
                     startSelectedQuizButton.disabled = false;
+                    aiTutorButton.disabled = false;
                     if (project.lastPlayedQuizId) {
                         quizSelect.value = project.lastPlayedQuizId;
                     }
@@ -1452,7 +1636,7 @@
                 let payload;
 
                 try {
-                    const apiKey = "AIzaSyAmL3qPv1Zr0URta9hE0a4QCveWOfonBHc";
+                    const apiKey = "AIzaSyAmL3qPv1Zr0URta9hE0a4QCveWOfonBHc"; // API key is handled by the environment
 
                     const isAutoGenre = autoGenreCheckbox.checked;
                     const selectedType = questionType.value;
@@ -2454,6 +2638,150 @@
                 quizToEditId = null;
             };
 
+            // --- AI Tutor Functions ---
+            const startAiTutorMode = async () => {
+                if (Tone.context.state !== 'running') await Tone.start();
+                playSound('click');
+
+                const project = appState.projects.find(p => p.id === activeProjectId);
+                const selectedQuizId = quizSelect.value;
+                const quiz = project?.quizzes.find(q => q.id === selectedQuizId);
+
+                if (!quiz || quiz.questions.length === 0) {
+                    alert("AIチューターを開始するには、問題を含むクイズを選択してください。");
+                    return;
+                }
+
+                const question = quiz.questions[Math.floor(Math.random() * quiz.questions.length)];
+                
+                switchScreen('aiTutor');
+                aiTutorChatLog.innerHTML = '';
+                aiTutorInput.value = '';
+                aiTutorSubmitButton.disabled = false;
+
+                aiTutorQuestionText.innerHTML = `
+                    <b>問題:</b> ${question.question}<br>
+                    <b>正解:</b> <span class="correct-answer">${question.answer.join(', ')}</span>
+                `;
+                
+                const otherOptions = (question.options || question.items || []).filter(opt => !question.answer.includes(opt));
+                otherOptionsContainer.innerHTML = `不正解の選択肢: ${otherOptions.join(', ')}`;
+                otherOptionsContainer.style.display = 'none';
+                toggleOtherOptionsButton.textContent = '他の選択肢を見る▼';
+
+                const initialPrompt = `あなたは、親しみやすく、常に励ましてくれる優秀な英語学習のチューターです。
+生徒がなぜその答えが正しいのかを自分の言葉で説明するのを手伝ってください。
+決して答えを直接教えず、ソクラテス式問答法のように、生徒の思考を促す質問をしてください。
+生徒の回答を分析し、褒めながら、さらに深い理解へと導くための追加の質問を生成してください。
+生徒が完全に行き詰まった場合にのみ、少しだけヒントを与えてください。
+常に日本語で応答してください。
+
+【問題】: ${question.question}
+【選択肢】: ${(question.options || question.items).join(', ')}
+【正解】: ${question.answer.join(', ')}
+---
+さあ、始めましょう！この問題の正解が「${question.answer.join(', ')}」になる理由を、あなたの言葉で説明してみてください。`;
+                
+                aiChatHistory = [{ role: "user", parts: [{ text: initialPrompt }] }];
+                
+                appendMessageToChat(`こんにちは！AIチューターです。一緒に頑張りましょう！💪<br>この問題の正解が「${question.answer.join(', ')}」になる理由を、あなたの言葉で説明してみてください。`, 'ai');
+            };
+
+            const appendMessageToChat = (text, sender) => {
+                const messageDiv = document.createElement('div');
+                messageDiv.classList.add('chat-message', sender);
+                messageDiv.innerHTML = text; // Use innerHTML to render line breaks
+                aiTutorChatLog.appendChild(messageDiv);
+                aiTutorChatLog.scrollTop = aiTutorChatLog.scrollHeight;
+            };
+
+            const handleAiTutorSubmit = async (event) => {
+                event.preventDefault();
+                const userInput = aiTutorInput.value.trim();
+                if (!userInput) return;
+
+                appendMessageToChat(userInput, 'user');
+                aiTutorInput.value = '';
+                aiTutorSubmitButton.disabled = true;
+
+                const loadingIndicator = document.createElement('div');
+                loadingIndicator.classList.add('chat-message', 'ai', 'loading');
+                loadingIndicator.innerHTML = '<div class="dot-flashing"></div>';
+                aiTutorChatLog.appendChild(loadingIndicator);
+                aiTutorChatLog.scrollTop = aiTutorChatLog.scrollHeight;
+
+                try {
+                    aiChatHistory.push({ role: "user", parts: [{ text: userInput }] });
+                    
+                    const payload = { contents: aiChatHistory };
+                    const apiKey = ""; // API key is handled by the environment
+                    const apiUrl = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash-preview-05-20:generateContent?key=${apiKey}`;
+
+                    const response = await fetch(apiUrl, {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify(payload)
+                    });
+
+                    if (!response.ok) throw new Error(`API error: ${response.statusText}`);
+
+                    const result = await response.json();
+                    
+                    aiTutorChatLog.removeChild(loadingIndicator);
+
+                    if (result.candidates?.[0]?.content?.parts?.[0]?.text) {
+                        const aiResponse = result.candidates[0].content.parts[0].text;
+                        appendMessageToChat(aiResponse.replace(/\n/g, '<br>'), 'ai');
+                        aiChatHistory.push({ role: "model", parts: [{ text: aiResponse }] });
+                    } else {
+                        appendMessageToChat('申し訳ありません、応答を取得できませんでした。もう一度試してください。', 'ai');
+                    }
+                } catch (error) {
+                    console.error("AI Tutor Error:", error);
+                    aiTutorChatLog.removeChild(loadingIndicator);
+                    appendMessageToChat('エラーが発生しました。しばらくしてからもう一度お試しください。', 'ai');
+                } finally {
+                    aiTutorSubmitButton.disabled = false;
+                    aiTutorInput.focus();
+                }
+            };
+            
+            const setupSpeechRecognition = () => {
+                const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
+                if (SpeechRecognition) {
+                    speechRecognition = new SpeechRecognition();
+                    speechRecognition.lang = 'ja-JP';
+                    speechRecognition.interimResults = false;
+                    speechRecognition.maxAlternatives = 1;
+
+                    speechRecognition.onstart = () => {
+                        isRecording = true;
+                        voiceInputButton.classList.add('recording');
+                        playSound('micOn');
+                    };
+
+                    speechRecognition.onend = () => {
+                        isRecording = false;
+                        voiceInputButton.classList.remove('recording');
+                        playSound('micOff');
+                    };
+
+                    speechRecognition.onresult = (event) => {
+                        const speechResult = event.results[0][0].transcript;
+                        aiTutorInput.value = speechResult;
+                        aiTutorInputForm.dispatchEvent(new Event('submit'));
+                    };
+
+                    speechRecognition.onerror = (event) => {
+                        console.error('Speech recognition error', event.error);
+                        isRecording = false;
+                        voiceInputButton.classList.remove('recording');
+                    };
+                } else {
+                    voiceInputButton.style.display = 'none';
+                }
+            };
+
 
             // --- Event Listeners ---
             hamburgerButton.addEventListener('click', toggleSidebar);
@@ -2498,7 +2826,15 @@
             nameQuizModal.addEventListener('click', (e) => { if (e.target === nameQuizModal) closeNameQuizModal(); });
             newQuizNameInput.addEventListener('keydown', (e) => { if (e.key === 'Enter') handleCreateQuiz(); });
 
-            interruptButton.addEventListener('click', () => interruptModal.classList.add('show'));
+            interruptButton.addEventListener('click', () => {
+                const isTutor = screens.aiTutor.classList.contains('active');
+                const title = isTutor ? 'AIチューターを終了' : 'クイズを中断';
+                const message = isTutor ? 'この学習セッションを終了しますか？' : '本当にクイズを中断しますか？現在の進捗は保存されません。';
+                interruptModal.querySelector('.modal-title').textContent = title;
+                interruptModal.querySelector('p').textContent = message;
+                interruptModal.querySelector('.delete').textContent = isTutor ? '終了する' : '中断する';
+                interruptModal.classList.add('show');
+            });
             modalCancelInterrupt.addEventListener('click', () => interruptModal.classList.remove('show'));
             modalConfirmInterrupt.addEventListener('click', () => {
                 interruptModal.classList.remove('show');
@@ -2619,6 +2955,23 @@
                 }
             });
 
+            // --- AI Tutor Listeners ---
+            aiTutorButton.addEventListener('click', startAiTutorMode);
+            aiTutorInputForm.addEventListener('submit', handleAiTutorSubmit);
+            voiceInputButton.addEventListener('click', () => {
+                if (!speechRecognition) return;
+                if (isRecording) {
+                    speechRecognition.stop();
+                } else {
+                    speechRecognition.start();
+                }
+            });
+            toggleOtherOptionsButton.addEventListener('click', () => {
+                const isHidden = otherOptionsContainer.style.display === 'none';
+                otherOptionsContainer.style.display = isHidden ? 'block' : 'none';
+                toggleOtherOptionsButton.textContent = isHidden ? '他の選択肢を隠す▲' : '他の選択肢を見る▼';
+            });
+
             // --- Window Resize Listener ---
             window.addEventListener('resize', () => {
                 if (currentQuiz) {
@@ -2662,6 +3015,7 @@
                     switchScreen('welcome');
                 }
                 renderProjectList();
+                setupSpeechRecognition();
                 
                 setTimeout(() => {
                     splashScreen.classList.add('hidden');
