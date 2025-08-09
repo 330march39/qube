@@ -197,7 +197,7 @@
         }
         .sidebar-overlay { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.5); z-index: 999; }
         .sidebar-overlay.active { display: block; }
-        .screen { display: none; flex-direction: column; width: 100%; }
+        .screen { display: none; flex-direction: column; width: 100%; height: 100%;}
         .screen.active { display: flex; }
         #projectStartScreen.active {
             justify-content: center;
@@ -489,22 +489,33 @@
             display: none;
         }
 
-        /* --- AI Tutor Styles --- */
-        #aiTutorScreen .quiz-container { max-width: 800px; }
-        .ai-tutor-question-container {
-            background-color: var(--feedback-bg);
-            border: 1px solid var(--button-border-default);
-            border-radius: 12px;
-            padding: 15px;
-            text-align: left;
-            margin-bottom: 15px;
+        /* --- AI Tutor Styles (MODIFIED) --- */
+        #aiTutorScreen .quiz-container {
+            max-width: 800px;
+            display: flex; /* ADDED */
+            flex-direction: column; /* ADDED */
+            height: 100%; /* ADDED */
         }
-        .ai-tutor-question-container p {
+        /* MODIFIED: Renamed and restyled for a framed look */
+        .ai-tutor-problem-statement {
+            background-color: var(--bg-secondary);
+            border: 1px solid var(--border-color);
+            border-radius: 12px;
+            padding: 1rem;
+            text-align: left;
+            margin-bottom: 1rem;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.05);
+            flex-shrink: 0; /* Prevent shrinking */
+        }
+        body.dark-mode .ai-tutor-problem-statement {
+             box-shadow: 0 2px 8px rgba(0,0,0,0.2);
+        }
+        .ai-tutor-problem-statement p {
             color: var(--text-primary);
             font-size: 1rem;
             line-height: 1.6;
         }
-        .ai-tutor-question-container .correct-answer {
+        .ai-tutor-problem-statement .correct-answer {
             font-weight: 700;
             color: var(--correct-feedback-text);
             background-color: var(--correct-option-bg);
@@ -528,8 +539,10 @@
             color: var(--text-secondary);
             font-size: 0.9rem;
         }
+        /* MODIFIED: Made chat log flexible height */
         #aiTutorChatLog {
-            height: 300px;
+            flex-grow: 1; /* CHANGED */
+            height: auto; /* CHANGED */
             overflow-y: auto;
             border: 1px solid var(--button-border-default);
             border-radius: 12px;
@@ -593,6 +606,7 @@
         }
         #aiTutorInputForm {
             display: flex; gap: 10px; margin-top: 15px; flex-wrap: wrap;
+            flex-shrink: 0; /* Prevent shrinking */
         }
         #aiTutorInput {
             flex-grow: 1; min-width: 150px; padding: 12px; border-radius: 8px;
@@ -733,8 +747,9 @@
                                 </div>
                             </div>
                              <div class="form-group mt-4">
+                                <!-- MODIFIED: Added flex-shrink-0 to prevent checkbox from shrinking -->
                                 <label class="flex items-center gap-2 cursor-pointer">
-                                    <input type="checkbox" id="autoGenreCheckbox" class="w-4 h-4 accent-sky-500">
+                                    <input type="checkbox" id="autoGenreCheckbox" class="w-4 h-4 accent-sky-500 flex-shrink-0">
                                     <span class="select-none">AIによる自動ジャンル分け</span>
                                 </label>
                             </div>
@@ -791,10 +806,13 @@
                     </div>
                 </div>
 
-                <!-- AI Tutor Screen -->
+                <!-- AI Tutor Screen (MODIFIED) -->
                 <div id="aiTutorScreen" class="screen">
                     <div class="quiz-container">
-                         <div class="ai-tutor-question-container">
+                         <!-- ADDED: Container for "Change Question" button -->
+                        <div id="aiTutorActionsContainer" class="mb-4 text-right hidden"></div>
+                        <!-- MODIFIED: Renamed class for better distinction and framing -->
+                        <div class="ai-tutor-problem-statement">
                             <p id="aiTutorQuestionText"></p>
                             <button id="toggleOtherOptionsButton">他の選択肢を見る▼</button>
                             <div id="otherOptionsContainer" style="display: none;"></div>
@@ -1173,6 +1191,7 @@
 
             // --- AI Tutor DOM Elements ---
             const aiTutorButton = document.getElementById('aiTutorButton');
+            const aiTutorActionsContainer = document.getElementById('aiTutorActionsContainer');
             const aiTutorQuestionText = document.getElementById('aiTutorQuestionText');
             const aiTutorChatLog = document.getElementById('aiTutorChatLog');
             const aiTutorInputForm = document.getElementById('aiTutorInputForm');
@@ -1207,6 +1226,7 @@
             let aiChatHistory = [];
             let speechRecognition;
             let isRecording = false;
+            let aiTutorInteractionCount = 0; // ADDED: Counter for AI tutor interactions
             
             // --- Sound Effects ---
             const sounds = {
@@ -1283,25 +1303,25 @@
             const adjustTitleFontSize = (element, text) => {
                  if (!element) return;
                 
-                const defaultSize = window.innerWidth < 768 ? 1.25 : 1.875;
-                element.innerHTML = ''; // Clear previous content
+                 const defaultSize = window.innerWidth < 768 ? 1.25 : 1.875;
+                 element.innerHTML = ''; // Clear previous content
                 
-                if (!text || text === 'Qube') {
-                    const img = document.createElement('img');
-                    img.src = "iconsp.png";
-                    img.alt = "Qube Logo";
-                    img.className = "h-10 w-16 mx-auto";
-                    img.onerror = function() {
-                        this.style.display='none';
-                        const span = document.createElement('span');
-                        span.textContent = 'Qube';
-                        element.appendChild(span);
-                    };
-                    element.appendChild(img);
-                } else {
-                    element.textContent = text;
-                    element.style.fontSize = `${defaultSize}rem`;
-                }
+                 if (!text || text === 'Qube') {
+                     const img = document.createElement('img');
+                     img.src = "iconsp.png";
+                     img.alt = "Qube Logo";
+                     img.className = "h-10 w-16 mx-auto";
+                     img.onerror = function() {
+                         this.style.display='none';
+                         const span = document.createElement('span');
+                         span.textContent = 'Qube';
+                         element.appendChild(span);
+                     };
+                     element.appendChild(img);
+                 } else {
+                     element.textContent = text;
+                     element.style.fontSize = `${defaultSize}rem`;
+                 }
             };
             
             const updateProjectTitle = (text) => {
@@ -1647,7 +1667,8 @@
                 let payload;
 
                 try {
-                    const apiKey = "AIzaSyAmL3qPv1Zr0URta9hE0a4QCveWOfonBHc"; // API key is handled by the environment
+                    // MODIFIED: Removed hardcoded API key.
+                    const apiKey = ""; // API key is handled by the environment
 
                     const isAutoGenre = autoGenreCheckbox.checked;
                     const selectedType = questionType.value;
@@ -2666,7 +2687,7 @@
                 quizToEditId = null;
             };
 
-            // --- AI Tutor Functions ---
+            // --- AI Tutor Functions (MODIFIED) ---
             const startAiTutorMode = async () => {
                 if (Tone.context.state !== 'running') await Tone.start();
                 playSound('click');
@@ -2686,6 +2707,11 @@
                 aiTutorChatLog.innerHTML = '';
                 aiTutorInput.value = '';
                 aiTutorSubmitButton.disabled = false;
+                
+                // ADDED: Reset and hide the "Change Question" button container
+                aiTutorInteractionCount = 0;
+                aiTutorActionsContainer.innerHTML = '';
+                aiTutorActionsContainer.classList.add('hidden');
 
                 aiTutorQuestionText.innerHTML = `
                     <b>問題:</b> ${question.question}<br>
@@ -2742,7 +2768,7 @@
                     aiChatHistory.push({ role: "user", parts: [{ text: userInput }] });
                     
                     const payload = { contents: aiChatHistory };
-                    const apiKey = ""; // API key is handled by the environment
+                    const apiKey = "AIzaSyAmL3qPv1Zr0URta9hE0a4QCveWOfonBHc"; // API key is handled by the environment
                     const apiUrl = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash-preview-05-20:generateContent?key=${apiKey}`;
 
                     const response = await fetch(apiUrl, {
@@ -2761,6 +2787,23 @@
                         const aiResponse = result.candidates[0].content.parts[0].text;
                         appendMessageToChat(aiResponse.replace(/\n/g, '<br>'), 'ai');
                         aiChatHistory.push({ role: "model", parts: [{ text: aiResponse }] });
+                        
+                        // ADDED: Logic to show "Change Question" button
+                        aiTutorInteractionCount++;
+                        if (aiTutorInteractionCount >= 2) {
+                            const changeQuestionBtn = document.createElement('button');
+                            changeQuestionBtn.textContent = '問題を変える';
+                            changeQuestionBtn.className = 'btn btn-sm';
+                            changeQuestionBtn.style.backgroundColor = 'var(--button-bg-default)';
+                            changeQuestionBtn.style.color = 'var(--button-text-default)';
+                            changeQuestionBtn.style.border = '1px solid var(--border-color)';
+                            changeQuestionBtn.onclick = () => startAiTutorMode();
+
+                            aiTutorActionsContainer.innerHTML = ''; // Clear previous button if any
+                            aiTutorActionsContainer.appendChild(changeQuestionBtn);
+                            aiTutorActionsContainer.classList.remove('hidden');
+                        }
+
                     } else {
                         appendMessageToChat('申し訳ありません、応答を取得できませんでした。もう一度試してください。', 'ai');
                     }
