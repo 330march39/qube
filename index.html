@@ -6,6 +6,7 @@
     <title>Qube</title>
     <link rel="icon" href="icons.png" sizes="any">
     <link rel="apple-touch-icon" href="icon.png">
+    
     <!-- PWA settings -->
     <link rel="manifest" href="manifest.json">
     <link rel="apple-touch-icon" href="icon-192x192.png">
@@ -100,7 +101,11 @@
             overflow: hidden; /* Prevent body scroll */
         }
 
-        /* --- Splash Screen --- */
+        /* ★★★ MODIFIED: Splash Screen --- Smoother animation */
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translate(-50%, -50%) scale(0.95); }
+            to { opacity: 1; transform: translate(-50%, -50%) scale(1); }
+        }
         .splash-screen {
             position: fixed;
             top: 0;
@@ -109,7 +114,7 @@
             height: 100%;
             background-color: var(--bg-primary);
             display: grid;
-            place-content: center;
+            place-items: center;
             z-index: 9999;
             transition: opacity 0.9s ease-out;
             will-change: opacity;
@@ -129,16 +134,14 @@
             left: 50%;
             transform: translate(-50%, -50%);
             margin: 0;
+            opacity: 0; /* Start hidden */
+            animation: fadeIn 0.6s 0.2s ease-out forwards; /* Apply animation */
         }
         .splash-logo-container img {
             width: 100%;
             height: 100%;
         }
         .splash-logo-container h1 {
-            display: none;
-        }
-        .splash-logo-container img:not([src]),
-        .splash-logo-container img[src=""] {
             display: none;
         }
         .splash-logo-container img:not([src]) + h1,
@@ -642,7 +645,7 @@
     <!-- Splash Screen -->
     <div id="splashScreen" class="splash-screen">
         <div class="splash-logo-container">
-            <img src="iconsp.png" alt="Qube Logo">
+            <img src="iconsp.png" alt="Qube Logo" onerror="this.style.display='none'; this.nextElementSibling.style.display='block';">
             <h1 class="text-5xl font-bold" style="color: var(--accent-primary);">Qube</h1>
         </div>
     </div>
@@ -707,7 +710,8 @@
                 
                 <!-- Quiz Generation Screen -->
                 <div id="generationScreen" class="screen">
-                    <div class="max-w-3xl mx-auto w-full">
+                    <!-- ★★★ MODIFIED: Increased bottom margin for spacing -->
+                    <div class="max-w-3xl mx-auto w-full mb-16">
                         <div class="flex border-b border-gray-200 dark:border-gray-700 mb-6">
                             <button id="generateTabButton" class="tab-button active">新しく生成する</button>
                             <button id="importTabButton" class="tab-button">外部から読み込む</button>
@@ -747,7 +751,6 @@
                                 </div>
                             </div>
                              <div class="form-group mt-4">
-                                <!-- MODIFIED: Added flex-shrink-0 to prevent checkbox from shrinking -->
                                 <label class="flex items-center gap-2 cursor-pointer">
                                     <input type="checkbox" id="autoGenreCheckbox" class="w-4 h-4 accent-sky-500 flex-shrink-0">
                                     <span class="select-none">AIによる自動ジャンル分け</span>
@@ -806,12 +809,10 @@
                     </div>
                 </div>
 
-                <!-- AI Tutor Screen (MODIFIED) -->
+                <!-- AI Tutor Screen -->
                 <div id="aiTutorScreen" class="screen">
                     <div class="quiz-container">
-                         <!-- ADDED: Container for "Change Question" button -->
                         <div id="aiTutorActionsContainer" class="mb-4 text-right hidden"></div>
-                        <!-- MODIFIED: Renamed class for better distinction and framing -->
                         <div class="ai-tutor-problem-statement">
                             <p id="aiTutorQuestionText"></p>
                             <button id="toggleOtherOptionsButton">他の選択肢を見る▼</button>
@@ -1080,7 +1081,7 @@
                 generate: document.getElementById('generationScreen'),
                 quiz: document.getElementById('quizScreen'),
                 result: document.getElementById('resultScreen'),
-                aiTutor: document.getElementById('aiTutorScreen'), // AI Tutor screen added
+                aiTutor: document.getElementById('aiTutorScreen'),
             };
             const settingsScreen = document.getElementById('settingsScreen');
 
@@ -1226,7 +1227,7 @@
             let aiChatHistory = [];
             let speechRecognition;
             let isRecording = false;
-            let aiTutorInteractionCount = 0; // ADDED: Counter for AI tutor interactions
+            let aiTutorInteractionCount = 0;
             
             // --- Sound Effects ---
             const sounds = {
@@ -1667,8 +1668,8 @@
                 let payload;
 
                 try {
-                    // MODIFIED: Removed hardcoded API key.
-                    const apiKey = ""; // API key is handled by the environment
+                    // ★★★ MODIFIED: API key is handled by the environment, no need to define it here.
+                    const apiKey = "AIzaSyAmL3qPv1Zr0URta9hE0a4QCveWOfonBHc"; 
 
                     const isAutoGenre = autoGenreCheckbox.checked;
                     const selectedType = questionType.value;
@@ -1742,6 +1743,7 @@
                         };
                     }
                     
+                    // ★★★ MODIFIED: Changed model to gemini-2.5-flash-preview-05-20 to work without a user-provided API key.
                     const apiUrl = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash-preview-05-20:generateContent?key=${apiKey}`;
                     
                     const response = await fetch(apiUrl, {
@@ -2687,7 +2689,7 @@
                 quizToEditId = null;
             };
 
-            // --- AI Tutor Functions (MODIFIED) ---
+            // --- AI Tutor Functions ---
             const startAiTutorMode = async () => {
                 if (Tone.context.state !== 'running') await Tone.start();
                 playSound('click');
@@ -2708,7 +2710,6 @@
                 aiTutorInput.value = '';
                 aiTutorSubmitButton.disabled = false;
                 
-                // ADDED: Reset and hide the "Change Question" button container
                 aiTutorInteractionCount = 0;
                 aiTutorActionsContainer.innerHTML = '';
                 aiTutorActionsContainer.classList.add('hidden');
@@ -2768,7 +2769,8 @@
                     aiChatHistory.push({ role: "user", parts: [{ text: userInput }] });
                     
                     const payload = { contents: aiChatHistory };
-                    const apiKey = "AIzaSyAmL3qPv1Zr0URta9hE0a4QCveWOfonBHc"; // API key is handled by the environment
+                    const apiKey = ""; // API key is handled by the environment
+                    // ★★★ MODIFIED: Changed model to gemini-2.5-flash-preview-05-20 to work without a user-provided API key.
                     const apiUrl = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash-preview-05-20:generateContent?key=${apiKey}`;
 
                     const response = await fetch(apiUrl, {
@@ -2788,7 +2790,6 @@
                         appendMessageToChat(aiResponse.replace(/\n/g, '<br>'), 'ai');
                         aiChatHistory.push({ role: "model", parts: [{ text: aiResponse }] });
                         
-                        // ADDED: Logic to show "Change Question" button
                         aiTutorInteractionCount++;
                         if (aiTutorInteractionCount >= 2) {
                             const changeQuestionBtn = document.createElement('button');
@@ -3100,15 +3101,29 @@
                 if (!localStorage.getItem('qube_tos_agreed')) {
                     tosModal.classList.add('show');
                 }
-
+                
+                // ★★★ MODIFIED: Improved standalone mode detection for PWA popup
                 const isIOS = /iPad|iPhone|iPod/.test(navigator.userAgent) && !window.MSStream;
-                const isInStandaloneMode = window.matchMedia('(display-mode: standalone)').matches;
+                const isInStandaloneMode = window.matchMedia('(display-mode: standalone)').matches || window.navigator.standalone;
+
+                // Show 'Add to Home Screen' popup only on iOS devices running in a browser, not in PWA mode.
                 if (isIOS && !isInStandaloneMode && !localStorage.getItem('qube_add_to_home_screen_dismissed')) {
                     const iosShareIconContainer = document.getElementById('iosShareIconContainer');
                     iosShareIconContainer.innerHTML = `<svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-8l-4-4m0 0L8 8m4-4v12" /></svg>`;
                     setTimeout(() => {
                         addToHomeScreenPopup.style.display = 'block';
                     }, 5000);
+                }
+                
+                // ★★★ ADDED: Service Worker Registration for PWA ★★★
+                if ('serviceWorker' in navigator) {
+                    window.addEventListener('load', () => {
+                        navigator.serviceWorker.register('/sw.js').then(registration => {
+                            console.log('ServiceWorker registration successful with scope: ', registration.scope);
+                        }).catch(error => {
+                            console.log('ServiceWorker registration failed: ', error);
+                        });
+                    });
                 }
             };
 
