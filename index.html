@@ -101,7 +101,7 @@
             overflow: hidden; /* Prevent body scroll */
         }
 
-        /* ★★★ MODIFIED: Splash Screen --- Smoother animation */
+        /* Splash Screen */
         @keyframes fadeIn {
             from { opacity: 0; transform: translate(-50%, -50%) scale(0.95); }
             to { opacity: 1; transform: translate(-50%, -50%) scale(1); }
@@ -134,8 +134,8 @@
             left: 50%;
             transform: translate(-50%, -50%);
             margin: 0;
-            opacity: 0; /* Start hidden */
-            animation: fadeIn 0.6s 0.2s ease-out forwards; /* Apply animation */
+            opacity: 0;
+            animation: fadeIn 0.6s 0.2s ease-out forwards;
         }
         .splash-logo-container img {
             width: 100%;
@@ -148,7 +148,6 @@
         .splash-logo-container img[src=""] + h1 {
             display: block;
         }
-
 
         /* --- Qube Base Layout --- */
         .main-container { display: flex; height: 100vh; width: 100%; }
@@ -176,12 +175,12 @@
         }
         #headerCenter {
             flex-grow: 1;
-            min-width: 0; /* Important for flex-shrink to work */
+            min-width: 0;
             text-align: center;
         }
         #projectTitle {
             font-weight: 700;
-            font-size: 1.875rem; /* text-3xl */
+            font-size: 1.875rem;
             line-height: 1.25;
             color: var(--text-primary);
             white-space: nowrap;
@@ -196,18 +195,25 @@
 
         @media (max-width: 767px) { 
             body.sidebar-open-desktop #mainContent { margin-left: 0; }
-            #projectTitle { font-size: 1.25rem; /* text-xl */ }
+            #projectTitle { font-size: 1.25rem; }
         }
         .sidebar-overlay { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.5); z-index: 999; }
         .sidebar-overlay.active { display: block; }
-        .screen { display: none; flex-direction: column; width: 100%; }
-        .screen.active { display: flex; flex-grow: 2;}
+
+        .screen { 
+            display: none; 
+            flex-direction: column; 
+            width: 100%; 
+        }
+        .screen.active { 
+            display: flex;
+            flex-grow: 1;
+        }
+
         #projectStartScreen.active {
             justify-content: center;
         }
 
-
-        /* --- Project List Enhancements --- */
         .project-item { position: relative; display: flex; align-items: center; justify-content: space-between; padding: 8px; border-radius: 8px; cursor: pointer; transition: background-color 0.2s; }
         .project-item:hover { background-color: var(--bg-tertiary); }
         .project-item.active { background-color: var(--bg-tertiary); font-weight: bold; }
@@ -221,8 +227,6 @@
         .project-menu-item:hover { background-color: var(--bg-tertiary); }
         .project-menu-item.delete { color: #ef4444; }
 
-
-        /* --- Qube Buttons & Forms --- */
         .btn { padding: 10px 20px; border-radius: 8px; font-weight: 600; cursor: pointer; transition: all 0.2s ease; border: none; }
         .btn-primary { background-color: var(--accent-primary); color: white; box-shadow: 0 4px 12px var(--accent-primary-shadow); }
         .btn-primary:hover:not(:disabled) { background-color: var(--accent-primary-hover); transform: translateY(-2px); }
@@ -246,7 +250,6 @@
             text-align: center;
         }
         
-        /* --- Qube Modal --- */
         .modal { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background-color: var(--modal-bg); display: flex; justify-content: center; align-items: center; z-index: 2000; opacity: 0; visibility: hidden; transition: opacity 0.3s ease, visibility 0.3s ease; }
         .modal.show { opacity: 1; visibility: visible; }
         .modal-content { background-color: var(--bg-secondary); padding: 30px; border-radius: 16px; box-shadow: 0 10px 30px rgba(0, 0, 0, 0.2); max-width: 400px; width: 90%; transform: translateY(-20px) scale(0.95); transition: transform 0.3s ease, background-color 0.3s ease; }
@@ -261,11 +264,9 @@
         .modal-button.cancel { background-color: transparent; color: var(--text-secondary); border: 1px solid var(--border-color); }
         .modal-button.cancel:hover { background-color: var(--border-color); }
 
-        /* --- ToS Modal --- */
         #tosModal .modal-content { max-width: 500px; }
         #tosContent { max-height: 30vh; overflow-y: auto; background-color: var(--bg-primary); padding: 1rem; border-radius: 8px; font-size: 0.9rem; color: var(--text-secondary); border: 1px solid var(--border-color); }
 
-        /* --- Add to Home Screen Popup --- */
         #addToHomeScreenPopup {
             display: none;
             position: fixed;
@@ -308,7 +309,6 @@
             line-height: 24px;
         }
 
-        /* --- Project Start Screen --- */
         #welcomeScreen, #projectStartScreen .start-screen-container {
             background-color: var(--bg-welcome);
             transition: background-color 0.3s ease;
@@ -338,7 +338,6 @@
         .divider { text-align: center; margin: 1.5rem 0; color: var(--text-secondary); display: flex; align-items: center; gap: 1rem; }
         .divider::before, .divider::after { content: ''; height: 1px; background-color: var(--border-color); flex-grow: 1; }
 
-        /* --- Integrated Quiz Screen Styles --- */
         .quiz-container { max-width: 800px; margin-left: auto; margin-right: auto; width: 100%; }
         #quizHeader { display: flex; flex-direction: column; gap: 1rem; }
         #quizTitleArea { display: flex; justify-content: center; align-items: center; min-height: 40px; }
@@ -373,14 +372,12 @@
         .toggle-explanation-button { background-color: var(--accent-primary); color: white; padding: 6px 12px; border-radius: 8px; font-size: 0.8rem; cursor: pointer; transition: background-color 0.3s ease, transform 0.2s ease; flex-shrink: 0; border: none; }
         .navigation-buttons { display: flex; justify-content: flex-end; margin-top: 20px; flex-wrap: wrap; gap: 10px; }
         
-        /* --- Integrated Result Screen Styles --- */
         .result-container { text-align: center; max-width: 600px; margin: 2rem auto; }
         .score-area { font-size: 1.8rem; font-weight: 800; color: var(--score-color); margin-top: 25px; }
         .score-comment { font-size: 1.3rem; font-weight: 700; color: var(--score-comment-color); margin-top: 10px; }
         .confetti-container { position: absolute; top: 0; left: 0; width: 100%; height: 100%; overflow: hidden; pointer-events: none; z-index: 0; }
         .confetti { position: absolute; width: 10px; height: 10px; background-color: #f06; opacity: 1; }
 
-        /* --- Settings Screen (Modal) Styles --- */
         #settingsScreen {
             position: fixed;
             top: 0;
@@ -438,7 +435,7 @@
         #soundVolumeSlider {
             -webkit-appearance: none;
             appearance: none;
-            width: 128px; /* w-32 */
+            width: 128px;
             height: 8px;
             background: var(--border-color);
             border-radius: 5px;
@@ -464,10 +461,8 @@
             border-radius: 50%;
         }
 
-
-        /* Edit Quiz Modal Styles */
         #editQuizzesModal .modal-content { max-width: 600px; }
-        #editQuizList .project-item { padding-left: 0; } /* Remove indent */
+        #editQuizList .project-item { padding-left: 0; }
         .drag-handle { touch-action: none; cursor: move; padding: 8px; }
         #editQuizList .project-item.dragging {
             opacity: 0.7;
@@ -476,7 +471,6 @@
             z-index: 10;
         }
 
-        /* --- Share/Import Styles --- */
         .tab-button {
             padding: 8px 16px;
             cursor: pointer;
@@ -492,14 +486,12 @@
             display: none;
         }
 
-        /* --- AI Tutor Styles (MODIFIED) --- */
         #aiTutorScreen .quiz-container {
             max-width: 800px;
-            display: flex; /* ADDED */
-            flex-direction: column; /* ADDED */
-            height: 100%; /* ADDED */
+            display: flex;
+            flex-direction: column;
+            height: 100%;
         }
-        /* MODIFIED: Renamed and restyled for a framed look */
         .ai-tutor-problem-statement {
             background-color: var(--bg-secondary);
             border: 1px solid var(--border-color);
@@ -508,7 +500,7 @@
             text-align: left;
             margin-bottom: 1rem;
             box-shadow: 0 2px 8px rgba(0,0,0,0.05);
-            flex-shrink: 0; /* Prevent shrinking */
+            flex-shrink: 0;
         }
         body.dark-mode .ai-tutor-problem-statement {
              box-shadow: 0 2px 8px rgba(0,0,0,0.2);
@@ -542,10 +534,9 @@
             color: var(--text-secondary);
             font-size: 0.9rem;
         }
-        /* MODIFIED: Made chat log flexible height */
         #aiTutorChatLog {
-            flex-grow: 1; /* CHANGED */
-            height: auto; /* CHANGED */
+            flex-grow: 1;
+            height: auto;
             overflow-y: auto;
             border: 1px solid var(--button-border-default);
             border-radius: 12px;
@@ -609,7 +600,7 @@
         }
         #aiTutorInputForm {
             display: flex; gap: 10px; margin-top: 15px; flex-wrap: wrap;
-            flex-shrink: 0; /* Prevent shrinking */
+            flex-shrink: 0;
         }
         #aiTutorInput {
             flex-grow: 1; min-width: 150px; padding: 12px; border-radius: 8px;
@@ -642,6 +633,20 @@
     </style>
 </head>
 <body>
+    <script>
+        try {
+            const savedData = localStorage.getItem('qube_app_data');
+            if (savedData) {
+                const settings = JSON.parse(savedData).settings;
+                if (settings && settings.darkMode) {
+                    document.body.classList.add('dark-mode');
+                }
+            }
+        } catch (e) {
+            console.error('Failed to apply dark mode setting on initial load:', e);
+        }
+    </script>
+
     <!-- Splash Screen -->
     <div id="splashScreen" class="splash-screen">
         <div class="splash-logo-container">
@@ -686,14 +691,12 @@
             </header>
             
             <div id="screenContainer">
-                <!-- Welcome Screen -->
                 <div id="welcomeScreen" class="screen active flex-col justify-center items-center text-center p-8 rounded-lg">
                     <h2 class="text-4xl font-bold mb-6" style="color: var(--themed-text-color);">学習を始めましょう！</h2>
                     <p class="text-xl mb-8" style="color: var(--text-secondary);">AIの力で、あなたの学習を次のレベルへ。</p>
                     <button id="getStartedButton" class="btn btn-primary text-lg px-8 py-3">さっそく始める</button>
                 </div>
 
-                <!-- Project Start Screen -->
                 <div id="projectStartScreen" class="screen">
                     <div class="start-screen-container">
                         <h2 class="text-3xl font-bold mb-6">学習を開始</h2>
@@ -708,9 +711,7 @@
                     </div>
                 </div>
                 
-                <!-- Quiz Generation Screen -->
                 <div id="generationScreen" class="screen">
-                    <!-- ★★★ MODIFIED: Increased bottom margin for spacing -->
                     <div class="max-w-3xl mx-auto w-full mb-16">
                         <div class="flex border-b border-gray-200 dark:border-gray-700 mb-6">
                             <button id="generateTabButton" class="tab-button active">新しく生成する</button>
@@ -775,7 +776,6 @@
                     </div>
                 </div>
 
-                <!-- Quiz Screen -->
                 <div id="quizScreen" class="screen">
                     <div class="quiz-container">
                         <div id="quizHeader">
@@ -809,7 +809,6 @@
                     </div>
                 </div>
 
-                <!-- AI Tutor Screen -->
                 <div id="aiTutorScreen" class="screen">
                     <div class="quiz-container">
                         <div id="aiTutorActionsContainer" class="mb-4 text-right hidden"></div>
@@ -833,7 +832,6 @@
                     </div>
                 </div>
 
-                <!-- Result Screen -->
                 <div id="resultScreen" class="screen">
                     <div class="result-container">
                         <h2 class="text-2xl font-bold mb-4" style="color: var(--score-color);">クイズ結果</h2>
@@ -1065,7 +1063,6 @@
 
     <script>
         document.addEventListener('DOMContentLoaded', () => {
-            // --- DOM Elements ---
             const sidebar = document.getElementById('sidebar');
             const hamburgerButton = document.getElementById('hamburgerButton');
             const sidebarOverlay = document.getElementById('sidebarOverlay');
@@ -1101,7 +1098,6 @@
             const fileUpload = document.getElementById('fileUpload');
             const filePreviewContainer = document.getElementById('filePreviewContainer');
 
-            // Import/Export DOM Elements
             const generateTabButton = document.getElementById('generateTabButton');
             const importTabButton = document.getElementById('importTabButton');
             const generateProjectContainer = document.getElementById('generateProjectContainer');
@@ -1160,7 +1156,6 @@
             const restartQuizButton = document.getElementById('restartQuizButton');
             const backToProjectButton = document.getElementById('backToProjectButton');
             
-            // Settings DOM
             const darkModeToggle = document.getElementById('darkModeToggle');
             const themeColorCircles = document.querySelectorAll('.color-circle');
             const soundVolumeSlider = document.getElementById('soundVolumeSlider');
@@ -1172,7 +1167,6 @@
             const backToProjectFromSettings = document.getElementById('backToProjectFromSettings');
             const editQuizzesButton = document.getElementById('editQuizzesButton');
 
-            // Edit Quiz Modal DOM
             const editQuizzesModal = document.getElementById('editQuizzesModal');
             const editQuizList = document.getElementById('editQuizList');
             const closeEditQuizModalButton = document.getElementById('closeEditQuizModalButton');
@@ -1184,13 +1178,11 @@
             const deleteQuizNameInstance = document.getElementById('deleteQuizNameInstance');
             const resetMasteryModal = document.getElementById('resetMasteryModal');
 
-            // ToS & PWA Prompt DOM
             const tosModal = document.getElementById('tosModal');
             const tosAgreeButton = document.getElementById('tosAgreeButton');
             const addToHomeScreenPopup = document.getElementById('addToHomeScreenPopup');
             const closeAddToHomeScreen = document.getElementById('closeAddToHomeScreen');
 
-            // --- AI Tutor DOM Elements ---
             const aiTutorButton = document.getElementById('aiTutorButton');
             const aiTutorActionsContainer = document.getElementById('aiTutorActionsContainer');
             const aiTutorQuestionText = document.getElementById('aiTutorQuestionText');
@@ -1202,8 +1194,6 @@
             const toggleOtherOptionsButton = document.getElementById('toggleOtherOptionsButton');
             const otherOptionsContainer = document.getElementById('otherOptionsContainer');
 
-
-            // --- App State ---
             let appState = {
                 projects: [],
                 settings: {
@@ -1223,13 +1213,11 @@
             let uploadedFiles = [];
             let projectToEditId = null;
             let quizToEditId = null;
-            // AI Tutor State
             let aiChatHistory = [];
             let speechRecognition;
             let isRecording = false;
             let aiTutorInteractionCount = 0;
             
-            // --- Sound Effects ---
             const sounds = {
                 correct: new Tone.Synth({ volume: -2, oscillator: { type: 'sine' }, envelope: { attack: 0.005, decay: 0.1, sustain: 0.3, release: 1 } }).toDestination(),
                 incorrect: new Tone.FMSynth({ volume: 4, harmonicity: 1.5, modulationIndex: 10, oscillator: { type: "sawtooth" }, envelope: { attack: 0.01, decay: 0.3, sustain: 0.01, release: 0.1 } }).toDestination(),
@@ -1239,11 +1227,12 @@
                 micOff: new Tone.Synth({ volume: -15, oscillator: { type: 'sine' }, envelope: { attack: 0.01, decay: 0.2, release: 0.2 } }).toDestination(),
             };
             
-            const updateVolume = (level) => {
+            // ★★★ 変更箇所 ★★★ START - 全ての関数を関数宣言に統一
+            function updateVolume(level) {
                 const numberLevel = Number(level);
                 let db;
                 if (numberLevel === 0) {
-                    db = -Infinity; // Mute
+                    db = -Infinity;
                     volumeStatus.textContent = 'オフ';
                 } else {
                     db = (numberLevel / 100) * 30 - 25;
@@ -1280,11 +1269,10 @@
                 } catch (error) { console.error("Sound playback failed:", error); }
             }
             
-            // --- Data Persistence ---
-            const saveState = () => {
+            function saveState() {
                 localStorage.setItem('qube_app_data', JSON.stringify(appState));
             };
-            const loadState = () => {
+            function loadState() {
                 const savedData = localStorage.getItem('qube_app_data');
                 if (savedData) {
                     const loadedState = JSON.parse(savedData);
@@ -1300,12 +1288,11 @@
                 }
             };
 
-            // --- UI & State Management Functions ---
-            const adjustTitleFontSize = (element, text) => {
+            function adjustTitleFontSize(element, text) {
                  if (!element) return;
                 
                  const defaultSize = window.innerWidth < 768 ? 1.25 : 1.875;
-                 element.innerHTML = ''; // Clear previous content
+                 element.innerHTML = '';
                 
                  if (!text || text === 'Qube') {
                      const img = document.createElement('img');
@@ -1325,7 +1312,7 @@
                  }
             };
             
-            const updateProjectTitle = (text) => {
+            function updateProjectTitle(text) {
                 if (screens.welcome.classList.contains('active')) {
                     adjustTitleFontSize(projectTitle, '学習を始めましょう！');
                 } else if (screens.aiTutor.classList.contains('active')) {
@@ -1335,7 +1322,7 @@
                 }
             };
 
-            const switchScreen = (screenName) => {
+            function switchScreen(screenName) {
                 Object.values(screens).forEach(s => s.classList.remove('active'));
                 if (screens[screenName]) screens[screenName].classList.add('active');
                 
@@ -1355,7 +1342,7 @@
                 }
             };
 
-            const toggleSidebar = () => {
+            function toggleSidebar() {
                 const isOpen = sidebar.classList.toggle('open');
                 if (window.innerWidth < 768) {
                     sidebarOverlay.classList.toggle('active', isOpen);
@@ -1364,16 +1351,18 @@
                 }
             };
             
-            const showNewProjectModal = () => {
+            function showNewProjectModal() {
                 newProjectNameInput.value = `プロジェクト ${appState.projects.length + 1}`;
                 newProjectModal.classList.add('show');
                 newProjectNameInput.focus();
                 newProjectNameInput.select();
             };
 
-            const closeNewProjectModal = () => newProjectModal.classList.remove('show');
+            function closeNewProjectModal() {
+                newProjectModal.classList.remove('show');
+            }
             
-            const handleCreateProject = () => {
+            function handleCreateProject() {
                 const projectName = newProjectNameInput.value.trim();
                 if (!projectName) {
                     newProjectNameInput.focus();
@@ -1395,7 +1384,7 @@
                 if(window.innerWidth < 768 && sidebar.classList.contains('open')) toggleSidebar();
             };
 
-            const renderProjectList = () => {
+            function renderProjectList() {
                 projectListEl.innerHTML = '';
                 if (appState.projects.length === 0) {
                     projectListEl.innerHTML = '<p class="text-gray-400 p-2">まだプロジェクトがありません。</p>';
@@ -1440,7 +1429,7 @@
                 addProjectDragDropListeners();
             };
             
-            const showProjectMenu = (projectId, projectItemElement) => {
+            function showProjectMenu(projectId, projectItemElement) {
                 document.querySelectorAll('.project-menu').forEach(m => m.remove());
                 const project = appState.projects.find(p => p.id === projectId);
                 if (!project) return;
@@ -1479,7 +1468,7 @@
                 setTimeout(() => document.body.addEventListener('click', closeMenu, true), 0);
             };
 
-            const toggleProjectPin = (projectId) => {
+            function toggleProjectPin(projectId) {
                 const project = appState.projects.find(p => p.id === projectId);
                 if (project) {
                     project.isPinned = !project.isPinned;
@@ -1488,7 +1477,7 @@
                 }
             };
 
-            const showRenameProjectModal = (projectId) => {
+            function showRenameProjectModal(projectId) {
                 projectToEditId = projectId;
                 const project = appState.projects.find(p => p.id === projectId);
                 if (project) {
@@ -1499,12 +1488,12 @@
                 }
             };
 
-            const closeRenameProjectModal = () => {
+            function closeRenameProjectModal() {
                 renameProjectModal.classList.remove('show');
                 projectToEditId = null;
             };
 
-            const handleRenameProject = () => {
+            function handleRenameProject() {
                 const newName = renameProjectNameInput.value.trim();
                 if (!newName || !projectToEditId) return;
                 const project = appState.projects.find(p => p.id === projectToEditId);
@@ -1517,7 +1506,7 @@
                 closeRenameProjectModal();
             };
 
-            const showDeleteProjectModal = (projectId) => {
+            function showDeleteProjectModal(projectId) {
                 projectToEditId = projectId;
                 const project = appState.projects.find(p => p.id === projectId);
                 if(project) {
@@ -1526,12 +1515,12 @@
                 }
             };
             
-            const closeDeleteProjectModal = () => {
+            function closeDeleteProjectModal() {
                 deleteProjectModal.classList.remove('show');
                 projectToEditId = null;
             };
 
-            const handleDeleteProject = () => {
+            function handleDeleteProject() {
                 if(!projectToEditId) return;
                 appState.projects = appState.projects.filter(p => p.id !== projectToEditId);
                 if(activeProjectId === projectToEditId) {
@@ -1545,7 +1534,7 @@
                 closeDeleteProjectModal();
             };
 
-            const addProjectDragDropListeners = () => {
+            function addProjectDragDropListeners() {
                 let draggedItem = null;
                 projectListEl.querySelectorAll('.project-item').forEach(item => {
                     item.addEventListener('dragstart', (e) => {
@@ -1576,7 +1565,7 @@
                 });
             };
 
-            const getDragAfterElement = (container, y) => {
+            function getDragAfterElement(container, y) {
                 const draggableElements = [...container.querySelectorAll('.project-item:not(.dragging)')];
                 return draggableElements.reduce((closest, child) => {
                     const box = child.getBoundingClientRect();
@@ -1586,7 +1575,7 @@
                 }, { offset: Number.NEGATIVE_INFINITY }).element;
             };
 
-            const setActiveProject = (projectId) => {
+            function setActiveProject(projectId) {
                 activeProjectId = projectId;
                 localStorage.setItem('qube_lastActiveProjectId', projectId);
                 resetUploadUI();
@@ -1605,7 +1594,7 @@
                 renderProjectList();
             };
 
-            const populateQuizSelect = (project) => {
+            function populateQuizSelect(project) {
                 quizSelect.innerHTML = '';
                 if (project.quizzes.length === 0) {
                     const option = document.createElement('option');
@@ -1634,7 +1623,7 @@
                 }
             };
 
-            const shuffleArray = (array) => {
+            function shuffleArray(array) {
                 const newArr = [...array];
                 for (let i = newArr.length - 1; i > 0; i--) {
                     const j = Math.floor(Math.random() * (i + 1));
@@ -1643,8 +1632,7 @@
                 return newArr;
             };
             
-            // --- Quiz Generation (Qube Core) ---
-            const handleGenerateQuiz = async () => {
+            async function handleGenerateQuiz() {
                 const buttonText = generateQuizButton.querySelector('.button-text');
                 const spinner = generateQuizButton.querySelector('.spinner');
                 generationError.classList.add('hidden');
@@ -1668,7 +1656,6 @@
                 let payload;
 
                 try {
-                    // ★★★ MODIFIED: API key is handled by the environment, no need to define it here.
                     const apiKey = "AIzaSyAmL3qPv1Zr0URta9hE0a4QCveWOfonBHc"; 
 
                     const isAutoGenre = autoGenreCheckbox.checked;
@@ -1743,7 +1730,6 @@
                         };
                     }
                     
-                    // ★★★ MODIFIED: Changed model to gemini-2.5-flash-preview-05-20 to work without a user-provided API key.
                     const apiUrl = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash-preview-05-20:generateContent?key=${apiKey}`;
                     
                     const response = await fetch(apiUrl, {
@@ -1804,7 +1790,7 @@
                 }
             };
             
-            const handleAutoGenreResponse = (genres) => {
+            function handleAutoGenreResponse(genres) {
                 const project = appState.projects.find(p => p.id === activeProjectId);
                 if (!project || !genres) return;
 
@@ -1825,7 +1811,7 @@
                 setActiveProject(activeProjectId);
             };
 
-            const showNameQuizModal = () => {
+            function showNameQuizModal() {
                 const project = appState.projects.find(p => p.id === activeProjectId);
                 if (!project) return;
                 newQuizNameInput.value = `クイズ ${project.quizzes.length + 1}`;
@@ -1834,41 +1820,39 @@
                 newQuizNameInput.select();
             };
             
-            const closeNameQuizModal = () => nameQuizModal.classList.remove('show');
+            function closeNameQuizModal() {
+                nameQuizModal.classList.remove('show');
+            }
 
-            const handleCreateQuiz = () => {
-    const quizName = newQuizNameInput.value.trim();
-    if (!quizName) {
-        newQuizNameInput.focus();
-        return;
-    }
-    const project = appState.projects.find(p => p.id === activeProjectId);
+            function handleCreateQuiz() {
+                const quizName = newQuizNameInput.value.trim();
+                if (!quizName) {
+                    newQuizNameInput.focus();
+                    return;
+                }
+                const project = appState.projects.find(p => p.id === activeProjectId);
 
-    // ★★★ 変更箇所 ★★★ START
-    if (project && tempGeneratedQuestions) {
-        const newQuiz = {
-            id: `quiz_${Date.now()}`,
-            name: quizName,
-            createdAt: new Date().toISOString(),
-            questions: tempGeneratedQuestions,
-            images: uploadedFiles.filter(f => f.mimeType.startsWith('image/'))
-        };
-        project.quizzes.push(newQuiz);
-        project.mastery[newQuiz.id] = {};
-        saveState();
-        tempGeneratedQuestions = null;
-        closeNameQuizModal();
-        setActiveProject(activeProjectId);
-    } else {
-        // 保存できない理由をユーザーに通知
-        alert("クイズの保存に失敗しました。AIからのデータが正しく取得できていない可能性があります。");
-        console.error("Quiz save failed: tempGeneratedQuestions is null or project not found.");
-    }
-    // ★★★ 変更箇所 ★★★ END
-};
+                if (project && tempGeneratedQuestions) {
+                    const newQuiz = {
+                        id: `quiz_${Date.now()}`,
+                        name: quizName,
+                        createdAt: new Date().toISOString(),
+                        questions: tempGeneratedQuestions,
+                        images: uploadedFiles.filter(f => f.mimeType.startsWith('image/'))
+                    };
+                    project.quizzes.push(newQuiz);
+                    project.mastery[newQuiz.id] = {};
+                    saveState();
+                    tempGeneratedQuestions = null;
+                    closeNameQuizModal();
+                    setActiveProject(activeProjectId);
+                } else {
+                    alert("クイズの保存に失敗しました。AIからのデータが正しく取得できていない可能性があります。");
+                    console.error("Quiz save failed: tempGeneratedQuestions is null or project not found.");
+                }
+            };
 
-            // --- Quiz Gameplay ---
-            const startQuiz = (quiz) => {
+            function startQuiz(quiz) {
                 if (sidebar.classList.contains('open')) {
                     toggleSidebar();
                 }
@@ -1922,7 +1906,7 @@
                 loadQuestion();
             };
 
-            const loadQuestion = () => {
+            function loadQuestion() {
                 feedbackMessageElement.style.visibility = 'hidden';
                 feedbackMessageElement.classList.remove('correct-feedback', 'incorrect-feedback');
                 feedbackResultElement.innerHTML = '';
@@ -2025,7 +2009,7 @@
                 updateNavigationButtons();
             };
             
-            const createSubmitButton = () => {
+            function createSubmitButton() {
                 const submitBtn = document.createElement('button');
                 submitBtn.textContent = '回答';
                 submitBtn.classList.add('btn', 'btn-primary');
@@ -2048,7 +2032,7 @@
                 submissionArea.appendChild(submitBtn);
             }
 
-            const submitAnswer = (userAnswer) => {
+            function submitAnswer(userAnswer) {
                 const question = currentQuiz.questions[currentQuiz.currentIndex];
                 if (currentQuiz.answeredQuestions.has(question.question)) return;
 
@@ -2072,7 +2056,7 @@
                 showFeedback(isCorrect, question, userAnswer);
             };
 
-            const showFeedback = (isCorrect, question, userAnswer) => {
+            function showFeedback(isCorrect, question, userAnswer) {
                 optionsGridElement.querySelectorAll('button, input, .sorting-item').forEach(el => {
                     el.disabled = true;
                 });
@@ -2138,7 +2122,7 @@
                 updateNavigationButtons();
             };
             
-            const setupSortingInteractions = () => {
+            function setupSortingInteractions() {
                 const isTouchDevice = ('ontouchstart' in window) || (navigator.maxTouchPoints > 0);
                 const sourceContainer = document.getElementById('sortingSource');
                 const targetContainer = document.getElementById('sortingTarget');
@@ -2188,7 +2172,7 @@
             };
 
 
-            const updateNavigationButtons = () => {
+            function updateNavigationButtons() {
                 const question = currentQuiz.questions[currentQuiz.currentIndex];
                 if (!question) {
                     nextButton.style.display = 'none';
@@ -2199,7 +2183,7 @@
                 nextButton.textContent = (currentQuiz.currentIndex === currentQuiz.questions.length - 1) ? '結果を見る' : '次の問題';
             };
 
-            const updateProgressBar = () => {
+            function updateProgressBar() {
                 if (!appState.settings.showProgress) {
                     progressBarContainer.style.display = 'none';
                     progressText.style.display = 'none';
@@ -2214,7 +2198,7 @@
                 progressText.textContent = `${Math.min(current, total)} / ${total} 問目`;
             };
 
-            const showQuizResult = () => {
+            function showQuizResult() {
                 switchScreen('result');
                 const total = currentQuiz.questions.length;
                 finalScore.textContent = `あなたのスコア: ${currentQuiz.score} / ${total}`;
@@ -2234,7 +2218,7 @@
                 scoreComment.textContent = comment;
             };
 
-            const launchConfetti = () => {
+            function launchConfetti() {
                 if (confettiAnimationId) cancelAnimationFrame(confettiAnimationId);
                 confettiContainer.innerHTML = '';
                 const confettiPieces = [];
@@ -2266,7 +2250,7 @@
                 confettiAnimationId = requestAnimationFrame(animate);
             };
             
-            const hexToRgb = (hex) => {
+            function hexToRgb(hex) {
                 let result = /^#?([a-f\d]{2})([a-f\d]{2})([a-f\d]{2})$/i.exec(hex);
                 return result ? {
                     r: parseInt(result[1], 16),
@@ -2275,8 +2259,7 @@
                 } : null;
             }
 
-            // --- Settings Functions ---
-            const applyColors = (themeName, isDark) => {
+            function applyColors(themeName, isDark) {
                 const root = document.documentElement;
                 const themes = {
                      'default': { base: '#0ea5e9', hover: '#0284c7', darkBase: '#38bdf8', darkHover: '#0ea5e9' },
@@ -2305,7 +2288,7 @@
                 }
             };
             
-            const setDarkMode = (isDark) => {
+            function setDarkMode(isDark) {
                 appState.settings.darkMode = isDark;
                 document.body.classList.toggle('dark-mode', isDark);
                 applyColors(appState.settings.themeColor, isDark);
@@ -2313,14 +2296,13 @@
                 saveState();
             };
 
-            const setThemeColor = (themeName) => {
+            function setThemeColor(themeName) {
                 appState.settings.themeColor = themeName;
                 applyColors(themeName, appState.settings.darkMode);
                 saveState();
             };
 
-            // --- File Upload Logic ---
-            const handleFileSelect = async (files) => {
+            async function handleFileSelect(files) {
                 fileUpload.disabled = true;
                 generationError.classList.add('hidden');
 
@@ -2385,7 +2367,7 @@
                 }
             };
 
-            const updateUIAfterFileUpload = async () => {
+            async function updateUIAfterFileUpload() {
                 filePreviewContainer.innerHTML = '';
                 for (const file of uploadedFiles) {
                     const itemDiv = document.createElement('div');
@@ -2429,7 +2411,7 @@
                 }
             };
 
-            const resetUploadUI = () => {
+            function resetUploadUI() {
                 uploadedFiles = [];
                 filePreviewContainer.innerHTML = '';
                 fileUpload.value = ''; 
@@ -2437,8 +2419,7 @@
                 promptText.placeholder = '例: 日本の首都は東京です。徳川家康は江戸幕府を開きました...';
             };
             
-            // --- Import/Export Functions ---
-            const handleExportProject = async (projectId) => {
+            async function handleExportProject(projectId) {
                 const projectToExport = appState.projects.find(p => p.id === projectId);
                 if (!projectToExport) {
                     alert('エクスポート対象のプロジェクトが見つかりません。');
@@ -2476,56 +2457,71 @@
                 }
             };
 
-            const handleImportProject = () => {
-    const file = importFileInput.files[0];
-    importStatusMessage.textContent = '';
-    if (!file) {
-        importStatusMessage.textContent = 'ファイルを選択してください。';
-        importStatusMessage.style.color = 'red';
-        return;
-    }
+            function handleImportProject() {
+                const file = importFileInput.files[0];
+                importStatusMessage.textContent = '';
+                if (!file) {
+                    importStatusMessage.textContent = 'ファイルを選択してください。';
+                    importStatusMessage.style.color = 'red';
+                    return;
+                }
 
-    const reader = new FileReader();
-    reader.onload = (e) => {
-        try {
-            const importedText = e.target.result;
-            if (!importedText) {
-                throw new Error('ファイルが空です。');
-            }
-            const importedProjectData = JSON.parse(importedText);
+                const reader = new FileReader();
+                reader.onload = (e) => {
+                    try {
+                        const importedText = e.target.result;
+                        if (!importedText) {
+                            throw new Error('ファイルが空です。');
+                        }
+                        const importedProjectData = JSON.parse(importedText);
 
-            // ★★★ 変更箇所 ★★★ START - ファイル形式の検証を強化
-            if (typeof importedProjectData.name !== 'string' || !Array.isArray(importedProjectData.quizzes) || typeof importedProjectData.mastery !== 'object') {
-                throw new Error('無効なプロジェクトファイル形式です。');
-            }
-            // ★★★ 変更箇所 ★★★ END
+                        if (typeof importedProjectData.name !== 'string' || !Array.isArray(importedProjectData.quizzes) || typeof importedProjectData.mastery !== 'object') {
+                            throw new Error('無効なプロジェクトファイル形式です。');
+                        }
 
-            const activeProject = appState.projects.find(p => p.id === activeProjectId);
+                        const activeProject = appState.projects.find(p => p.id === activeProjectId);
 
-            if (activeProject && activeProject.quizzes.length === 0) {
-                // ... (既存のロジックは変更なし)
-            } else {
-                // ... (既存のロジックは変更なし)
-            }
-            importFileInput.value = '';
+                        if (activeProject && activeProject.quizzes.length === 0) {
+                            activeProject.name = importedProjectData.name;
+                            activeProject.quizzes = importedProjectData.quizzes || [];
+                            activeProject.mastery = importedProjectData.mastery || {};
+                            activeProject.images = importedProjectData.images || [];
 
-        } catch (error) {
-            console.error("Import failed:", error);
-            // ★★★ 変更箇所 ★★★ エラーメッセージを具体的に
-            importStatusMessage.textContent = `読み込みに失敗しました: ${error.message}`;
-            importStatusMessage.style.color = 'red';
-        }
-    };
-    reader.onerror = () => {
-        importStatusMessage.textContent = 'ファイルの読み込み中にエラーが発生しました。';
-        importStatusMessage.style.color = 'red';
-    };
-    reader.readAsText(file);
-};
+                            saveState();
+                            renderProjectList();
+                            setActiveProject(activeProject.id);
+                            importStatusMessage.textContent = `「${activeProject.name}」にクイズを正常に読み込みました。`;
+                            importStatusMessage.style.color = 'green';
+                        } else {
+                            const newProject = importedProjectData;
+                            newProject.id = `proj_${Date.now()}`;
+                            newProject.isPinned = false;
+                            newProject.lastPlayedQuizId = null;
+                            if (!newProject.mastery) newProject.mastery = {};
 
+                            appState.projects.unshift(newProject);
+                            saveState();
+                            renderProjectList();
+                            setActiveProject(newProject.id);
+                            importStatusMessage.textContent = `「${newProject.name}」を正常に読み込みました。`;
+                            importStatusMessage.style.color = 'green';
+                        }
+                        importFileInput.value = '';
 
-            // --- Edit Quiz Functions ---
-            const showEditQuizzesModal = () => {
+                    } catch (error) {
+                        console.error("Import failed:", error);
+                        importStatusMessage.textContent = `読み込みに失敗しました: ${error.message}`;
+                        importStatusMessage.style.color = 'red';
+                    }
+                };
+                reader.onerror = () => {
+                    importStatusMessage.textContent = 'ファイルの読み込み中にエラーが発生しました。';
+                    importStatusMessage.style.color = 'red';
+                };
+                reader.readAsText(file);
+            };
+
+            function showEditQuizzesModal() {
                 const project = appState.projects.find(p => p.id === activeProjectId);
                 if (!project) return;
 
@@ -2557,7 +2553,7 @@
                 editQuizzesModal.classList.add('show');
             };
 
-            const updateQuizOrder = () => {
+            function updateQuizOrder() {
                 const project = appState.projects.find(p => p.id === activeProjectId);
                 if (!project) return;
                 const newOrderIds = Array.from(editQuizList.querySelectorAll('.project-item')).map(item => item.dataset.quizId);
@@ -2566,7 +2562,7 @@
                 populateQuizSelect(project);
             };
 
-            const addQuizDragDropListeners = () => {
+            function addQuizDragDropListeners() {
                 let draggedItem = null;
 
                 editQuizList.querySelectorAll('.project-item').forEach(item => {
@@ -2623,7 +2619,7 @@
                 editQuizList.addEventListener('touchstart', touchStart, { passive: false });
             };
 
-            const handleQuizEditActions = (e) => {
+            function handleQuizEditActions(e) {
                 const button = e.target.closest('button');
                 if (!button) return;
                 
@@ -2647,7 +2643,7 @@
                 }
             };
 
-            const handleRenameQuiz = () => {
+            function handleRenameQuiz() {
                 const newName = renameQuizNameInstanceInput.value.trim();
                 const project = appState.projects.find(p => p.id === activeProjectId);
                 const quiz = project?.quizzes.find(q => q.id === quizToEditId);
@@ -2661,7 +2657,7 @@
                 quizToEditId = null;
             };
 
-            const handleDeleteQuiz = () => {
+            function handleDeleteQuiz() {
                 const project = appState.projects.find(p => p.id === activeProjectId);
                 if (project && quizToEditId) {
                     project.quizzes = project.quizzes.filter(q => q.id !== quizToEditId);
@@ -2680,8 +2676,7 @@
                 quizToEditId = null;
             };
 
-            // --- AI Tutor Functions ---
-            const startAiTutorMode = async () => {
+            async function startAiTutorMode() {
                 if (Tone.context.state !== 'running') await Tone.start();
                 playSound('click');
 
@@ -2733,15 +2728,15 @@
                 appendMessageToChat(`こんにちは！AIチューターです。一緒に頑張りましょう！💪<br>この問題の正解が「${question.answer.join(', ')}」になる理由を、あなたの言葉で説明してみてください。`, 'ai');
             };
 
-            const appendMessageToChat = (text, sender) => {
+            function appendMessageToChat(text, sender) {
                 const messageDiv = document.createElement('div');
                 messageDiv.classList.add('chat-message', sender);
-                messageDiv.innerHTML = text; // Use innerHTML to render line breaks
+                messageDiv.innerHTML = text;
                 aiTutorChatLog.appendChild(messageDiv);
                 aiTutorChatLog.scrollTop = aiTutorChatLog.scrollHeight;
             };
 
-            const handleAiTutorSubmit = async (event) => {
+            async function handleAiTutorSubmit(event) {
                 event.preventDefault();
                 const userInput = aiTutorInput.value.trim();
                 if (!userInput) return;
@@ -2760,8 +2755,8 @@
                     aiChatHistory.push({ role: "user", parts: [{ text: userInput }] });
                     
                     const payload = { contents: aiChatHistory };
-                    const apiKey = ""; // API key is handled by the environment
-                    // ★★★ MODIFIED: Changed model to gemini-2.5-flash-preview-05-20 to work without a user-provided API key.
+                    const apiKey = "";
+                    
                     const apiUrl = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash-preview-05-20:generateContent?key=${apiKey}`;
 
                     const response = await fetch(apiUrl, {
@@ -2791,7 +2786,7 @@
                             changeQuestionBtn.style.border = '1px solid var(--border-color)';
                             changeQuestionBtn.onclick = () => startAiTutorMode();
 
-                            aiTutorActionsContainer.innerHTML = ''; // Clear previous button if any
+                            aiTutorActionsContainer.innerHTML = '';
                             aiTutorActionsContainer.appendChild(changeQuestionBtn);
                             aiTutorActionsContainer.classList.remove('hidden');
                         }
@@ -2809,7 +2804,7 @@
                 }
             };
             
-            const setupSpeechRecognition = () => {
+            function setupSpeechRecognition() {
                 const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
                 if (SpeechRecognition) {
                     speechRecognition = new SpeechRecognition();
@@ -2845,6 +2840,72 @@
                 }
             };
 
+            function init() {
+                const splashScreen = document.getElementById('splashScreen');
+                
+                loadState();
+                
+                const { settings } = appState;
+                setDarkMode(settings.darkMode);
+                darkModeToggle.checked = settings.darkMode;
+                
+                themeColorCircles.forEach(c => c.classList.remove('selected'));
+                document.querySelector(`.color-circle[data-theme="${settings.themeColor}"]`)?.classList.add('selected');
+                
+                soundVolumeSlider.value = settings.soundVolume;
+                updateVolume(settings.soundVolume);
+
+                questionCountSelect.value = settings.questionCount;
+                shuffleQuestionsToggle.checked = settings.shuffleQuestions;
+                showProgressToggle.checked = settings.showProgress;
+                masteryModeToggle.checked = settings.masteryMode;
+
+                const lastActiveProjectId = localStorage.getItem('qube_lastActiveProjectId');
+                const projectExists = appState.projects.some(p => p.id === lastActiveProjectId);
+                if (lastActiveProjectId && projectExists) {
+                    setActiveProject(lastActiveProjectId);
+                } else if (appState.projects.length > 0) {
+                    setActiveProject(appState.projects[0].id);
+                }
+                else {
+                    switchScreen('welcome');
+                }
+                renderProjectList();
+                setupSpeechRecognition();
+                
+                setTimeout(() => {
+                    splashScreen.classList.add('hidden');
+                    splashScreen.addEventListener('transitionend', () => {
+                        splashScreen.style.display = 'none';
+                    }, { once: true });
+                }, 1500);
+
+                if (!localStorage.getItem('qube_tos_agreed')) {
+                    tosModal.classList.add('show');
+                }
+                
+                const isIOS = /iPad|iPhone|iPod/.test(navigator.userAgent) && !window.MSStream;
+                const isInStandaloneMode = window.matchMedia('(display-mode: standalone)').matches || window.navigator.standalone;
+
+                if (isIOS && !isInStandaloneMode && !localStorage.getItem('qube_add_to_home_screen_dismissed')) {
+                    const iosShareIconContainer = document.getElementById('iosShareIconContainer');
+                    iosShareIconContainer.innerHTML = `<svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-8l-4-4m0 0L8 8m4-4v12" /></svg>`;
+                    setTimeout(() => {
+                        addToHomeScreenPopup.style.display = 'block';
+                    }, 5000);
+                }
+                
+                if ('serviceWorker' in navigator) {
+                    window.addEventListener('load', () => {
+                        navigator.serviceWorker.register('/sw.js').then(registration => {
+                            console.log('ServiceWorker registration successful with scope: ', registration.scope);
+                        }).catch(error => {
+                            console.log('ServiceWorker registration failed: ', error);
+                        });
+                    });
+                }
+            };
+            // ★★★ 変更箇所 ★★★ END
 
             // --- Event Listeners ---
             hamburgerButton.addEventListener('click', toggleSidebar);
@@ -2939,7 +3000,6 @@
                 }
             });
             
-            // --- Settings Listeners ---
             darkModeToggle.addEventListener('change', (e) => setDarkMode(e.target.checked));
             
             themeColorCircles.forEach(circle => {
@@ -2973,7 +3033,6 @@
                 saveState();
             });
 
-            // --- Edit Quiz Listeners ---
             editQuizzesButton.addEventListener('click', () => {
                 settingsScreen.classList.remove('active');
                 showEditQuizzesModal();
@@ -2988,7 +3047,6 @@
             deleteQuizInstanceModal.querySelector('.delete').addEventListener('click', handleDeleteQuiz);
             deleteQuizInstanceModal.querySelector('.cancel').addEventListener('click', () => deleteQuizInstanceModal.classList.remove('show'));
 
-            // --- ToS & PWA Listeners ---
             tosAgreeButton.addEventListener('click', () => {
                 localStorage.setItem('qube_tos_agreed', 'true');
                 tosModal.classList.remove('show');
@@ -2999,7 +3057,6 @@
                 addToHomeScreenPopup.style.display = 'none';
             });
             
-            // --- Event listeners for tabs and import/export ---
             generateTabButton.addEventListener('click', () => {
                 generateTabButton.classList.add('active');
                 importTabButton.classList.remove('active');
@@ -3024,7 +3081,6 @@
                 }
             });
 
-            // --- AI Tutor Listeners ---
             aiTutorButton.addEventListener('click', startAiTutorMode);
             aiTutorInputForm.addEventListener('submit', handleAiTutorSubmit);
             voiceInputButton.addEventListener('click', () => {
@@ -3041,82 +3097,10 @@
                 toggleOtherOptionsButton.textContent = isHidden ? '他の選択肢を隠す▲' : '他の選択肢を見る▼';
             });
 
-            // --- Window Resize Listener ---
             window.addEventListener('resize', () => {
                 const project = appState.projects.find(p => p.id === activeProjectId);
                 updateProjectTitle(project?.name || 'Qube');
             });
-
-
-            // --- Initialization ---
-            const init = () => {
-                const splashScreen = document.getElementById('splashScreen');
-                
-                loadState();
-                
-                const { settings } = appState;
-                setDarkMode(settings.darkMode);
-                darkModeToggle.checked = settings.darkMode;
-                
-                themeColorCircles.forEach(c => c.classList.remove('selected'));
-                document.querySelector(`.color-circle[data-theme="${settings.themeColor}"]`)?.classList.add('selected');
-                
-                soundVolumeSlider.value = settings.soundVolume;
-                updateVolume(settings.soundVolume);
-
-                questionCountSelect.value = settings.questionCount;
-                shuffleQuestionsToggle.checked = settings.shuffleQuestions;
-                showProgressToggle.checked = settings.showProgress;
-                masteryModeToggle.checked = settings.masteryMode;
-
-                const lastActiveProjectId = localStorage.getItem('qube_lastActiveProjectId');
-                const projectExists = appState.projects.some(p => p.id === lastActiveProjectId);
-                if (lastActiveProjectId && projectExists) {
-                    setActiveProject(lastActiveProjectId);
-                } else if (appState.projects.length > 0) {
-                    setActiveProject(appState.projects[0].id);
-                }
-                else {
-                    switchScreen('welcome');
-                }
-                renderProjectList();
-                setupSpeechRecognition();
-                
-                setTimeout(() => {
-                    splashScreen.classList.add('hidden');
-                    splashScreen.addEventListener('transitionend', () => {
-                        splashScreen.style.display = 'none';
-                    }, { once: true });
-                }, 1500);
-
-                if (!localStorage.getItem('qube_tos_agreed')) {
-                    tosModal.classList.add('show');
-                }
-                
-                // ★★★ MODIFIED: Improved standalone mode detection for PWA popup
-                const isIOS = /iPad|iPhone|iPod/.test(navigator.userAgent) && !window.MSStream;
-                const isInStandaloneMode = window.matchMedia('(display-mode: standalone)').matches || window.navigator.standalone;
-
-                // Show 'Add to Home Screen' popup only on iOS devices running in a browser, not in PWA mode.
-                if (isIOS && !isInStandaloneMode && !localStorage.getItem('qube_add_to_home_screen_dismissed')) {
-                    const iosShareIconContainer = document.getElementById('iosShareIconContainer');
-                    iosShareIconContainer.innerHTML = `<svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-8l-4-4m0 0L8 8m4-4v12" /></svg>`;
-                    setTimeout(() => {
-                        addToHomeScreenPopup.style.display = 'block';
-                    }, 5000);
-                }
-                
-                // ★★★ ADDED: Service Worker Registration for PWA ★★★
-                if ('serviceWorker' in navigator) {
-                    window.addEventListener('load', () => {
-                        navigator.serviceWorker.register('/sw.js').then(registration => {
-                            console.log('ServiceWorker registration successful with scope: ', registration.scope);
-                        }).catch(error => {
-                            console.log('ServiceWorker registration failed: ', error);
-                        });
-                    });
-                }
-            };
 
             init();
         });
