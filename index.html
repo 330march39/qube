@@ -2755,9 +2755,16 @@
                     aiChatHistory.push({ role: "user", parts: [{ text: userInput }] });
                     
                     const payload = { contents: aiChatHistory };
-                    const apiKey = "";
                     
-                    const apiUrl = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash-preview-05-20:generateContent?key=${apiKey}`;
+                    // ★★★ 変更箇所 1/2: ここにあなたのAPIキーを設定 ★★★
+                    const apiKey = "AIzaSyAmL3qPv1Zr0URta9hE0a4QCveWOfonBHc";
+
+                    if (!apiKey || apiKey === "ここにあなたのGoogle AI APIキーを貼り付け") {
+                        throw new Error("APIキーが設定されていません。");
+                    }
+                    
+                    // ★★★ 変更箇所 2/2: モデル名をAPIキー必須のものに戻す ★★★
+                    const apiUrl = `https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash-latest:generateContent?key=${apiKey}`;
 
                     const response = await fetch(apiUrl, {
                         method: 'POST',
@@ -2765,7 +2772,10 @@
                         body: JSON.stringify(payload)
                     });
 
-                    if (!response.ok) throw new Error(`API error: ${response.statusText}`);
+                    if (!response.ok) {
+                         const errorBody = await response.json();
+                         throw new Error(`APIエラー: ${errorBody.error.message}`);
+                    }
 
                     const result = await response.json();
                     
@@ -2792,12 +2802,13 @@
                         }
 
                     } else {
-                        appendMessageToChat('申し訳ありません、応答を取得できませんでした。もう一度試してください。', 'ai');
+                        // AIからの応答が空、または形式が不正な場合
+                        throw new Error("AIから有効な応答がありませんでした。");
                     }
                 } catch (error) {
                     console.error("AI Tutor Error:", error);
                     aiTutorChatLog.removeChild(loadingIndicator);
-                    appendMessageToChat('エラーが発生しました。しばらくしてからもう一度お試しください。', 'ai');
+                    appendMessageToChat(`エラーが発生しました: ${error.message}`, 'ai');
                 } finally {
                     aiTutorSubmitButton.disabled = false;
                     aiTutorInput.focus();
