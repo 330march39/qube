@@ -2475,6 +2475,7 @@
                         }
                         const importedProjectData = JSON.parse(importedText);
 
+                        // ★★★ 変更箇所: ファイル形式の厳密なチェックを追加 ★★★
                         if (typeof importedProjectData.name !== 'string' || !Array.isArray(importedProjectData.quizzes) || typeof importedProjectData.mastery !== 'object') {
                             throw new Error('無効なプロジェクトファイル形式です。');
                         }
@@ -2520,7 +2521,6 @@
                 };
                 reader.readAsText(file);
             };
-
             function showEditQuizzesModal() {
                 const project = appState.projects.find(p => p.id === activeProjectId);
                 if (!project) return;
