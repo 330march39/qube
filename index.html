@@ -2496,8 +2496,6 @@
                             saveState();
                             renderProjectList();
                             setActiveProject(activeProject.id);
-                            importStatusMessage.textContent = `「${activeProject.name}」にクイズを正常に読み込みました。`;
-                            importStatusMessage.style.color = 'green';
                         } else {
                             const newProject = importedProjectData;
                             newProject.id = `proj_${Date.now()}`;
