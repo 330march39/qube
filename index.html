@@ -2476,10 +2476,13 @@
                 reader.onload = (e) => {
                     try {
                         const importedText = e.target.result;
+                        if (!importedText) {
+                            throw new Error('ファイルが空です。');
+                        }
                         const importedProjectData = JSON.parse(importedText);
 
-                        if (!importedProjectData.name || !importedProjectData.quizzes) {
-                            throw new Error('無効なファイル形式です。');
+                        if (importedProjectData.file_type !== "qube_project" || typeof importedProjectData.name !== 'string' || !Array.isArray(importedProjectData.quizzes) || typeof importedProjectData.mastery !== 'object') {
+                            throw new Error('Qubeの有効なプロジェクトファイルではありません。');
                         }
 
                         const activeProject = appState.projects.find(p => p.id === activeProjectId);
@@ -2515,7 +2518,7 @@
                         importStatusMessage.textContent = `読み込みに失敗しました: ${error.message}`;
                         importStatusMessage.style.color = 'red';
                     } finally {
-                        // ★★★ 変更箇所: この行を追加 ★★★
+                        // ★★★ この行を追加 ★★★
                         // ファイル選択をリセットし、同じファイルを連続で読み込めるようにする
                         importFileInput.value = '';
                     }
