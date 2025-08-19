@@ -2464,68 +2464,72 @@
             };
 
             function handleImportProject() {
-                const file = importFileInput.files[0];
-                importStatusMessage.textContent = '';
-                if (!file) {
-                    importStatusMessage.textContent = 'ファイルを選択してください。';
-                    importStatusMessage.style.color = 'red';
-                    return;
-                }
+                const file = importFileInput.files[0];
+                importStatusMessage.textContent = '';
 
-                const reader = new FileReader();
-                reader.onload = (e) => {
-                    try {
-                        const importedText = e.target.result;
-                        if (!importedText) {
-                            throw new Error('ファイルが空です。');
-                        }
-                        const importedProjectData = JSON.parse(importedText);
+                if (!file) {
+                    importStatusMessage.textContent = 'ファイルを選択してください。';
+                    importStatusMessage.style.color = 'red';
+                    return;
+                }
 
-                        if (typeof importedProjectData.name !== 'string' || !Array.isArray(importedProjectData.quizzes) || typeof importedProjectData.mastery !== 'object') {
+                const reader = new FileReader();
+                reader.onload = (e) => {
+                    try {
+                        const importedText = e.target.result;
+                        if (!importedText) {
+                            throw new Error('ファイルが空です。');
+                        }
+                        const importedProjectData = JSON.parse(importedText);
+
+                        // ★★★ 変更箇所：検証ロジックを更新 ★★★
+                        if (typeof importedProjectData.name !== 'string' || !Array.isArray(importedProjectData.quizzes) || typeof importedProjectData.mastery !== 'object') {
                             throw new Error('Qubeの有効なプロジェクトファイルではありません。');
                         }
 
-                        const activeProject = appState.projects.find(p => p.id === activeProjectId);
+                        const activeProject = appState.projects.find(p => p.id === activeProjectId);
 
-                        if (activeProject && activeProject.quizzes.length === 0) {
-                            activeProject.name = importedProjectData.name;
-                            activeProject.quizzes = importedProjectData.quizzes || [];
-                            activeProject.mastery = importedProjectData.mastery || {};
-                            activeProject.images = importedProjectData.images || [];
+                        // ★★★ 変更箇所：クイズの有無で処理を分岐 ★★★
+                        if (activeProject && activeProject.quizzes.length > 0) {
+                            // 既存のクイズがある場合：クイズと習熟度データを追加（マージ）する
+                            activeProject.quizzes.push(...(importedProjectData.quizzes || []));
+                            Object.assign(activeProject.mastery, importedProjectData.mastery || {});
+                            if (importedProjectData.images) {
+                                activeProject.images = [...(activeProject.images || []), ...importedProjectData.images];
+                            }
+                            importStatusMessage.textContent = `「${activeProject.name}」にクイズを追加しました。`;
+                            importStatusMessage.style.color = 'green';
+                        } else if (activeProject) {
+                            // クイズがない空のプロジェクトの場合：内容を置き換える
+                            activeProject.name = importedProjectData.name;
+                            activeProject.quizzes = importedProjectData.quizzes || [];
+                            activeProject.mastery = importedProjectData.mastery || {};
+                            activeProject.images = importedProjectData.images || [];
+                            importStatusMessage.textContent = `プロジェクト「${activeProject.name}」を読み込みました。`;
+                            importStatusMessage.style.color = 'green';
+                        } else {
+                            throw new Error("読み込み先のプロジェクトが見つかりません。");
+                        }
 
-                            saveState();
-                            renderProjectList();
-                            setActiveProject(activeProject.id);
-                            importStatusMessage.textContent = `「${activeProject.name}」にクイズを正常に読み込みました。`;
-                            importStatusMessage.style.color = 'green';
-                        } else {
-                            const newProject = importedProjectData;
-                            newProject.id = `proj_${Date.now()}`;
-                            newProject.isPinned = false;
-                            newProject.lastPlayedQuizId = null;
-                            if (!newProject.mastery) newProject.mastery = {};
+                        saveState();
+                        renderProjectList();
+                        setActiveProject(activeProject.id);
 
-                            appState.projects.unshift(newProject);
-                            saveState();
-                            renderProjectList();
-                            setActiveProject(newProject.id);
-                            importStatusMessage.textContent = `「${newProject.name}」を正常に読み込みました。`;
-                            importStatusMessage.style.color = 'green';
-                        }
-                        
-                    } catch (error) {
-                        console.error("Import failed:", error);
-                        importStatusMessage.textContent = `読み込みに失敗しました: ${error.message}`;
-                        importStatusMessage.style.color = 'red';
-                    } 
-                };
-                reader.onerror = () => {
-                    importStatusMessage.textContent = 'ファイルの読み込み中にエラーが発生しました。';
-                    importStatusMessage.style.color = 'red';
-                };
-                reader.readAsText(file);
-                importFileInput.value = '';
-            };
+                    } catch (error) {
+                        console.error("Import failed:", error);
+                        importStatusMessage.textContent = `読み込みに失敗しました: ${error.message}`;
+                        importStatusMessage.style.color = 'red';
+                    }
+                };
+                reader.onerror = () => {
+                    importStatusMessage.textContent = 'ファイルの読み込み中にエラーが発生しました。';
+                    importStatusMessage.style.color = 'red';
+                };
+                reader.readAsText(file);
+                
+                // ★★★ 変更箇所：バグ修正のため、ここで値をリセット ★★★
+                importFileInput.value = '';
+            };
             function showEditQuizzesModal() {
                 const project = appState.projects.find(p => p.id === activeProjectId);
                 if (!project) return;
