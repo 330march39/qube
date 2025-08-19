@@ -2482,15 +2482,17 @@
                         }
                         const importedProjectData = JSON.parse(importedText);
 
-                        // ★★★ 変更箇所：検証ロジックを更新 ★★★
                         if (typeof importedProjectData.name !== 'string' || !Array.isArray(importedProjectData.quizzes) || typeof importedProjectData.mastery !== 'object') {
                             throw new Error('Qubeの有効なプロジェクトファイルではありません。');
                         }
 
                         const activeProject = appState.projects.find(p => p.id === activeProjectId);
 
-                        // ★★★ 変更箇所：クイズの有無で処理を分岐 ★★★
-                        if (activeProject && activeProject.quizzes.length > 0) {
+                        if (!activeProject) {
+                            throw new Error("読み込み先のプロジェクトが見つかりません。");
+                        }
+
+                        if (activeProject.quizzes.length > 0) {
                             // 既存のクイズがある場合：クイズと習熟度データを追加（マージ）する
                             activeProject.quizzes.push(...(importedProjectData.quizzes || []));
                             Object.assign(activeProject.mastery, importedProjectData.mastery || {});
@@ -2499,7 +2501,7 @@
                             }
                             importStatusMessage.textContent = `「${activeProject.name}」にクイズを追加しました。`;
                             importStatusMessage.style.color = 'green';
-                        } else if (activeProject) {
+                        } else {
                             // クイズがない空のプロジェクトの場合：内容を置き換える
                             activeProject.name = importedProjectData.name;
                             activeProject.quizzes = importedProjectData.quizzes || [];
@@ -2507,13 +2509,16 @@
                             activeProject.images = importedProjectData.images || [];
                             importStatusMessage.textContent = `プロジェクト「${activeProject.name}」を読み込みました。`;
                             importStatusMessage.style.color = 'green';
-                        } else {
-                            throw new Error("読み込み先のプロジェクトが見つかりません。");
                         }
 
                         saveState();
                         renderProjectList();
-                        setActiveProject(activeProject.id);
+
+                        // ★★★ iOSでのエラーを解消するための修正 ★★★
+                        // データの保存とリストの描画が完了した「後」に画面遷移を実行させる
+                        setTimeout(() => {
+                            setActiveProject(activeProject.id);
+                        }, 0);
 
                     } catch (error) {
                         console.error("Import failed:", error);
@@ -2527,7 +2532,7 @@
                 };
                 reader.readAsText(file);
                 
-                // ★★★ 変更箇所：バグ修正のため、ここで値をリセット ★★★
+                // ファイル選択は即座にリセット
                 importFileInput.value = '';
             };
             function showEditQuizzesModal() {
