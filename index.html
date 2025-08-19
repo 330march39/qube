@@ -2463,7 +2463,8 @@
                 }
             };
 
-            function handleImportProject() {
+            // ★★★ 変更箇所: asyncキーワードを追加 ★★★
+            async function handleImportProject() {
                 const file = importFileInput.files[0];
                 importStatusMessage.textContent = '';
                 if (!file) {
@@ -2473,7 +2474,7 @@
                 }
 
                 const reader = new FileReader();
-                reader.onload = (e) => {
+                reader.onload = async (e) => { // こちらもasyncにするとより安全です
                     try {
                         const importedText = e.target.result;
                         if (!importedText) {
@@ -2493,11 +2494,10 @@
                             activeProject.mastery = importedProjectData.mastery || {};
                             activeProject.images = importedProjectData.images || [];
 
-                            saveState();
+                            await saveState(); // awaitを使用
                             renderProjectList();
                             setActiveProject(activeProject.id);
-                            importStatusMessage.textContent = `「${activeProject.name}」にクイズを正常に読み込みました。`;
-                            importStatusMessage.style.color = 'green';
+                            
                         } else {
                             const newProject = importedProjectData;
                             newProject.id = `proj_${Date.now()}`;
@@ -2506,11 +2506,9 @@
                             if (!newProject.mastery) newProject.mastery = {};
 
                             appState.projects.unshift(newProject);
-                            saveState();
+                            await saveState(); // awaitを使用
                             renderProjectList();
                             setActiveProject(newProject.id);
-                            importStatusMessage.textContent = `「${newProject.name}」を正常に読み込みました。`;
-                            importStatusMessage.style.color = 'green';
                         }
                         
                     } catch (error) {
@@ -2518,8 +2516,6 @@
                         importStatusMessage.textContent = `読み込みに失敗しました: ${error.message}`;
                         importStatusMessage.style.color = 'red';
                     } finally {
-                        // ★★★ この行を追加 ★★★
-                        // ファイル選択をリセットし、同じファイルを連続で読み込めるようにする
                         importFileInput.value = '';
                     }
                 };
