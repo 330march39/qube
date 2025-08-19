@@ -2463,33 +2463,73 @@
                 }
             };
 
-            function saveState() {
-                try {
-                    // 通常の保存処理を試みる
-                    const dataToSave = JSON.stringify(appState);
-                    localStorage.setItem('qube_app_data', dataToSave);
+            function handleImportProject() {
+                const file = importFileInput.files[0];
+                importStatusMessage.textContent = '';
 
-                } catch (e) {
-                    // 保存に失敗した場合の処理
-                    console.error("Failed to save state:", e);
-
-                    // iOSでよく発生する容量超過エラーかどうかを判定
-                    if (e.name === 'QuotaExceededError') {
-                        // ユーザーに分かりやすいメッセージで通知
-                        alert(
-                            'データの保存に失敗しました。\n\n' +
-                            '以下の原因が考えられます：\n' +
-                            '・Safariがプライベートブラウジングモードになっている\n' +
-                            '・端末のストレージ空き容量が不足している\n' +
-                            '・プロジェクトのデータサイズが大きすぎる\n\n' +
-                            'プライベートブラウジングをオフにして、もう一度お試しください。'
-                        );
-                    } else {
-                        // その他の予期せぬエラー
-                        alert('予期せぬエラーにより、データの保存に失敗しました。');
-                    }
+                if (!file) {
+                    importStatusMessage.textContent = 'ファイルを選択してください。';
+                    importStatusMessage.style.color = 'red';
+                    return;
                 }
-            };
+
+                const reader = new FileReader();
+
+                reader.onload = (e) => {
+                    try {
+                        const importedText = e.target.result;
+                        if (!importedText) {
+                            throw new Error('ファイルが空か、読み込みに失敗しました。');
+                        }
+                        const importedProjectData = JSON.parse(importedText);
+
+                        if (typeof importedProjectData.name !== 'string' || !Array.isArray(importedProjectData.quizzes) || typeof importedProjectData.mastery !== 'object') {
+                            throw new Error('Qubeの有効なプロジェクトファイルではありません。');
+                        }
+
+                        const activeProject = appState.projects.find(p => p.id === activeProjectId);
+                        if (!activeProject) {
+                            throw new Error("読み込み先のプロジェクトが見つかりません。");
+                        }
+
+                        if (activeProject.quizzes.length > 0) {
+                            // 既存クイズあり：マージ
+                            activeProject.quizzes.push(...(importedProjectData.quizzes || []));
+                            Object.assign(activeProject.mastery, importedProjectData.mastery || {});
+                            if (importedProjectData.images) {
+                                activeProject.images = [...(activeProject.images || []), ...importedProjectData.images];
+                            }
+                            importStatusMessage.textContent = `「${activeProject.name}」にクイズを追加しました。`;
+                            importStatusMessage.style.color = 'green';
+                        } else {
+                            // 既存クイズなし：置き換え
+                            activeProject.name = importedProjectData.name;
+                            activeProject.quizzes = importedProjectData.quizzes || [];
+                            activeProject.mastery = importedProjectData.mastery || {};
+                            activeProject.images = importedProjectData.images || [];
+                            importStatusMessage.textContent = `プロジェクト「${activeProject.name}」を読み込みました。`;
+                            importStatusMessage.style.color = 'green';
+                        }
+
+                        saveState();
+                        renderProjectList();
+
+                        // 対策②：データの保存とリストの描画が完了した「後」に画面遷移を実行
+                        setTimeout(() => {
+                            setActiveProject(activeProject.id);
+                        }, 0);
+
+                    } catch (error) {
+                        console.error("Import failed:", error);
+                        importStatusMessage.textContent = `読み込みに失敗しました: ${error.message}`;
+                        importStatusMessage.style.color = 'red';
+                    } finally {
+                        // ★★★ 対策①：ファイルの読み込みが全て完了してからリセット ★★★
+                        // これで2回目以降のファイル選択も可能になる
+                        importFileInput.value = '';
+                    }
+                };
+
                 reader.onerror = () => {
                     importStatusMessage.textContent = 'ファイルの読み込み中にエラーが発生しました。';
                     importStatusMessage.style.color = 'red';
