@@ -2481,9 +2481,9 @@
                         }
                         const importedProjectData = JSON.parse(importedText);
 
-                        if (importedProjectData.file_type !== "qube_project" || typeof importedProjectData.name !== 'string' || !Array.isArray(importedProjectData.quizzes) || typeof importedProjectData.mastery !== 'object') {
-                            throw new Error('Qubeの有効なプロジェクトファイルではありません。');
-                        }
+                        if (typeof importedProjectData.name !== 'string' || !Array.isArray(importedProjectData.quizzes) || typeof importedProjectData.mastery !== 'object') {
+                            throw new Error('Qubeの有効なプロジェクトファイルではありません。');
+                        }
 
                         const activeProject = appState.projects.find(p => p.id === activeProjectId);
 
