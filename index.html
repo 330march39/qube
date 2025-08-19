@@ -1276,8 +1276,32 @@
             }
             
             function saveState() {
-                localStorage.setItem('qube_app_data', JSON.stringify(appState));
-            };
+                try {
+                    // 通常の保存処理を試みる
+                    const dataToSave = JSON.stringify(appState);
+                    localStorage.setItem('qube_app_data', dataToSave);
+
+                } catch (e) {
+                    // 保存に失敗した場合の処理
+                    console.error("Failed to save state:", e);
+
+                    // iOSでよく発生する容量超過エラーかどうかを判定
+                    if (e.name === 'QuotaExceededError') {
+                        // ユーザーに分かりやすいメッセージで通知
+                        alert(
+                            'データの保存に失敗しました。\n\n' +
+                            '以下の原因が考えられます：\n' +
+                            '・Safariがプライベートブラウジングモードになっている\n' +
+                            '・端末のストレージ空き容量が不足している\n' +
+                            '・プロジェクトのデータサイズが大きすぎる\n\n' +
+                            'プライベートブラウジングをオフにして、もう一度お試しください。'
+                        );
+                    } else {
+                        // その他の予期せぬエラー
+                        alert('予期せぬエラーにより、データの保存に失敗しました。');
+                    }
+                }
+            };
             function loadState() {
                 const savedData = localStorage.getItem('qube_app_data');
                 if (savedData) {
