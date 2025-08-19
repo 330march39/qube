@@ -2517,17 +2517,14 @@
                         console.error("Import failed:", error);
                         importStatusMessage.textContent = `読み込みに失敗しました: ${error.message}`;
                         importStatusMessage.style.color = 'red';
-                    } finally {
-                        // ★★★ この行を追加 ★★★
-                        // ファイル選択をリセットし、同じファイルを連続で読み込めるようにする
-                        importFileInput.value = '';
-                    }
+                    } 
                 };
                 reader.onerror = () => {
                     importStatusMessage.textContent = 'ファイルの読み込み中にエラーが発生しました。';
                     importStatusMessage.style.color = 'red';
                 };
                 reader.readAsText(file);
+                importFileInput.value = '';
             };
             function showEditQuizzesModal() {
                 const project = appState.projects.find(p => p.id === activeProjectId);
