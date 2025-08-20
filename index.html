@@ -2487,73 +2487,72 @@
                 }
             };
 
-            function readFileAsText(file) {
-    return new Promise((resolve, reject) => {
-        const reader = new FileReader();
-        reader.onload = () => resolve(reader.result);
-        reader.onerror = () => reject(reader.error);
-        reader.readAsText(file);
-    });
-}
-            async function handleImportProject() {
-    const file = importFileInput.files[0];
-    importStatusMessage.textContent = '';
-    importProjectButton.disabled = true;
+            function handleImportProject() {
+                const file = importFileInput.files[0];
+                importStatusMessage.textContent = '';
 
-    if (!file) {
-        importStatusMessage.textContent = 'ファイルを選択してください。';
-        importStatusMessage.style.color = 'red';
-        importProjectButton.disabled = false;
-        return;
-    }
+                if (!file) {
+                    importStatusMessage.textContent = 'ファイルを選択してください。';
+                    importStatusMessage.style.color = 'red';
+                    return;
+                }
 
-    try {
-        const importedText = await readFileAsText(file);
+                const reader = new FileReader();
 
-        if (!importedText) {
-            throw new Error('ファイルが空か、読み込みに失敗しました。');
-        }
-        
-        const importedProjectData = JSON.parse(importedText);
+                reader.onload = (e) => {
+                    try {
+                        const importedText = e.target.result;
+                        if (!importedText) {
+                            throw new Error('ファイルが空か、読み込みに失敗しました。');
+                        }
+                        const importedProjectData = JSON.parse(importedText);
 
-        if (typeof importedProjectData.name !== 'string' || !Array.isArray(importedProjectData.quizzes) || typeof importedProjectData.mastery !== 'object') {
-            throw new Error('Qubeの有効なプロジェクトファイルではありません。');
-        }
+                        if (typeof importedProjectData.name !== 'string' || !Array.isArray(importedProjectData.quizzes) || typeof importedProjectData.mastery !== 'object') {
+                            throw new Error('Qubeの有効なプロジェクトファイルではありません。');
+                        }
 
-        const activeProject = appState.projects.find(p => p.id === activeProjectId);
-        if (!activeProject) {
-            throw new Error("読み込み先のプロジェクトが見つかりません。");
-        }
+                        const activeProject = appState.projects.find(p => p.id === activeProjectId);
+                        if (!activeProject) {
+                            throw new Error("読み込み先のプロジェクトが見つかりません。");
+                        }
 
-        if (activeProject.quizzes.length > 0) {
-            activeProject.quizzes.push(...(importedProjectData.quizzes || []));
-            Object.assign(activeProject.mastery, importedProjectData.mastery || {});
-            if (importedProjectData.images) {
-                activeProject.images = [...(activeProject.images || []), ...importedProjectData.images];
-            }
-        } else {
-            activeProject.name = importedProjectData.name;
-            activeProject.quizzes = importedProjectData.quizzes || [];
-            activeProject.mastery = importedProjectData.mastery || {};
-            activeProject.images = importedProjectData.images || [];
-        }
+                        if (activeProject.quizzes.length > 0) {
+                            // 既存クイズあり：マージ
+                            activeProject.quizzes.push(...(importedProjectData.quizzes || []));
+                            Object.assign(activeProject.mastery, importedProjectData.mastery || {});
+                            if (importedProjectData.images) {
+                                activeProject.images = [...(activeProject.images || []), ...importedProjectData.images];
+                            }
+                            importStatusMessage.textContent = `「${activeProject.name}」にクイズを追加しました。`;
+                            importStatusMessage.style.color = 'green';
+                        } else {
+                            // 既存クイズなし：置き換え
+                            activeProject.name = importedProjectData.name;
+                            activeProject.quizzes = importedProjectData.quizzes || [];
+                            activeProject.mastery = importedProjectData.mastery || {};
+                            activeProject.images = importedProjectData.images || [];
+                            importStatusMessage.textContent = `プロジェクト「${activeProject.name}」を読み込みました。`;
+                            importStatusMessage.style.color = 'green';
+                        }
 
-        saveState();
-        renderProjectList();
-        setActiveProject(activeProject.id);
+                        saveState();
+                        renderProjectList();
 
-        importStatusMessage.textContent = `プロジェクト「${activeProject.name}」を正常に読み込みました。`;
-        importStatusMessage.style.color = 'green';
+                        // 対策②：データの保存とリストの描画が完了した「後」に画面遷移を実行
+                        setTimeout(() => {
+                            setActiveProject(activeProject.id);
+                        }, 0);
 
-    } catch (error) {
-        console.error("Import failed:", error);
-        importStatusMessage.textContent = `読み込みに失敗しました: ${error.message}`;
-        importStatusMessage.style.color = 'red';
-    } finally {
-        importFileInput.value = '';
-        importProjectButton.disabled = false;
-    }
-}
+                    } catch (error) {
+                        console.error("Import failed:", error);
+                        importStatusMessage.textContent = `読み込みに失敗しました: ${error.message}`;
+                        importStatusMessage.style.color = 'red';
+                    } finally {
+                        // ★★★ 対策①：ファイルの読み込みが全て完了してからリセット ★★★
+                        // これで2回目以降のファイル選択も可能になる
+                        importFileInput.value = '';
+                    }
+                };
 
                 reader.onerror = () => {
                     importStatusMessage.textContent = 'ファイルの読み込み中にエラーが発生しました。';
