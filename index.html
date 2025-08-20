@@ -3125,7 +3125,10 @@
                 generateProjectContainer.style.display = 'none';
             });
 
-            importProjectButton.addEventListener('click', handleImportProject);
+            importProjectButton.addEventListener('click', () => {
+    handleImportProject();
+    importFileInput.value = '';
+});
 
             exportProjectButton.addEventListener('click', () => {
                 if(activeProjectId) {
