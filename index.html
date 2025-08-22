@@ -3022,7 +3022,6 @@
 
             modalCreateQuizButton.addEventListener('click', handleCreateQuiz);
             modalCancelQuizButton.addEventListener('click', closeNameQuizModal);
-            nameQuizModal.addEventListener('click', (e) => { if (e.target === nameQuizModal) closeNameQuizModal(); });
             newQuizNameInput.addEventListener('keydown', (e) => { if (e.key === 'Enter') handleCreateQuiz(); });
 
             interruptButton.addEventListener('click', () => {
