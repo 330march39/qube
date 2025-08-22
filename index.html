@@ -2790,7 +2790,8 @@
             function appendMessageToChat(text, sender) {
                 const messageDiv = document.createElement('div');
                 messageDiv.classList.add('chat-message', sender);
-                messageDiv.innerHTML = text;
+                const formattedText = text.replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>');
+                messageDiv.innerHTML = formattedText;
                 aiTutorChatLog.appendChild(messageDiv);
                 aiTutorChatLog.scrollTop = aiTutorChatLog.scrollHeight;
             };
