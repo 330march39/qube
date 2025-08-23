@@ -1752,11 +1752,9 @@ async function handleGenerateQuiz() {
         return;
     }
 
-    // ★★★ 確認ポイント1: モーダル要素の取得 ★★★
     const loadingModal = document.getElementById('loadingModal');
     const loadingStatus = document.getElementById('loadingStatus');
 
-    // もし要素が見つからなければ、ここで処理を中断してエラーを出す
     if (!loadingModal || !loadingStatus) {
         console.error("致命的なエラー: ローディングモーダルのHTML要素が見つかりません。IDを確認してください。");
         generationError.textContent = "UIコンポーネントのエラーが発生しました。";
@@ -1764,9 +1762,8 @@ async function handleGenerateQuiz() {
         return;
     }
     
-    // ★★★ 確認ポイント2: tryブロックの直前ではなく、直後でモーダルを表示 ★★★
     loadingModal.classList.add('show');
-    loadingStatus.textContent = ''; // ステータスをリセット
+    loadingStatus.textContent = ''; 
     
     const warningTimeout = setTimeout(() => {
         generationWarning.textContent = '生成に時間がかかる可能性があります...';
@@ -1782,13 +1779,13 @@ async function handleGenerateQuiz() {
     try {
         loadingStatus.textContent = 'AIへの送信データを準備中...';
         
+        // ★★★ このAPIキーはサンプルです。ご自身のキーに置き換えてください ★★★
         const apiKey = "AIzaSyAYeOQOPvaMh5eiM8Kn2yRmtvY4D3HmDvI"; 
         
-        if (!apiKey || apiKey === "ここにあなたのAPIキーを貼り付け") {
+        if (!apiKey || apiKey.startsWith("AIzaSy") === false) { // より安全なチェック
             throw new Error("APIキーが設定されていません。");
         }
 
-        // ... (この後のAPIリクエスト作成ロジックは変更なし) ...
         const isAutoGenre = autoGenreCheckbox.checked;
         const selectedType = questionType.value;
         const numQuestions = genQuestionCount.value === 'all' ? '可能な限り多く' : `${genQuestionCount.value}問`;
@@ -1800,7 +1797,7 @@ async function handleGenerateQuiz() {
         payload = { contents: [{ role: "user", parts: [] }], generationConfig: { responseMimeType: "application/json" } };
         const parts = [{ text: basePrompt }];
         if (promptText.value.trim()) { parts.push({ text: `\n\n--- テキスト内容 ---\n${promptText.value}` }); }
-        // (ファイル処理部分は省略...今回はテキストのみとのこと)
+        
         payload.contents[0].parts = parts;
         let itemSchema = { type: "OBJECT", properties: { question: { type: "STRING" }, type: { type: "STRING" }, options: { type: "ARRAY", items: { type: "STRING" } }, items: { type: "ARRAY", items: { type: "STRING" } }, answer: { type: "ARRAY", items: { type: "STRING" } }, explanation: { type: "STRING" }, long_content: { type: "STRING" }, image_source: { type: "BOOLEAN" } }, required: ["question", "type", "answer", "explanation"] };
         if (isAutoGenre) { payload.generationConfig.responseSchema = { type: "OBJECT", properties: { "genres": { type: "ARRAY", items: { type: "OBJECT", properties: { "genre_name": { type: "STRING" }, "quizzes": { type: "ARRAY", items: itemSchema } }, required: ["genre_name", "quizzes"] } } } }; } else { payload.generationConfig.responseSchema = { type: "OBJECT", properties: { "quizzes": { "type": "ARRAY", "items": itemSchema } } }; }
@@ -1820,8 +1817,11 @@ async function handleGenerateQuiz() {
         }
         const result = await response.json();
         
-        if (result.candidates?.[0]?.content?.parts?.[0]?.text) {
-            const generatedData = result.candidates[0].content.parts[0];
+        // ★★★ 修正箇所 START ★★★
+        // .text を参照せず、JSON.parse() を使わないように修正
+        if (result.candidates?.[0]?.content?.parts?.[0]) {
+            const generatedData = result.candidates[0].content.parts[0]; // 応答は既にオブジェクト形式
+            // ★★★ 修正箇所 END ★★★
             const processQuestions = (questions) => { return questions.map(q => { let processed = {...q}; if (!Array.isArray(processed.answer)) { processed.answer = [String(processed.answer)]; } return processed; }); };
             if (isAutoGenre && generatedData.genres) { const processedGenres = generatedData.genres.map(genre => ({ ...genre, quizzes: processQuestions(genre.quizzes || []) })); handleAutoGenreResponse(processedGenres); } 
             else if (generatedData.quizzes) { tempGeneratedQuestions = processQuestions(generatedData.quizzes); showNameQuizModal(); } 
@@ -1837,7 +1837,6 @@ async function handleGenerateQuiz() {
         generationError.textContent = `クイズの生成に失敗しました: ${error.message}`;
         generationError.classList.remove('hidden');
     } finally {
-        // ★★★ 確認ポイント3: finallyブロックで確実にモーダルを非表示にする ★★★
         clearTimeout(warningTimeout);
         generationWarning.classList.add('hidden');
         buttonText.textContent = 'クイズを生成する';
