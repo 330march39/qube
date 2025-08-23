@@ -698,7 +698,7 @@
             
             <div id="screenContainer">
                 <div id="welcomeScreen" class="screen active flex-col justify-center items-center text-center p-8 rounded-lg">
-                    <img src="iconsp.png" alt="Qube ロゴ" class="h-27 mb-6 mx-auto">
+                    <img src="iconsp.png" alt="Qube ロゴ" class="h-25 mb-6 mx-auto">
                     <p class="text-xl mb-8" style="color: var(--text-secondary);">AIの力で、あなたの学習を次のレベルへ。</p>
                     <button id="getStartedButton" class="btn btn-primary text-lg px-8 py-3">さっそく始める</button>
                 </div>
@@ -776,6 +776,12 @@
                                 <label for="importFileInput">共有ファイル (.txt) を選択</label>
                                 <input type="file" id="importFileInput" accept=".txt, text/plain" class="w-full p-2 border rounded-lg">
                             </div>
+                            <div class="form-group">
+                               <label class="flex items-center gap-2 cursor-pointer">
+                                   <input type="checkbox" id="importMasteryCheckbox" class="w-4 h-4 accent-sky-500 flex-shrink-0" checked>
+                                   <span class="select-none">共有元の学習状況（習熟度）を反映する</span>
+                               </label>
+                           </div>
                             <button id="importProjectButton" class="btn btn-primary w-full mt-4 py-3 text-lg">プロジェクトを読み込む</button>
                             <p id="importStatusMessage" class="text-sm mt-2 text-center"></p>
                         </div>
@@ -1122,6 +1128,7 @@
             const importFileInput = document.getElementById('importFileInput');
             const importProjectButton = document.getElementById('importProjectButton');
             const importStatusMessage = document.getElementById('importStatusMessage');
+            const importMasteryCheckbox = document.getElementById('importMasteryCheckbox');
             const exportProjectButton = document.getElementById('exportProjectButton');
 
 
@@ -2545,7 +2552,9 @@
                         if (activeProject.quizzes.length > 0) {
                             // 既存クイズあり：マージ
                             activeProject.quizzes.push(...(importedProjectData.quizzes || []));
-                            Object.assign(activeProject.mastery, importedProjectData.mastery || {});
+                            if (importMasteryCheckbox.checked) {
+                                  Object.assign(activeProject.mastery, importedProjectData.mastery || {});
+                               }
                             if (importedProjectData.images) {
                                 activeProject.images = [...(activeProject.images || []), ...importedProjectData.images];
                             }
@@ -2555,7 +2564,11 @@
                             // 既存クイズなし：置き換え
                             activeProject.name = importedProjectData.name;
                             activeProject.quizzes = importedProjectData.quizzes || [];
-                            activeProject.mastery = importedProjectData.mastery || {};
+                            if (importMasteryCheckbox.checked) {
+                                   activeProject.mastery = importedProjectData.mastery || {};
+                               } else {
+                                   activeProject.mastery = {};
+                               }
                             activeProject.images = importedProjectData.images || [];
                             importStatusMessage.textContent = `プロジェクト「${activeProject.name}」を読み込みました。`;
                             importStatusMessage.style.color = 'green';
