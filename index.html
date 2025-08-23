@@ -1779,10 +1779,9 @@ async function handleGenerateQuiz() {
     try {
         loadingStatus.textContent = 'AIへの送信データを準備中...';
         
-        // ★★★ このAPIキーはサンプルです。ご自身のキーに置き換えてください ★★★
-        const apiKey = "AIzaSyAYeOQOPvaMh5eiM8Kn2yRmtvY4D3HmDvI"; 
+        const apiKey = "AIzaSyAYeOQOPvaMh5eiM8Kn2yRmtvY4D3HmDvI";
         
-        if (!apiKey || apiKey.startsWith("AIzaSy") === false) { // より安全なチェック
+        if (!apiKey || apiKey.startsWith("AIzaSy") === false) {
             throw new Error("APIキーが設定されていません。");
         }
 
@@ -1794,9 +1793,47 @@ async function handleGenerateQuiz() {
         basePrompt += `各問題には、内容に最適な形式("multiple_choice", "multiple_select", "fill_in_the_blank", "sorting")をAIが判断して指定し、必ず詳細な解説を日本語で付けてください。\n\n# JSON形式の厳守\n- "answer"フィールドには、必ず"options"や"items"配列に含まれる選択肢の**テキストそのもの**を、配列形式で正確に格納してください。例: ["東京都"]\n- "options"フィールドには、解答の選択肢となる文字列の配列を入れてください。選択肢の前に「A:」のような記号は不要です。`;
         if (selectedType !== 'auto_select') { basePrompt += `問題形式は「${questionType.options[questionType.selectedIndex].text}」に統一してください。` }
         basePrompt += `生成される問題は、提供された情報源と完全に一致し、事実として正確でなければなりません。`;
+        
         payload = { contents: [{ role: "user", parts: [] }], generationConfig: { responseMimeType: "application/json" } };
+        
         const parts = [{ text: basePrompt }];
-        if (promptText.value.trim()) { parts.push({ text: `\n\n--- テキスト内容 ---\n${promptText.value}` }); }
+        if (promptText.value.trim()) {
+            parts.push({ text: `\n\n--- テキスト内容 ---\n${promptText.value}` });
+        }
+        
+        // ★★★ 修正箇所 START ★★★
+        // uploadedFiles の内容をAPIリクエストに含める処理を追加
+        for (const file of uploadedFiles) {
+            if (file.isPdf) {
+                 // PDFの場合、全ページを画像として展開してpartsに追加する
+                const pdf = await pdfjsLib.getDocument({ data: file.pdfData }).promise;
+                for (let i = 1; i <= pdf.numPages; i++) {
+                    const page = await pdf.getPage(i);
+                    const viewport = page.getViewport({ scale: 1.5 });
+                    const canvas = document.createElement('canvas');
+                    const context = canvas.getContext('2d');
+                    canvas.height = viewport.height;
+                    canvas.width = viewport.width;
+                    await page.render({ canvasContext: context, viewport: viewport }).promise;
+                    const imageDataUrl = canvas.toDataURL('image/jpeg', 0.8);
+                    parts.push({
+                        inlineData: {
+                            mimeType: 'image/jpeg',
+                            data: imageDataUrl.split(',')[1]
+                        }
+                    });
+                }
+            } else if (file.mimeType.startsWith('image/')) {
+                // 通常の画像ファイルの場合
+                parts.push({
+                    inlineData: {
+                        mimeType: file.mimeType,
+                        data: file.content.split(',')[1]
+                    }
+                });
+            }
+        }
+        // ★★★ 修正箇所 END ★★★
         
         payload.contents[0].parts = parts;
         let itemSchema = { type: "OBJECT", properties: { question: { type: "STRING" }, type: { type: "STRING" }, options: { type: "ARRAY", items: { type: "STRING" } }, items: { type: "ARRAY", items: { type: "STRING" } }, answer: { type: "ARRAY", items: { type: "STRING" } }, explanation: { type: "STRING" }, long_content: { type: "STRING" }, image_source: { type: "BOOLEAN" } }, required: ["question", "type", "answer", "explanation"] };
@@ -1817,11 +1854,8 @@ async function handleGenerateQuiz() {
         }
         const result = await response.json();
         
-        // ★★★ 修正箇所 START ★★★
-        // .text を参照せず、JSON.parse() を使わないように修正
         if (result.candidates?.[0]?.content?.parts?.[0]) {
-            const generatedData = result.candidates[0].content.parts[0]; // 応答は既にオブジェクト形式
-            // ★★★ 修正箇所 END ★★★
+            const generatedData = result.candidates[0].content.parts[0];
             const processQuestions = (questions) => { return questions.map(q => { let processed = {...q}; if (!Array.isArray(processed.answer)) { processed.answer = [String(processed.answer)]; } return processed; }); };
             if (isAutoGenre && generatedData.genres) { const processedGenres = generatedData.genres.map(genre => ({ ...genre, quizzes: processQuestions(genre.quizzes || []) })); handleAutoGenreResponse(processedGenres); } 
             else if (generatedData.quizzes) { tempGeneratedQuestions = processQuestions(generatedData.quizzes); showNameQuizModal(); } 
