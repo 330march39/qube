@@ -1831,16 +1831,12 @@
                          throw new Error("AIからの応答が無効、または空です。");
                     }
                 } catch (error) {
-                    console.error("Quiz generation failed:", error);
-                    if(payload) {
-                         console.error("Failed Payload:", JSON.stringify(payload, null, 2));
-                    }
-                   if (error.message.includes('quota')) {
-                      generationError.textContent = '現在、サービスが混み合っています。数分経ってから、もう一度お試しください。';
-                   } else {
-                       generationError.textContent = `クイズの生成に失敗しました: ${error.message}`;
-                   }
-                    generationError.classList.remove('hidden');
+                    console.error("Quiz generation failed:", error);
+                    if(payload) {
+                         console.error("Failed Payload:", JSON.stringify(payload, null, 2));
+                    }
+                    generationError.textContent = `クイズの生成に失敗しました: ${error.message}`;
+                    generationError.classList.remove('hidden');
                 } finally {
                     clearTimeout(warningTimeout);
                     generationWarning.classList.add('hidden');
@@ -2892,12 +2888,7 @@
                 } catch (error) {
                     console.error("AI Tutor Error:", error);
                     aiTutorChatLog.removeChild(loadingIndicator);
-                    alet userFriendlyMessage = `エラーが発生しました: ${error.message}`;
-                   if (error.message.includes('quota')) {
-                       userFriendlyMessage = '現在、サービスが混み合っています。数分経ってから、もう一度話しかけてみてください。';
-                   }
-
-                   appendMessageToChat(userFriendlyMessage, 'ai');
+                    appendMessageToChat(`エラーが発生しました: ${error.message}`, 'ai');
                 } finally {
                     aiTutorSubmitButton.disabled = false;
                     aiTutorInput.focus();
