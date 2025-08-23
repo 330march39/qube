@@ -172,15 +172,18 @@
             gap: 1rem;
         }
         #headerLeft, #headerRight {
-            flex-shrink: 0;
-            display: flex;
-            align-items: center;
-            gap: 0.5rem;
+        flex-shrink: 0; /* ボタンのある左右の領域は縮まないように固定 */
+        display: flex;
+        align-items: center;
+        gap: 0.5rem;
         }
+    
         #headerCenter {
-            flex-grow: 1;
-            min-width: 0;
+            flex-grow: 1; /* 中央の領域は利用可能なスペースいっぱいに広がる */
             text-align: center;
+        
+            /* 最も重要な設定：これによりflexアイテムがコンテンツ幅より小さくなることを許可 */
+            min-width: 0;
         }
         #projectTitle {
             font-weight: 700;
