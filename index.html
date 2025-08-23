@@ -2478,8 +2478,8 @@
                 uploadedFiles = [];
                 filePreviewContainer.innerHTML = '';
                 fileUpload.value = ''; 
-                promptLabel.textContent = 'クイズにしたい内容を入力または貼り付け';
-                promptText.placeholder = '例: 日本の首都は東京です。徳川家康は江戸幕府を開きました...';
+                promptLabel.textContent = 'クイズにしたい内容（プロンプト）';
+                promptText.placeholder = '例:「英語の長文問題を作成してください。中学レベルで、ポスターから内容を読み取る問題にしてください。」　または　「日本の首都は東京です。徳川家康は江戸幕府を開きました...」';
             };
             
             async function handleExportProject(projectId) {
