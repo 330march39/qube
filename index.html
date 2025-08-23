@@ -636,6 +636,23 @@
                 margin-top: 20px;
             }
         }
+        body {
+        -webkit-user-select: none;
+        -moz-user-select: none;
+        -ms-user-select: none;
+        user-select: none;
+      }
+      #questionText, 
+      #longContentBox, 
+      #aiTutorQuestionText, 
+      #aiTutorChatLog .chat-message,
+      .feedback-message,
+      .start-screen-container p {
+        -webkit-user-select: text;
+        -moz-user-select: text;
+        -ms-user-select: text;
+        user-select: text;
+      }
     </style>
 </head>
 <body>
