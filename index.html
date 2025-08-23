@@ -1821,7 +1821,7 @@ async function handleGenerateQuiz() {
         const result = await response.json();
         
         if (result.candidates?.[0]?.content?.parts?.[0]?.text) {
-            const generatedData = JSON.parse(result.candidates[0].content.parts[0].text);
+            const generatedData = result.candidates[0].content.parts[0];
             const processQuestions = (questions) => { return questions.map(q => { let processed = {...q}; if (!Array.isArray(processed.answer)) { processed.answer = [String(processed.answer)]; } return processed; }); };
             if (isAutoGenre && generatedData.genres) { const processedGenres = generatedData.genres.map(genre => ({ ...genre, quizzes: processQuestions(genre.quizzes || []) })); handleAutoGenreResponse(processedGenres); } 
             else if (generatedData.quizzes) { tempGeneratedQuestions = processQuestions(generatedData.quizzes); showNameQuizModal(); } 
