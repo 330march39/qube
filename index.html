@@ -663,6 +663,20 @@
         img {
         pointer-events: none;
       }
+        .loader {
+  border: 5px solid var(--bg-tertiary);
+  border-top: 5px solid var(--accent-primary);
+  border-radius: 50%;
+  width: 50px;
+  height: 50px;
+  animation: spin 1s linear infinite;
+  margin: 20px auto;
+}
+
+@keyframes spin {
+  0% { transform: rotate(0deg); }
+  100% { transform: rotate(360deg); }
+}
     </style>
 </head>
 <body>
@@ -1116,6 +1130,14 @@
         <p>ブラウザの共有ボタン <span id="iosShareIconContainer" class="inline-block align-middle h-5 w-5 -mt-1"></span> から「ホーム画面に追加」を選択してください。</p>
         <p class="text-xs mt-2 text-gray-500">アプリ版とブラウザ版で生成したクイズが同期しないため、生成する前にアプリ版を使用することをおすすめします。</p>
     </div>
+    
+    <div id="loadingModal" class="modal">
+    <div class="modal-content" style="max-width: 300px; text-align: center; background-color: var(--bg-secondary);">
+        <div class="loader"></div>
+        <p class="mt-4 text-lg font-semibold">ファイルを処理中...</p>
+        <p id="loadingStatus" class="text-sm" style="color: var(--text-secondary); min-height: 1.25rem;"></p>
+    </div>
+</div>
 
 
     <script>
@@ -2399,114 +2421,199 @@
                 saveState();
             };
 
-            async function handleFileSelect(files) {
-                fileUpload.disabled = true;
-                generationError.classList.add('hidden');
+            // 既存のhandleFileSelect関数を、以下の内容でまるごと置き換えてください
+async function handleFileSelect(files) {
+    fileUpload.disabled = true;
+    generationError.classList.add('hidden');
 
-                const filePromises = Array.from(files).map(file => {
-                    return new Promise((resolve, reject) => {
-                        const reader = new FileReader();
+    // --- NEW: 処理中モーダルを表示 ---
+    const loadingModal = document.getElementById('loadingModal');
+    const loadingStatus = document.getElementById('loadingStatus');
+    loadingStatus.textContent = '';
+    loadingModal.classList.add('show');
+    
+    const filePromises = Array.from(files).map(file => {
+        return new Promise((resolve, reject) => {
+            const reader = new FileReader();
+            
+            if (file.type === 'application/pdf') {
+                loadingStatus.textContent = `PDFを解析中: ${file.name}`;
+                reader.onload = async (e) => {
+                    try {
+                        const pdfData = new Uint8Array(e.target.result);
+                        const pdf = await pdfjsLib.getDocument({ data: pdfData }).promise;
+                        const numPages = pdf.numPages;
+
+                        // --- MODIFIED: 最初の1ページだけを先に画像化 ---
+                        const page = await pdf.getPage(1);
+                        const viewport = page.getViewport({ scale: 1.5 });
+                        const canvas = document.createElement('canvas');
+                        const context = canvas.getContext('2d');
+                        canvas.height = viewport.height;
+                        canvas.width = viewport.width;
+                        await page.render({ canvasContext: context, viewport: viewport }).promise;
                         
-                        if (file.type === 'application/pdf') {
-                            reader.onload = async (e) => {
-                                try {
-                                    const pdfData = new Uint8Array(e.target.result);
-                                    const pdf = await pdfjsLib.getDocument({ data: pdfData }).promise;
-                                    const pagePromises = [];
+                        const firstPageDataUrl = canvas.toDataURL('image/jpeg', 0.8);
 
-                                    for (let i = 1; i <= pdf.numPages; i++) {
-                                        pagePromises.push((async (pageNum) => {
-                                            const page = await pdf.getPage(pageNum);
-                                            const viewport = page.getViewport({ scale: 1.5 });
-                                            const canvas = document.createElement('canvas');
-                                            const context = canvas.getContext('2d');
-                                            canvas.height = viewport.height;
-                                            canvas.width = viewport.width;
-                                            await page.render({ canvasContext: context, viewport: viewport }).promise;
-                                            return {
-                                                name: `${file.name} (ページ ${pageNum})`,
-                                                content: canvas.toDataURL('image/png'),
-                                                mimeType: 'image/png'
-                                            };
-                                        })(i));
-                                    }
-                                    resolve(Promise.all(pagePromises));
-                                } catch (pdfError) {
-                                    reject(pdfError);
-                                }
-                            };
-                            reader.onerror = (err) => reject(err);
-                            reader.readAsArrayBuffer(file);
-                        } else {
-                            reader.onload = (e) => resolve([{ 
-                                name: file.name, 
-                                content: e.target.result,
-                                mimeType: file.type 
-                            }]);
-                            reader.onerror = (err) => reject(err);
-                            reader.readAsDataURL(file);
-                        }
-                    });
-                });
+                        // --- MODIFIED: PDF専用のオブジェクトを作成して返す ---
+                        const pdfResult = {
+                            id: `file_${Date.now()}_${Math.random()}`,
+                            isPdf: true,
+                            name: file.name,
+                            numPages: numPages,
+                            firstPageDataUrl: firstPageDataUrl,
+                            pdfData: pdfData // 残りのページを後で処理するために生のデータを保持
+                        };
+                        resolve([pdfResult]);
 
-                try {
-                    const results = await Promise.all(filePromises);
-                    const flattenedResults = results.flat(); 
-                    uploadedFiles.push(...flattenedResults);
-                    await updateUIAfterFileUpload();
-                } catch (err) {
-                    console.error("File processing error:", err);
-                    generationError.textContent = `ファイルの処理に失敗しました: ${err.message}`;
-                    generationError.classList.remove('hidden');
-                } finally {
-                    fileUpload.value = '';
-                    fileUpload.disabled = false;
-                }
-            };
-
-            async function updateUIAfterFileUpload() {
-                filePreviewContainer.innerHTML = '';
-                for (const file of uploadedFiles) {
-                    const itemDiv = document.createElement('div');
-                    itemDiv.className = 'file-preview-item';
-
-                    if (file.mimeType.startsWith('image/')) {
-                        const img = document.createElement('img');
-                        img.src = file.content;
-                        itemDiv.appendChild(img);
-                    } else {
-                        const icon = document.createElement('div');
-                        icon.innerHTML = `<svg xmlns="http://www.w3.org/2000/svg" class="h-12 w-12 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" /></svg>`;
-                        itemDiv.appendChild(icon);
+                    } catch (pdfError) {
+                        reject(pdfError);
                     }
+                };
+                reader.readAsArrayBuffer(file);
+            } else {
+                // PDF以外のファイルの処理 (画像など)
+                reader.onload = (e) => resolve([{ 
+                    id: `file_${Date.now()}_${Math.random()}`,
+                    isPdf: false,
+                    name: file.name, 
+                    content: e.target.result,
+                    mimeType: file.type 
+                }]);
+                reader.onerror = (err) => reject(err);
+                reader.readAsDataURL(file);
+            }
+        });
+    });
 
-                    const p = document.createElement('p');
-                    p.className = 'file-name';
-                    p.textContent = file.name;
-                    itemDiv.appendChild(p);
+    try {
+        const results = await Promise.all(filePromises);
+        const flattenedResults = results.flat(); 
+        uploadedFiles.push(...flattenedResults);
+        await updateUIAfterFileUpload(); 
+    } catch (err) {
+        console.error("File processing error:", err);
+        generationError.textContent = `ファイルの処理に失敗しました: ${err.message}`;
+        generationError.classList.remove('hidden');
+    } finally {
+        fileUpload.value = '';
+        fileUpload.disabled = false;
+        // --- NEW: 処理中モーダルを非表示 ---
+        loadingModal.classList.remove('show');
+    }
+};
+
+            // 既存のupdateUIAfterFileUpload関数を、以下の内容でまるごと置き換えてください
+async function updateUIAfterFileUpload() {
+    filePreviewContainer.innerHTML = '';
+    for (const file of uploadedFiles) {
+        const itemDiv = document.createElement('div');
+        itemDiv.className = 'file-preview-item';
+        itemDiv.dataset.fileId = file.id; // --- MODIFIED: ユニークIDを付与 ---
+
+        // --- NEW: PDFの場合の特別なプレビュー処理 ---
+        if (file.isPdf) {
+            itemDiv.style.alignItems = 'stretch'; // コンテナの幅を子要素に合わせる
+            
+            const pdfContainer = document.createElement('div');
+            pdfContainer.style.display = 'flex';
+            pdfContainer.style.flexDirection = 'column';
+            pdfContainer.style.alignItems = 'center';
+
+            const img = document.createElement('img');
+            img.src = file.firstPageDataUrl;
+            pdfContainer.appendChild(img);
+            
+            if (file.numPages > 1) {
+                const summaryDiv = document.createElement('div');
+                summaryDiv.style.textAlign = 'center';
+                summaryDiv.style.marginTop = '8px';
+
+                const summaryText = document.createElement('p');
+                summaryText.className = 'text-gray-500 dark:text-gray-400 text-sm';
+                summaryText.textContent = `...その他 ${file.numPages - 1} ページ`;
+
+                const viewAllBtn = document.createElement('button');
+                viewAllBtn.textContent = 'すべて見る';
+                viewAllBtn.className = 'text-sm font-bold cursor-pointer';
+                viewAllBtn.style.color = 'var(--accent-primary)';
+                viewAllBtn.style.marginTop = '4px';
+                viewAllBtn.style.background = 'none';
+                viewAllBtn.style.border = 'none';
+                viewAllBtn.style.padding = '0';
+
+                summaryDiv.appendChild(summaryText);
+                summaryDiv.appendChild(viewAllBtn);
+                pdfContainer.appendChild(summaryDiv);
+                
+                // 「すべて見る」ボタンのクリックイベント
+                viewAllBtn.addEventListener('click', async (e) => {
+                    e.stopPropagation();
+                    summaryDiv.innerHTML = '<p class="text-sm">画像を生成中...</p>';
                     
-                    const removeBtn = document.createElement('button');
-                    removeBtn.className = 'remove-file-btn';
-                    removeBtn.innerHTML = '&times;';
-                    removeBtn.onclick = (e) => {
-                        e.stopPropagation();
-                        const fileIndex = uploadedFiles.findIndex(f => f.name === file.name && f.content === file.content);
-                        if(fileIndex > -1){
-                            uploadedFiles.splice(fileIndex, 1);
+                    try {
+                        const pdf = await pdfjsLib.getDocument({ data: file.pdfData }).promise;
+                        for (let i = 2; i <= file.numPages; i++) { // 2ページ目から処理
+                            const page = await pdf.getPage(i);
+                            const viewport = page.getViewport({ scale: 1.5 });
+                            const canvas = document.createElement('canvas');
+                            canvas.height = viewport.height;
+                            canvas.width = viewport.width;
+                            await page.render({ canvasContext: canvas.getContext('2d'), viewport: viewport }).promise;
+                            
+                            const newImg = document.createElement('img');
+                            newImg.src = canvas.toDataURL('image/jpeg', 0.8);
+                            newImg.style.marginTop = '8px';
+                            pdfContainer.appendChild(newImg);
                         }
-                        updateUIAfterFileUpload();
-                    };
-                    itemDiv.appendChild(removeBtn);
-                    filePreviewContainer.appendChild(itemDiv);
-                }
+                        summaryDiv.remove(); // 処理が終わったらサマリーを消す
+                    } catch (err) {
+                        summaryDiv.innerHTML = '<p class="text-sm text-red-500">エラー</p>';
+                        console.error("Error rendering PDF pages:", err);
+                    }
+                });
+            }
+            itemDiv.appendChild(pdfContainer);
 
-                if (uploadedFiles.length > 0) {
-                    promptLabel.textContent = 'アップロードしたファイルへの追加指示 (任意)';
-                    promptText.placeholder = '例: この内容について5問作成してください。';
-                } else {
-                    resetUploadUI();
-                }
-            };
+        } else if (file.mimeType.startsWith('image/')) {
+            const img = document.createElement('img');
+            img.src = file.content;
+            itemDiv.appendChild(img);
+        } else {
+            const icon = document.createElement('div');
+            icon.innerHTML = `<svg xmlns="http://www.w3.org/2000/svg" class="h-12 w-12 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" /></svg>`;
+            itemDiv.appendChild(icon);
+        }
+
+        const p = document.createElement('p');
+        p.className = 'file-name';
+        p.textContent = file.name;
+        itemDiv.appendChild(p);
+        
+        const removeBtn = document.createElement('button');
+        removeBtn.className = 'remove-file-btn';
+        removeBtn.innerHTML = '&times;';
+        removeBtn.onclick = (e) => {
+            e.stopPropagation();
+            // --- MODIFIED: ユニークIDでファイルを検索して削除 ---
+            const fileIdToRemove = itemDiv.dataset.fileId; 
+            const fileIndex = uploadedFiles.findIndex(f => f.id === fileIdToRemove);
+            if(fileIndex > -1){
+                uploadedFiles.splice(fileIndex, 1);
+            }
+            updateUIAfterFileUpload();
+        };
+        itemDiv.appendChild(removeBtn);
+        filePreviewContainer.appendChild(itemDiv);
+    }
+
+    if (uploadedFiles.length > 0) {
+        promptLabel.textContent = 'アップロードしたファイルへの追加指示 (任意)';
+        promptText.placeholder = '例: この内容について5問作成してください。';
+    } else {
+        resetUploadUI();
+    }
+};
 
             function resetUploadUI() {
                 uploadedFiles = [];
