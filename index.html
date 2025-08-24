@@ -2672,8 +2672,8 @@ async function updateUIAfterFileUpload() {
                             if (importedProjectData.images) {
                                 activeProject.images = [...(activeProject.images || []), ...importedProjectData.images];
                             }
-                            importStatusMessage.textContent = `「${activeProject.name}」にクイズを追加しました。`;
-                            importStatusMessage.style.color = 'green';
+                            //importStatusMessage.textContent = `「${activeProject.name}」にクイズを追加しました。`;
+                            //importStatusMessage.style.color = 'green';
                         } else {
                             // 既存クイズなし：置き換え
                             activeProject.name = importedProjectData.name;
