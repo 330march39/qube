@@ -1803,36 +1803,14 @@ async function handleGenerateQuiz() {
         
         // ★★★ 修正箇所 START ★★★
         // uploadedFiles の内容をAPIリクエストに含める処理を追加
-        for (const file of uploadedFiles) {
-            if (file.isPdf) {
-                 // PDFの場合、全ページを画像として展開してpartsに追加する
-                const pdf = await pdfjsLib.getDocument({ data: file.pdfData }).promise;
-                for (let i = 1; i <= pdf.numPages; i++) {
-                    const page = await pdf.getPage(i);
-                    const viewport = page.getViewport({ scale: 1.5 });
-                    const canvas = document.createElement('canvas');
-                    const context = canvas.getContext('2d');
-                    canvas.height = viewport.height;
-                    canvas.width = viewport.width;
-                    await page.render({ canvasContext: context, viewport: viewport }).promise;
-                    const imageDataUrl = canvas.toDataURL('image/jpeg', 0.8);
-                    parts.push({
-                        inlineData: {
-                            mimeType: 'image/jpeg',
-                            data: imageDataUrl.split(',')[1]
-                        }
-                    });
-                }
-            } else if (file.mimeType.startsWith('image/')) {
-                // 通常の画像ファイルの場合
-                parts.push({
-                    inlineData: {
-                        mimeType: file.mimeType,
-                        data: file.content.split(',')[1]
-                    }
-                });
-            }
+        uploadedFiles.forEach(file => {
+    parts.push({
+        inlineData: {
+            mimeType: file.mimeType,
+            data: file.content.split(',')[1]
         }
+    });
+});
         // ★★★ 修正箇所 END ★★★
         
         payload.contents[0].parts = parts;
@@ -2395,60 +2373,48 @@ async function handleGenerateQuiz() {
             };
 
             // 既存のhandleFileSelect関数を、以下の内容でまるごと置き換えてください
+// 以下の2つの関数を、以前のコードの内容に置き換えてください
+
 async function handleFileSelect(files) {
     fileUpload.disabled = true;
     generationError.classList.add('hidden');
 
-    // --- NEW: 処理中モーダルを表示 ---
-    const loadingModal = document.getElementById('loadingModal');
-    const loadingStatus = document.getElementById('loadingStatus');
-    loadingStatus.textContent = '';
-    loadingModal.classList.add('show');
-    
     const filePromises = Array.from(files).map(file => {
         return new Promise((resolve, reject) => {
             const reader = new FileReader();
             
             if (file.type === 'application/pdf') {
-                loadingStatus.textContent = `PDFを解析中: ${file.name}`;
                 reader.onload = async (e) => {
                     try {
                         const pdfData = new Uint8Array(e.target.result);
                         const pdf = await pdfjsLib.getDocument({ data: pdfData }).promise;
-                        const numPages = pdf.numPages;
+                        const pagePromises = [];
 
-                        // --- MODIFIED: 最初の1ページだけを先に画像化 ---
-                        const page = await pdf.getPage(1);
-                        const viewport = page.getViewport({ scale: 1.5 });
-                        const canvas = document.createElement('canvas');
-                        const context = canvas.getContext('2d');
-                        canvas.height = viewport.height;
-                        canvas.width = viewport.width;
-                        await page.render({ canvasContext: context, viewport: viewport }).promise;
-                        
-                        const firstPageDataUrl = canvas.toDataURL('image/jpeg', 0.8);
-
-                        // --- MODIFIED: PDF専用のオブジェクトを作成して返す ---
-                        const pdfResult = {
-                            id: `file_${Date.now()}_${Math.random()}`,
-                            isPdf: true,
-                            name: file.name,
-                            numPages: numPages,
-                            firstPageDataUrl: firstPageDataUrl,
-                            pdfData: pdfData // 残りのページを後で処理するために生のデータを保持
-                        };
-                        resolve([pdfResult]);
-
+                        for (let i = 1; i <= pdf.numPages; i++) {
+                            pagePromises.push((async (pageNum) => {
+                                const page = await pdf.getPage(pageNum);
+                                const viewport = page.getViewport({ scale: 1.5 });
+                                const canvas = document.createElement('canvas');
+                                const context = canvas.getContext('2d');
+                                canvas.height = viewport.height;
+                                canvas.width = viewport.width;
+                                await page.render({ canvasContext: context, viewport: viewport }).promise;
+                                return {
+                                    name: `${file.name} (ページ ${pageNum})`,
+                                    content: canvas.toDataURL('image/png'),
+                                    mimeType: 'image/png'
+                                };
+                            })(i));
+                        }
+                        resolve(Promise.all(pagePromises));
                     } catch (pdfError) {
                         reject(pdfError);
                     }
                 };
+                reader.onerror = (err) => reject(err);
                 reader.readAsArrayBuffer(file);
             } else {
-                // PDF以外のファイルの処理 (画像など)
                 reader.onload = (e) => resolve([{ 
-                    id: `file_${Date.now()}_${Math.random()}`,
-                    isPdf: false,
                     name: file.name, 
                     content: e.target.result,
                     mimeType: file.type 
@@ -2463,7 +2429,7 @@ async function handleFileSelect(files) {
         const results = await Promise.all(filePromises);
         const flattenedResults = results.flat(); 
         uploadedFiles.push(...flattenedResults);
-        await updateUIAfterFileUpload(); 
+        await updateUIAfterFileUpload();
     } catch (err) {
         console.error("File processing error:", err);
         generationError.textContent = `ファイルの処理に失敗しました: ${err.message}`;
@@ -2471,84 +2437,16 @@ async function handleFileSelect(files) {
     } finally {
         fileUpload.value = '';
         fileUpload.disabled = false;
-        // --- NEW: 処理中モーダルを非表示 ---
-        loadingModal.classList.remove('show');
     }
 };
 
-            // 既存のupdateUIAfterFileUpload関数を、以下の内容でまるごと置き換えてください
 async function updateUIAfterFileUpload() {
     filePreviewContainer.innerHTML = '';
     for (const file of uploadedFiles) {
         const itemDiv = document.createElement('div');
         itemDiv.className = 'file-preview-item';
-        itemDiv.dataset.fileId = file.id; // --- MODIFIED: ユニークIDを付与 ---
 
-        // --- NEW: PDFの場合の特別なプレビュー処理 ---
-        if (file.isPdf) {
-            itemDiv.style.alignItems = 'stretch'; // コンテナの幅を子要素に合わせる
-            
-            const pdfContainer = document.createElement('div');
-            pdfContainer.style.display = 'flex';
-            pdfContainer.style.flexDirection = 'column';
-            pdfContainer.style.alignItems = 'center';
-
-            const img = document.createElement('img');
-            img.src = file.firstPageDataUrl;
-            pdfContainer.appendChild(img);
-            
-            if (file.numPages > 1) {
-                const summaryDiv = document.createElement('div');
-                summaryDiv.style.textAlign = 'center';
-                summaryDiv.style.marginTop = '8px';
-
-                const summaryText = document.createElement('p');
-                summaryText.className = 'text-gray-500 dark:text-gray-400 text-sm';
-                summaryText.textContent = `...その他 ${file.numPages - 1} ページ`;
-
-                const viewAllBtn = document.createElement('button');
-                viewAllBtn.textContent = 'すべて見る';
-                viewAllBtn.className = 'text-sm font-bold cursor-pointer';
-                viewAllBtn.style.color = 'var(--accent-primary)';
-                viewAllBtn.style.marginTop = '4px';
-                viewAllBtn.style.background = 'none';
-                viewAllBtn.style.border = 'none';
-                viewAllBtn.style.padding = '0';
-
-                summaryDiv.appendChild(summaryText);
-                summaryDiv.appendChild(viewAllBtn);
-                pdfContainer.appendChild(summaryDiv);
-                
-                // 「すべて見る」ボタンのクリックイベント
-                viewAllBtn.addEventListener('click', async (e) => {
-                    e.stopPropagation();
-                    summaryDiv.innerHTML = '<p class="text-sm">画像を生成中...</p>';
-                    
-                    try {
-                        const pdf = await pdfjsLib.getDocument({ data: file.pdfData }).promise;
-                        for (let i = 2; i <= file.numPages; i++) { // 2ページ目から処理
-                            const page = await pdf.getPage(i);
-                            const viewport = page.getViewport({ scale: 1.5 });
-                            const canvas = document.createElement('canvas');
-                            canvas.height = viewport.height;
-                            canvas.width = viewport.width;
-                            await page.render({ canvasContext: canvas.getContext('2d'), viewport: viewport }).promise;
-                            
-                            const newImg = document.createElement('img');
-                            newImg.src = canvas.toDataURL('image/jpeg', 0.8);
-                            newImg.style.marginTop = '8px';
-                            pdfContainer.appendChild(newImg);
-                        }
-                        summaryDiv.remove(); // 処理が終わったらサマリーを消す
-                    } catch (err) {
-                        summaryDiv.innerHTML = '<p class="text-sm text-red-500">エラー</p>';
-                        console.error("Error rendering PDF pages:", err);
-                    }
-                });
-            }
-            itemDiv.appendChild(pdfContainer);
-
-        } else if (file.mimeType.startsWith('image/')) {
+        if (file.mimeType.startsWith('image/')) {
             const img = document.createElement('img');
             img.src = file.content;
             itemDiv.appendChild(img);
@@ -2568,9 +2466,7 @@ async function updateUIAfterFileUpload() {
         removeBtn.innerHTML = '&times;';
         removeBtn.onclick = (e) => {
             e.stopPropagation();
-            // --- MODIFIED: ユニークIDでファイルを検索して削除 ---
-            const fileIdToRemove = itemDiv.dataset.fileId; 
-            const fileIndex = uploadedFiles.findIndex(f => f.id === fileIdToRemove);
+            const fileIndex = uploadedFiles.findIndex(f => f.name === file.name && f.content === file.content);
             if(fileIndex > -1){
                 uploadedFiles.splice(fileIndex, 1);
             }
@@ -2587,7 +2483,6 @@ async function updateUIAfterFileUpload() {
         resetUploadUI();
     }
 };
-
             function resetUploadUI() {
                 uploadedFiles = [];
                 filePreviewContainer.innerHTML = '';
