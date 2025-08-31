@@ -2643,7 +2643,7 @@ async function updateUIAfterFileUpload() {
                     try {
                         await navigator.share({
                             title: projectToExport.name,
-                            text: `Qubeプロジェクト: ${projectToExport.name}`,
+                            text: `このファイルをQubeで読み込んで、友達が作った「${projectToExport.name}」に挑戦してみよう！`,
                             files: [file],
                         });
                     } catch (error) {
