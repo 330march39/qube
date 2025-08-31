@@ -1740,8 +1740,6 @@
             };
             
             // 既存のhandleGenerateQuiz関数を、以下の内容でまるごと置き換えてください
-// 既存の handleGenerateQuiz 関数を削除し、以下のコードに差し替えてください。
-
 async function handleGenerateQuiz() {
     const buttonText = generateQuizButton.querySelector('.button-text');
     const spinner = generateQuizButton.querySelector('.spinner');
@@ -1753,97 +1751,134 @@ async function handleGenerateQuiz() {
         generationError.classList.remove('hidden');
         return;
     }
-    
-    if (!API_KEY || API_KEY === "AIzaSyA_c7CFmw0VJo1itcTmLJPapMYmnzzVYVU") {
-        generationError.textContent = 'エラー: 有効なAPIキーが設定されていません。';
-        generationError.classList.remove('hidden');
-        return;
-    }
 
     const loadingModal = document.getElementById('loadingModal');
     const loadingStatus = document.getElementById('loadingStatus');
+
+    if (!loadingModal || !loadingStatus) {
+        console.error("致命的なエラー: ローディングモーダルのHTML要素が見つかりません。IDを確認してください。");
+        generationError.textContent = "UIコンポーネントのエラーが発生しました。";
+        generationError.classList.remove('hidden');
+        return;
+    }
+    
     loadingModal.classList.add('show');
-    loadingStatus.textContent = 'AIへの送信データを準備中...';
+    loadingStatus.textContent = ''; 
+    
+    const warningTimeout = setTimeout(() => {
+        generationWarning.textContent = '生成に時間がかかる可能性があります...';
+        generationWarning.classList.remove('hidden');
+    }, 15000);
 
     buttonText.textContent = '生成中...';
     spinner.classList.remove('hidden');
     generateQuizButton.disabled = true;
+    
+    let payload;
 
     try {
+        loadingStatus.textContent = 'AIへの送信データを準備中...';
+        
+        const apiKey = "AIzaSyDBics-IMwGjNoh-2Rqj979DrinKEnyO1A";
+        
+        if (!apiKey || apiKey.startsWith("AIzaSy") === false) {
+            throw new Error("APIキーが設定されていません。");
+        }
+
         const isAutoGenre = autoGenreCheckbox.checked;
         const selectedType = questionType.value;
         const numQuestions = genQuestionCount.value === 'all' ? '可能な限り多く' : `${genQuestionCount.value}問`;
-        
         let basePrompt = `あなたは優秀なクイズ生成AIです。提供されたテキストや画像を分析し、以下の指示に従って質の高いクイズを${numQuestions}作成してください。\n\n# 指示分析\n- もし提供されたテキストが「〇〇についての問題を作って」のような指示形式であれば、その指示に従ってクイズを生成してください。\n- もし提供されたテキストが「日本の首都は東京です」のような事実や文章であれば、その内容に基づいてクイズを生成してください。\n- 指示自体を問題文にするのではなく、指示内容に沿った問題を作成してください。\n\n# 基本ルール\n画像群がPDFの連続したページである可能性も考慮し、全体の文脈を理解して問題を作成してください。`;
         if (isAutoGenre) { basePrompt += `内容を複数のジャンルに分け、各ジャンルごとに問題を作成してください。`; }
         basePrompt += `各問題には、内容に最適な形式("multiple_choice", "multiple_select", "fill_in_the_blank", "sorting")をAIが判断して指定し、必ず詳細な解説を日本語で付けてください。\n\n# JSON形式の厳守\n- "answer"フィールドには、必ず"options"や"items"配列に含まれる選択肢の**テキストそのもの**を、配列形式で正確に格納してください。例: ["東京都"]\n- "options"フィールドには、解答の選択肢となる文字列の配列を入れてください。選択肢の前に「A:」のような記号は不要です。`;
         if (selectedType !== 'auto_select') { basePrompt += `問題形式は「${questionType.options[questionType.selectedIndex].text}」に統一してください。` }
         basePrompt += `生成される問題は、提供された情報源と完全に一致し、事実として正確でなければなりません。`;
-
+        
+        payload = { contents: [{ role: "user", parts: [] }], generationConfig: { responseMimeType: "application/json" } };
+        
         const parts = [{ text: basePrompt }];
         if (promptText.value.trim()) {
             parts.push({ text: `\n\n--- テキスト内容 ---\n${promptText.value}` });
         }
         
-        uploadedFiles.forEach(file => {
-            parts.push({
-                inlineData: {
-                    mimeType: file.mimeType,
-                    data: file.content.split(',')[1]
+        // ★★★ 修正箇所 START ★★★
+        // uploadedFiles の内容をAPIリクエストに含める処理を追加
+        for (const file of uploadedFiles) {
+            if (file.isPdf) {
+                 // PDFの場合、全ページを画像として展開してpartsに追加する
+                const pdf = await pdfjsLib.getDocument({ data: file.pdfData }).promise;
+                for (let i = 1; i <= pdf.numPages; i++) {
+                    const page = await pdf.getPage(i);
+                    const viewport = page.getViewport({ scale: 1.5 });
+                    const canvas = document.createElement('canvas');
+                    const context = canvas.getContext('2d');
+                    canvas.height = viewport.height;
+                    canvas.width = viewport.width;
+                    await page.render({ canvasContext: context, viewport: viewport }).promise;
+                    const imageDataUrl = canvas.toDataURL('image/jpeg', 0.8);
+                    parts.push({
+                        inlineData: {
+                            mimeType: 'image/jpeg',
+                            data: imageDataUrl.split(',')[1]
+                        }
+                    });
                 }
-            });
-        });
-
-        const payload = { contents: [{ role: "user", parts: parts }], generationConfig: { responseMimeType: "application/json" } };
+            } else if (file.mimeType.startsWith('image/')) {
+                // 通常の画像ファイルの場合
+                parts.push({
+                    inlineData: {
+                        mimeType: file.mimeType,
+                        data: file.content.split(',')[1]
+                    }
+                });
+            }
+        }
+        // ★★★ 修正箇所 END ★★★
+        
+        payload.contents[0].parts = parts;
         let itemSchema = { type: "OBJECT", properties: { question: { type: "STRING" }, type: { type: "STRING" }, options: { type: "ARRAY", items: { type: "STRING" } }, items: { type: "ARRAY", items: { type: "STRING" } }, answer: { type: "ARRAY", items: { type: "STRING" } }, explanation: { type: "STRING" }, long_content: { type: "STRING" }, image_source: { type: "BOOLEAN" } }, required: ["question", "type", "answer", "explanation"] };
         if (isAutoGenre) { payload.generationConfig.responseSchema = { type: "OBJECT", properties: { "genres": { type: "ARRAY", items: { type: "OBJECT", properties: { "genre_name": { type: "STRING" }, "quizzes": { type: "ARRAY", items: itemSchema } }, required: ["genre_name", "quizzes"] } } } }; } else { payload.generationConfig.responseSchema = { type: "OBJECT", properties: { "quizzes": { "type": "ARRAY", "items": itemSchema } } }; }
-
+        
         loadingStatus.textContent = 'AIがクイズを生成中...';
-        const apiUrl = `https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-pro-latest:generateContent?key=${API_KEY}`;
+        const apiUrl = `https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-pro:generateContent?key=${apiKey}`;
         
         const response = await fetch(apiUrl, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(payload) });
 
         if (!response.ok) {
-            const errorData = await response.json();
-            const errorMessage = errorData?.error?.message || `HTTPエラー: ${response.status}`;
-            throw new Error(errorMessage);
+            const errorBody = await response.text();
+            console.error("API Error Response:", errorBody);
+            let userFriendlyError = `APIリクエストに失敗しました (ステータス: ${response.status})。`;
+            if (response.status === 400) { userFriendlyError += " APIキーが無効か、リクエストの内容に問題がある可能性があります。"; } 
+            else if (response.status === 429) { userFriendlyError += " APIの利用上限に達しました。時間をおいて再度お試しください。"; }
+            throw new Error(userFriendlyError);
         }
-
         const result = await response.json();
-        const part = result.candidates?.[0]?.content?.parts?.[0];
-
-        if (!part) {
-            const finishReason = result.candidates?.[0]?.finishReason;
+        
+        if (result.candidates?.[0]?.content?.parts?.[0]) {
+            const generatedData = result.candidates[0].content.parts[0];
+            const processQuestions = (questions) => { return questions.map(q => { let processed = {...q}; if (!Array.isArray(processed.answer)) { processed.answer = [String(processed.answer)]; } return processed; }); };
+            if (isAutoGenre && generatedData.genres) { const processedGenres = generatedData.genres.map(genre => ({ ...genre, quizzes: processQuestions(genre.quizzes || []) })); handleAutoGenreResponse(processedGenres); } 
+            else if (generatedData.quizzes) { tempGeneratedQuestions = processQuestions(generatedData.quizzes); showNameQuizModal(); } 
+            else { throw new Error("AIからの応答が期待された形式ではありません。"); }
+        } else {
+            console.error("Invalid API response structure:", result);
             let errorMessage = "AIからの応答が無効、または空です。";
-            if(finishReason && finishReason !== "STOP") { 
-                errorMessage += ` (理由: ${finishReason}) - コンテンツが安全でないと判断されたか、他の理由で停止した可能性があります。`; 
-            }
+            if(result.candidates?.[0]?.finishReason && result.candidates[0].finishReason !== "STOP") { errorMessage += ` (理由: ${result.candidates[0].finishReason}) - コンテンツが安全でないと判断された可能性があります。`; }
             throw new Error(errorMessage);
-        }
-        
-        // AIがJSONをテキストで返した場合でもパースを試みる
-        const generatedData = typeof part.text === 'string' ? JSON.parse(part.text) : part;
-
-        const processQuestions = (questions) => { return questions.map(q => ({...q, answer: Array.isArray(q.answer) ? q.answer : [String(q.answer)]})); };
-        
-        if (isAutoGenre && generatedData.genres) { 
-            const processedGenres = generatedData.genres.map(genre => ({ ...genre, quizzes: processQuestions(genre.quizzes || []) })); 
-            handleAutoGenreResponse(processedGenres); 
-        } else if (generatedData.quizzes) { 
-            tempGeneratedQuestions = processQuestions(generatedData.quizzes); 
-            showNameQuizModal(); 
-        } else { 
-            throw new Error("AIからの応答が期待されたJSON形式ではありません。"); 
         }
     } catch (error) {
-        console.error("クイズ生成に失敗しました:", error);
-        generationError.textContent = `エラー: ${error.message}`;
+        console.error("Quiz generation failed:", error);
+        generationError.textContent = `クイズの生成に失敗しました: ${error.message}`;
         generationError.classList.remove('hidden');
     } finally {
+        clearTimeout(warningTimeout);
+        generationWarning.classList.add('hidden');
         buttonText.textContent = 'クイズを生成する';
         spinner.classList.add('hidden');
         generateQuizButton.disabled = false;
-        loadingModal.classList.remove('show');
+        if (loadingModal) {
+            loadingModal.classList.remove('show');
+        }
     }
 }
             
@@ -2360,48 +2395,60 @@ async function handleGenerateQuiz() {
             };
 
             // 既存のhandleFileSelect関数を、以下の内容でまるごと置き換えてください
-// 以下の2つの関数を、以前のコードの内容に置き換えてください
-
 async function handleFileSelect(files) {
     fileUpload.disabled = true;
     generationError.classList.add('hidden');
 
+    // --- NEW: 処理中モーダルを表示 ---
+    const loadingModal = document.getElementById('loadingModal');
+    const loadingStatus = document.getElementById('loadingStatus');
+    loadingStatus.textContent = '';
+    loadingModal.classList.add('show');
+    
     const filePromises = Array.from(files).map(file => {
         return new Promise((resolve, reject) => {
             const reader = new FileReader();
             
             if (file.type === 'application/pdf') {
+                loadingStatus.textContent = `PDFを解析中: ${file.name}`;
                 reader.onload = async (e) => {
                     try {
                         const pdfData = new Uint8Array(e.target.result);
                         const pdf = await pdfjsLib.getDocument({ data: pdfData }).promise;
-                        const pagePromises = [];
+                        const numPages = pdf.numPages;
 
-                        for (let i = 1; i <= pdf.numPages; i++) {
-                            pagePromises.push((async (pageNum) => {
-                                const page = await pdf.getPage(pageNum);
-                                const viewport = page.getViewport({ scale: 1.5 });
-                                const canvas = document.createElement('canvas');
-                                const context = canvas.getContext('2d');
-                                canvas.height = viewport.height;
-                                canvas.width = viewport.width;
-                                await page.render({ canvasContext: context, viewport: viewport }).promise;
-                                return {
-                                    name: `${file.name} (ページ ${pageNum})`,
-                                    content: canvas.toDataURL('image/png'),
-                                    mimeType: 'image/png'
-                                };
-                            })(i));
-                        }
-                        resolve(Promise.all(pagePromises));
+                        // --- MODIFIED: 最初の1ページだけを先に画像化 ---
+                        const page = await pdf.getPage(1);
+                        const viewport = page.getViewport({ scale: 1.5 });
+                        const canvas = document.createElement('canvas');
+                        const context = canvas.getContext('2d');
+                        canvas.height = viewport.height;
+                        canvas.width = viewport.width;
+                        await page.render({ canvasContext: context, viewport: viewport }).promise;
+                        
+                        const firstPageDataUrl = canvas.toDataURL('image/jpeg', 0.8);
+
+                        // --- MODIFIED: PDF専用のオブジェクトを作成して返す ---
+                        const pdfResult = {
+                            id: `file_${Date.now()}_${Math.random()}`,
+                            isPdf: true,
+                            name: file.name,
+                            numPages: numPages,
+                            firstPageDataUrl: firstPageDataUrl,
+                            pdfData: pdfData // 残りのページを後で処理するために生のデータを保持
+                        };
+                        resolve([pdfResult]);
+
                     } catch (pdfError) {
                         reject(pdfError);
                     }
                 };
-                reader.onerror = (err) => reject(err);
                 reader.readAsArrayBuffer(file);
             } else {
+                // PDF以外のファイルの処理 (画像など)
                 reader.onload = (e) => resolve([{ 
+                    id: `file_${Date.now()}_${Math.random()}`,
+                    isPdf: false,
                     name: file.name, 
                     content: e.target.result,
                     mimeType: file.type 
@@ -2416,7 +2463,7 @@ async function handleFileSelect(files) {
         const results = await Promise.all(filePromises);
         const flattenedResults = results.flat(); 
         uploadedFiles.push(...flattenedResults);
-        await updateUIAfterFileUpload();
+        await updateUIAfterFileUpload(); 
     } catch (err) {
         console.error("File processing error:", err);
         generationError.textContent = `ファイルの処理に失敗しました: ${err.message}`;
@@ -2424,16 +2471,84 @@ async function handleFileSelect(files) {
     } finally {
         fileUpload.value = '';
         fileUpload.disabled = false;
+        // --- NEW: 処理中モーダルを非表示 ---
+        loadingModal.classList.remove('show');
     }
 };
 
+            // 既存のupdateUIAfterFileUpload関数を、以下の内容でまるごと置き換えてください
 async function updateUIAfterFileUpload() {
     filePreviewContainer.innerHTML = '';
     for (const file of uploadedFiles) {
         const itemDiv = document.createElement('div');
         itemDiv.className = 'file-preview-item';
+        itemDiv.dataset.fileId = file.id; // --- MODIFIED: ユニークIDを付与 ---
 
-        if (file.mimeType.startsWith('image/')) {
+        // --- NEW: PDFの場合の特別なプレビュー処理 ---
+        if (file.isPdf) {
+            itemDiv.style.alignItems = 'stretch'; // コンテナの幅を子要素に合わせる
+            
+            const pdfContainer = document.createElement('div');
+            pdfContainer.style.display = 'flex';
+            pdfContainer.style.flexDirection = 'column';
+            pdfContainer.style.alignItems = 'center';
+
+            const img = document.createElement('img');
+            img.src = file.firstPageDataUrl;
+            pdfContainer.appendChild(img);
+            
+            if (file.numPages > 1) {
+                const summaryDiv = document.createElement('div');
+                summaryDiv.style.textAlign = 'center';
+                summaryDiv.style.marginTop = '8px';
+
+                const summaryText = document.createElement('p');
+                summaryText.className = 'text-gray-500 dark:text-gray-400 text-sm';
+                summaryText.textContent = `...その他 ${file.numPages - 1} ページ`;
+
+                const viewAllBtn = document.createElement('button');
+                viewAllBtn.textContent = 'すべて見る';
+                viewAllBtn.className = 'text-sm font-bold cursor-pointer';
+                viewAllBtn.style.color = 'var(--accent-primary)';
+                viewAllBtn.style.marginTop = '4px';
+                viewAllBtn.style.background = 'none';
+                viewAllBtn.style.border = 'none';
+                viewAllBtn.style.padding = '0';
+
+                summaryDiv.appendChild(summaryText);
+                summaryDiv.appendChild(viewAllBtn);
+                pdfContainer.appendChild(summaryDiv);
+                
+                // 「すべて見る」ボタンのクリックイベント
+                viewAllBtn.addEventListener('click', async (e) => {
+                    e.stopPropagation();
+                    summaryDiv.innerHTML = '<p class="text-sm">画像を生成中...</p>';
+                    
+                    try {
+                        const pdf = await pdfjsLib.getDocument({ data: file.pdfData }).promise;
+                        for (let i = 2; i <= file.numPages; i++) { // 2ページ目から処理
+                            const page = await pdf.getPage(i);
+                            const viewport = page.getViewport({ scale: 1.5 });
+                            const canvas = document.createElement('canvas');
+                            canvas.height = viewport.height;
+                            canvas.width = viewport.width;
+                            await page.render({ canvasContext: canvas.getContext('2d'), viewport: viewport }).promise;
+                            
+                            const newImg = document.createElement('img');
+                            newImg.src = canvas.toDataURL('image/jpeg', 0.8);
+                            newImg.style.marginTop = '8px';
+                            pdfContainer.appendChild(newImg);
+                        }
+                        summaryDiv.remove(); // 処理が終わったらサマリーを消す
+                    } catch (err) {
+                        summaryDiv.innerHTML = '<p class="text-sm text-red-500">エラー</p>';
+                        console.error("Error rendering PDF pages:", err);
+                    }
+                });
+            }
+            itemDiv.appendChild(pdfContainer);
+
+        } else if (file.mimeType.startsWith('image/')) {
             const img = document.createElement('img');
             img.src = file.content;
             itemDiv.appendChild(img);
@@ -2453,7 +2568,9 @@ async function updateUIAfterFileUpload() {
         removeBtn.innerHTML = '&times;';
         removeBtn.onclick = (e) => {
             e.stopPropagation();
-            const fileIndex = uploadedFiles.findIndex(f => f.name === file.name && f.content === file.content);
+            // --- MODIFIED: ユニークIDでファイルを検索して削除 ---
+            const fileIdToRemove = itemDiv.dataset.fileId; 
+            const fileIndex = uploadedFiles.findIndex(f => f.id === fileIdToRemove);
             if(fileIndex > -1){
                 uploadedFiles.splice(fileIndex, 1);
             }
@@ -2470,6 +2587,7 @@ async function updateUIAfterFileUpload() {
         resetUploadUI();
     }
 };
+
             function resetUploadUI() {
                 uploadedFiles = [];
                 filePreviewContainer.innerHTML = '';
@@ -2554,8 +2672,8 @@ async function updateUIAfterFileUpload() {
                             if (importedProjectData.images) {
                                 activeProject.images = [...(activeProject.images || []), ...importedProjectData.images];
                             }
-                            //importStatusMessage.textContent = `「${activeProject.name}」にクイズを追加しました。`;
-                            //importStatusMessage.style.color = 'green';
+                            importStatusMessage.textContent = `「${activeProject.name}」にクイズを追加しました。`;
+                            importStatusMessage.style.color = 'green';
                         } else {
                             // 既存クイズなし：置き換え
                             activeProject.name = importedProjectData.name;
@@ -2840,7 +2958,7 @@ async function updateUIAfterFileUpload() {
                     const payload = { contents: aiChatHistory };
                     
                     // ★★★ 変更箇所 1/2: ここにあなたのAPIキーを設定 ★★★
-                    const apiKey = "AIzaSyAmL3qPv1Zr0URta9hE0a4QCveWOfonBHc";
+                    const apiKey = "AIzaSyDBics-IMwGjNoh-2Rqj979DrinKEnyO1A";
 
                     if (!apiKey || apiKey === "ここにあなたのGoogle AI APIキーを貼り付け") {
                         throw new Error("APIキーが設定されていません。");
