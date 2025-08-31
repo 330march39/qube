@@ -1741,68 +1741,63 @@
             };
             
             async function handleGenerateQuiz() {
-    const buttonText = generateQuizButton.querySelector('.button-text');
-    const spinner = generateQuizButton.querySelector('.spinner');
-    generationError.classList.add('hidden');
-    generationWarning.classList.add('hidden');
+                const buttonText = generateQuizButton.querySelector('.button-text');
+                const spinner = generateQuizButton.querySelector('.spinner');
+                generationError.classList.add('hidden');
+                generationWarning.classList.add('hidden');
 
-    if (promptText.value.trim() === '' && uploadedFiles.length === 0) {
-        generationError.textContent = 'クイズの元になる内容を入力またはアップロードしてください。';
-        generationError.classList.remove('hidden');
-        return;
-    }
+                if (promptText.value.trim() === '' && uploadedFiles.length === 0) {
+                    generationError.textContent = 'クイズの元になる内容を入力またはアップロードしてください。';
+                    generationError.classList.remove('hidden');
+                    return;
+                }
 
-    const warningTimeout = setTimeout(() => {
-        generationWarning.textContent = '生成に時間がかかる可能性があります...';
-        generationWarning.classList.remove('hidden');
-    }, 15000);
+                const warningTimeout = setTimeout(() => {
+                    generationWarning.textContent = '生成に時間がかかる可能性があります...';
+                    generationWarning.classList.remove('hidden');
+                }, 15000);
 
-    buttonText.textContent = '生成準備中...';
-    spinner.classList.remove('hidden');
-    generateQuizButton.disabled = true;
-    
-    let payload;
+                buttonText.textContent = '生成準備中...';
+                spinner.classList.remove('hidden');
+                generateQuizButton.disabled = true;
+                
+                let payload;
 
-    try {
-        // --- START: ファイル変換処理 ---
-        const processedFiles = [];
-        if (uploadedFiles.length > 0) {
-            const loadingModal = document.getElementById('loadingModal');
-            const loadingStatus = document.getElementById('loadingStatus');
-            loadingModal.classList.add('show');
-            
-            for (const file of uploadedFiles) {
-                if (file.isPdf) {
-                    loadingStatus.textContent = `PDFを画像に変換中: ${file.name}`;
-                    const pdf = await pdfjsLib.getDocument({ data: file.pdfData }).promise;
-                    for (let i = 1; i <= pdf.numPages; i++) {
-                        loadingStatus.textContent = `PDFを画像に変換中... (${i}/${pdf.numPages}ページ)`;
-                        const page = await pdf.getPage(i);
-                        const viewport = page.getViewport({ scale: 1.5 });
-                        const canvas = document.createElement('canvas');
-                        canvas.height = viewport.height;
-                        canvas.width = viewport.width;
-                        await page.render({ canvasContext: canvas.getContext('2d'), viewport: viewport }).promise;
-                        processedFiles.push({
-                            mimeType: 'image/jpeg',
-                            content: canvas.toDataURL('image/jpeg', 0.8)
-                        });
-                    }
-                } else {
-                    processedFiles.push(file);
-                }
-            }
-            loadingModal.classList.remove('show');
-        }
-        // --- END: ファイル変換処理 ---
+                try {
+                    // ★★★ START: ファイル変換処理を追加 ★★★
+                    const processedFiles = [];
+                    if (uploadedFiles.length > 0) {
+                        const loadingModal = document.getElementById('loadingModal');
+                        const loadingStatus = document.getElementById('loadingStatus');
+                        loadingModal.classList.add('show');
+                        
+                        for (const file of uploadedFiles) {
+                            if (file.isPdf) {
+                                loadingStatus.textContent = `PDFを画像に変換中: ${file.name}`;
+                                const pdf = await pdfjsLib.getDocument({ data: file.pdfData }).promise;
+                                for (let i = 1; i <= pdf.numPages; i++) {
+                                    loadingStatus.textContent = `PDFを画像に変換中... (${i}/${pdf.numPages}ページ)`;
+                                    const page = await pdf.getPage(i);
+                                    const viewport = page.getViewport({ scale: 1.5 });
+                                    const canvas = document.createElement('canvas');
+                                    canvas.height = viewport.height;
+                                    canvas.width = viewport.width;
+                                    await page.render({ canvasContext: canvas.getContext('2d'), viewport: viewport }).promise;
+                                    processedFiles.push({
+                                        mimeType: 'image/jpeg',
+                                        content: canvas.toDataURL('image/jpeg', 0.8) // データ量を抑えるため圧縮
+                                    });
+                                }
+                            } else {
+                                processedFiles.push(file); // PDF以外はそのまま追加
+                            }
+                        }
+                        loadingModal.classList.remove('show');
+                    }
+                    // ★★★ END: ファイル変換処理 ★★★
+                     buttonText.textContent = '生成中...'; // ユーザーへのフィードバックを更新
 
-        // ★★★ 重要な変更点 ★★★
-        // APIリクエストの前に、処理済みの画像データを一時変数に保存します。
-        tempGeneratedImages = processedFiles.filter(f => f.mimeType && f.mimeType.startsWith('image/'));
-
-        buttonText.textContent = '生成中...';
-
-       const apiKey = "AIzaSyDBics-IMwGjNoh-2Rqj979DrinKEnyO1A"; 
+                    const apiKey = "AIzaSyDBics-IMwGjNoh-2Rqj979DrinKEnyO1A"; 
 
                     const isAutoGenre = autoGenreCheckbox.checked;
                     const selectedType = questionType.value;
@@ -1821,16 +1816,12 @@
                          basePrompt += `内容を複数のジャンルに分け、各ジャンルごとに問題を作成してください。`;
                     }
                      basePrompt += `各問題には、内容に最適な形式("multiple_choice", "multiple_select", "fill_in_the_blank", "sorting")をAIが判断して指定し、必ず詳細な解説を日本語で付けてください。
-
-                    # 文章と設問の分離ルール (重要)
-                    - 問題の前提となる長文、対話文、あるいは例文などがある場合は、その文章を `long_content` フィールドに格納してください。
-                    - `question` フィールドには、「空欄に最も適切な語句を選びなさい」や「この文章の要点は何ですか？」といった、その文章に対する**設問そのもの**を格納してください。
-                    - このルールは特に、英文の空欄補充問題や読解問題で厳密に守ってください。
-                    
-                    # JSON形式の厳守
-                    - "answer"フィールドには、必ず"options"や"items"配列に含まれる選択肢の**テキストそのもの**を、配列形式で正確に格納してください。例: ["東京都"]
-                    - "options"フィールドには、解答の選択肢となる文字列の配列を入れてください。選択肢の前に「A:」のような記号は不要です。`;
                     
+                        # JSON形式の厳守
+                        - "answer"フィールドには、必ず"options"や"items"配列に含まれる選択肢の**テキストそのもの**を、配列形式で正確に格納してください。例: ["東京都"]
+                        - "options"フィールドには、解答の選択肢となる文字列の配列を入れてください。選択肢の前に「A:」のような記号は不要です。`;
+                    
+                    // ★★★ ここも修正後のコードを適用 ★★★
                     if (selectedType !== 'auto_select') {
                         basePrompt += `\n# 問題形式の厳守\n全てのクイズの問題形式(JSONのtypeフィールド)は、必ず「${selectedType}」に統一してください。他の形式は絶対に使用しないでください。`;
                     }
@@ -1896,77 +1887,86 @@
                     }
                     
                     const apiUrl = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-pro:generateContent?key=${apiKey}`;
-        
-        const response = await fetch(/* ... */);
-        
-        if (!response.ok) { /* ... */ }
+                    
+                    const response = await fetch(apiUrl, {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify(payload)
+                    });
 
-        const result = await response.json();
-        
-        if (result.candidates?.[0]?.content?.parts?.[0]?.text) {
-            const generatedData = JSON.parse(result.candidates[0].content.parts[0].text);
-            
-            const processQuestions = (questions) => { /* ... */ };
+                    if (!response.ok) {
+                         const errorBody = await response.text();
+                         console.error("API Error Response:", errorBody);
+                         throw new Error(`APIリクエストに失敗しました (ステータス: ${response.status})`);
+                    }
+                    const result = await response.json();
+                    
+                    if (result.candidates?.[0]?.content?.parts?.[0]?.text) {
+                        const generatedData = JSON.parse(result.candidates[0].content.parts[0].text);
+                        
+                        const processQuestions = (questions) => {
+                            return questions.map(q => {
+                                let processed = {...q};
+                                if (!Array.isArray(processed.answer)) {
+                                     processed.answer = [String(processed.answer)];
+                                }
+                                return processed;
+                            });
+                        };
 
-            if (isAutoGenre && generatedData.genres) {
-                const processedGenres = generatedData.genres.map(genre => ({
-                    ...genre,
-                    quizzes: processQuestions(genre.quizzes || [])
-                }));
-                // ★ tempGeneratedImages は既に設定済みなので、そのまま次の関数を呼びます
-                handleAutoGenreResponse(processedGenres); 
-            } else if (generatedData.quizzes) {
-                tempGeneratedQuestions = processQuestions(generatedData.quizzes);
-                // ★ tempGeneratedImages は既に設定済みなので、ここでは何もしません
-                showNameQuizModal();
-            } else {
-                throw new Error("AIからの応答が期待された形式ではありません。");
-            }
-        } else {
-            throw new Error("AIからの応答が無効、または空です。");
-        }
-    } catch (error) {
-        // ★ エラー時にも一時変数を確実にクリアします
-        tempGeneratedImages = [];
-        tempGeneratedQuestions = null;
-        console.error("Quiz generation failed:", error);
-        generationError.textContent = `クイズの生成に失敗しました: ${error.message}`;
-        generationError.classList.remove('hidden');
-    } finally {
-        clearTimeout(warningTimeout);
-        generationWarning.classList.add('hidden');
-        buttonText.textContent = 'クイズを生成する';
-        spinner.classList.add('hidden');
-        generateQuizButton.disabled = false;
-    }
-}
+                        if (isAutoGenre && generatedData.genres) {
+                            const processedGenres = generatedData.genres.map(genre => ({
+                                ...genre,
+                                quizzes: processQuestions(genre.quizzes || [])
+                            }));
+                            handleAutoGenreResponse(processedGenres);
+                        } else if (generatedData.quizzes) {
+                            tempGeneratedQuestions = processQuestions(generatedData.quizzes);
+                            tempGeneratedImages = processedFiles.filter(f => f.mimeType && f.mimeType.startsWith('image/'));
+                            showNameQuizModal();
+                        } else {
+                            throw new Error("AIからの応答が期待された形式ではありません。");
+                        }
+                    } else {
+                         console.error("Invalid API response structure:", result);
+                         throw new Error("AIからの応答が無効、または空です。");
+                    }
+                } catch (error) {
+                    console.error("Quiz generation failed:", error);
+                    if(payload) {
+                         console.error("Failed Payload:", JSON.stringify(payload, null, 2));
+                    }
+                    generationError.textContent = `クイズの生成に失敗しました: ${error.message}`;
+                    generationError.classList.remove('hidden');
+                } finally {
+                    clearTimeout(warningTimeout);
+                    generationWarning.classList.add('hidden');
+                    buttonText.textContent = 'クイズを生成する';
+                    spinner.classList.add('hidden');
+                    generateQuizButton.disabled = false;
+                }
+            };
             
             function handleAutoGenreResponse(genres) {
-    const project = appState.projects.find(p => p.id === activeProjectId);
-    if (!project || !genres) return;
+                const project = appState.projects.find(p => p.id === activeProjectId);
+                if (!project || !genres) return;
 
-    genres.forEach(genre => {
-        if (genre.quizzes && genre.quizzes.length > 0) {
-            const newQuiz = {
-                id: `quiz_${Date.now()}_${Math.random()}`,
-                name: genre.genre_name,
-                createdAt: new Date().toISOString(),
-                questions: genre.quizzes,
-                // ★★★ 修正点: uploadedFiles を見るのではなく、処理済みの tempGeneratedImages を使う ★★★
-                images: tempGeneratedImages 
+                genres.forEach(genre => {
+                    if (genre.quizzes && genre.quizzes.length > 0) {
+                        const newQuiz = {
+                            id: `quiz_${Date.now()}_${Math.random()}`,
+                            name: genre.genre_name,
+                            createdAt: new Date().toISOString(),
+                            questions: genre.quizzes,
+                            images: uploadedFiles.filter(f => f.mimeType.startsWith('image/'))
+                        };
+                        project.quizzes.push(newQuiz);
+                        project.mastery[newQuiz.id] = {};
+                    }
+                });
+                saveState();
+                setActiveProject(activeProjectId);
             };
-            project.quizzes.push(newQuiz);
-            project.mastery[newQuiz.id] = {};
-        }
-    });
-
-    // ★★★ 追加: 処理完了後に一時変数をクリアする ★★★
-    tempGeneratedImages = [];
-    tempGeneratedQuestions = null; // 念のためこちらもクリア
-
-    saveState();
-    setActiveProject(activeProjectId);
-};
 
             function showNameQuizModal() {
                 const project = appState.projects.find(p => p.id === activeProjectId);
