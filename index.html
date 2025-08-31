@@ -1293,6 +1293,7 @@
             let currentQuiz = null; 
             let confettiAnimationId;
             let tempGeneratedQuestions = null;
+            let tempGeneratedImages = [];
             let uploadedFiles = [];
             let projectToEditId = null;
             let quizToEditId = null;
@@ -1921,6 +1922,7 @@
                             handleAutoGenreResponse(processedGenres);
                         } else if (generatedData.quizzes) {
                             tempGeneratedQuestions = processQuestions(generatedData.quizzes);
+                            tempGeneratedImages = processedFiles.filter(f => f.mimeType && f.mimeType.startsWith('image/'));
                             showNameQuizModal();
                         } else {
                             throw new Error("AIからの応答が期待された形式ではありません。");
@@ -1977,6 +1979,8 @@
             
             function closeNameQuizModal() {
                 nameQuizModal.classList.remove('show');
+                tempGeneratedQuestions = null;
+                tempGeneratedImages = [];
             }
 
             function handleCreateQuiz() {
@@ -1993,7 +1997,7 @@
                         name: quizName,
                         createdAt: new Date().toISOString(),
                         questions: tempGeneratedQuestions,
-                        images: uploadedFiles.filter(f => f.mimeType && f.mimeType.startsWith('image/'))
+                        images: tempGeneratedImages
                     };
                     project.quizzes.push(newQuiz);
                     project.mastery[newQuiz.id] = {};
