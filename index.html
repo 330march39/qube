@@ -1818,7 +1818,7 @@ async function handleGenerateQuiz() {
         if (isAutoGenre) { payload.generationConfig.responseSchema = { type: "OBJECT", properties: { "genres": { type: "ARRAY", items: { type: "OBJECT", properties: { "genre_name": { type: "STRING" }, "quizzes": { type: "ARRAY", items: itemSchema } }, required: ["genre_name", "quizzes"] } } } }; } else { payload.generationConfig.responseSchema = { type: "OBJECT", properties: { "quizzes": { "type": "ARRAY", "items": itemSchema } } }; }
         
         loadingStatus.textContent = 'AIがクイズを生成中...';
-        const apiUrl = `https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-pro:generateContent?key=${apiKey}`;
+        const apiUrl = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-pro:generateContent?key=${apiKey}`;
         
         const response = await fetch(apiUrl, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(payload) });
 
