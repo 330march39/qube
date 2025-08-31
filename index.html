@@ -1993,7 +1993,7 @@
                         name: quizName,
                         createdAt: new Date().toISOString(),
                         questions: tempGeneratedQuestions,
-                        images: uploadedFiles.filter(f => f.mimeType.startsWith('image/'))
+                        images: uploadedFiles.filter(f => f.mimeType && f.mimeType.startsWith('image/'))
                     };
                     project.quizzes.push(newQuiz);
                     project.mastery[newQuiz.id] = {};
