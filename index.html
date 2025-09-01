@@ -677,6 +677,17 @@
   0% { transform: rotate(0deg); }
   100% { transform: rotate(360deg); }
 }
+        #tutorialDots .dot {
+            width: 10px;
+            height: 10px;
+            border-radius: 50%;
+            background-color: var(--border-color);
+            transition: background-color 0.3s ease, transform 0.3s ease;
+        }
+        #tutorialDots .dot.active {
+            background-color: var(--accent-primary);
+            transform: scale(1.2);
+        }
     </style>
 </head>
 <body>
@@ -702,8 +713,25 @@
         </div>
     </div>
 
+    <div id="tutorialModal" class="modal" style="display: none; background-color: var(--modal-bg); z-index: 5000;">
+    <div class="modal-content" style="max-width: 500px; width: 90%; padding: 1.5rem; text-align: center; background-color: var(--bg-secondary); border-radius: 16px;">
+        <img id="tutorialImage" src="" alt="チュートリアル画像" style="max-width: 100%; height: auto; max-height: 70vh; margin-bottom: 1.5rem; border-radius: 8px; user-select: none;">
+        
+        <div id="tutorialNavigation" class="flex justify-between items-center w-full">
+            <button id="tutorialPrevButton" class="modal-button cancel">‹ 前へ</button>
+            
+            <div id="tutorialDots" class="flex gap-2"></div>
+
+            <button id="tutorialNextButton" class="modal-button create">次へ ›</button>
+        </div>
+        
+        <button id="tutorialStartButton" class="btn btn-primary btn-lg w-full mt-4" style="display: none;">始める</button>
+    </div>
+</div>
+
     <div id="confettiContainer" class="confetti-container"></div>
     <div class="main-container">
+
         <!-- Sidebar -->
         <aside id="sidebar">
             <div class="flex items-center mb-6 h-10">
@@ -1277,6 +1305,14 @@
             const toggleOtherOptionsButton = document.getElementById('toggleOtherOptionsButton');
             const otherOptionsContainer = document.getElementById('otherOptionsContainer');
 
+            const tutorialModal = document.getElementById('tutorialModal');
+            const tutorialImage = document.getElementById('tutorialImage');
+            const tutorialNavigation = document.getElementById('tutorialNavigation');
+            const tutorialPrevButton = document.getElementById('tutorialPrevButton');
+            const tutorialNextButton = document.getElementById('tutorialNextButton');
+            const tutorialStartButton = document.getElementById('tutorialStartButton');
+            const tutorialDots = document.getElementById('tutorialDots');
+
             let appState = {
                 projects: [],
                 settings: {
@@ -1301,6 +1337,15 @@
             let speechRecognition;
             let isRecording = false;
             let aiTutorInteractionCount = 0;
+
+            let currentTutorialIndex = 0;
+            const tutorialImages = [
+                'Instagram story - 3.png', // 1枚目の画像のパス
+                'Instagram story - 4.png', // 2枚目の画像のパス
+                'Instagram story - 5.png', // 3枚目の画像のパス
+                'Instagram story - 6.png', // 4枚目の画像のパス
+                'Instagram story - 7.png'  // 5枚目の画像のパス
+            ];
             
             const sounds = {
                 correct: new Tone.Synth({ volume: -2, oscillator: { type: 'sine' }, envelope: { attack: 0.005, decay: 0.1, sustain: 0.3, release: 1 } }).toDestination(),
@@ -3137,6 +3182,43 @@ async function updateUIAfterFileUpload() {
                 }
             };
 
+            function showTutorialPage() {
+                // 画像のパスを更新
+                tutorialImage.src = tutorialImages[currentTutorialIndex];
+            
+                // ドットインジケーターを更新
+                tutorialDots.innerHTML = '';
+                tutorialImages.forEach((_, index) => {
+                    const dot = document.createElement('div');
+                    dot.className = 'dot';
+                    if (index === currentTutorialIndex) {
+                        dot.classList.add('active');
+                    }
+                    tutorialDots.appendChild(dot);
+                });
+            
+                // 「前へ」ボタンは最初のページでは非表示
+                tutorialPrevButton.style.visibility = (currentTutorialIndex === 0) ? 'hidden' : 'visible';
+            
+                // 最後のページかどうかでボタンの表示を切り替え
+                if (currentTutorialIndex === tutorialImages.length - 1) {
+                    tutorialNavigation.style.display = 'none';  // 「前へ」「次へ」「ドット」を非表示
+                    tutorialStartButton.style.display = 'block'; // 「始める」ボタンを表示
+                } else {
+                    tutorialNavigation.style.display = 'flex';   // 「前へ」「次へ」「ドット」を表示
+                    tutorialStartButton.style.display = 'none';  // 「始める」ボタンを非表示
+                }
+            }
+            
+            /**
+             * チュートリアルを開始する関数
+             */
+            function startTutorial() {
+                currentTutorialIndex = 0;
+                tutorialModal.style.display = 'flex'; // flexで中央寄せ
+                showTutorialPage();
+            }        
+
             function init() {
                 const splashScreen = document.getElementById('splashScreen');
                 
@@ -3174,12 +3256,17 @@ async function updateUIAfterFileUpload() {
                     splashScreen.classList.add('hidden');
                     splashScreen.addEventListener('transitionend', () => {
                         splashScreen.style.display = 'none';
+            
+                        if (!localStorage.getItem('qube_tutorial_completed')) {
+                            // 初回起動時: チュートリアルを開始
+                            startTutorial();
+                        } else if (!localStorage.getItem('qube_tos_agreed')) {
+                            // チュートリアル完了済みで、利用規約が未同意の場合
+                            tosModal.classList.add('show');
+                        }
+                        
                     }, { once: true });
                 }, 1500);
-
-                if (!localStorage.getItem('qube_tos_agreed')) {
-                    tosModal.classList.add('show');
-                }
                 
                 const isIOS = /iPad|iPhone|iPod/.test(navigator.userAgent) && !window.MSStream;
                 const isInStandaloneMode = window.matchMedia('(display-mode: standalone)').matches || window.navigator.standalone;
@@ -3400,6 +3487,31 @@ async function updateUIAfterFileUpload() {
                 const project = appState.projects.find(p => p.id === activeProjectId);
                 updateProjectTitle(project?.name || 'Qube');
             });
+        
+                tutorialNextButton.addEventListener('click', () => {
+                    if (currentTutorialIndex < tutorialImages.length - 1) {
+                        currentTutorialIndex++;
+                        showTutorialPage();
+                    }
+                });
+        
+                tutorialPrevButton.addEventListener('click', () => {
+                    if (currentTutorialIndex > 0) {
+                        currentTutorialIndex--;
+                        showTutorialPage();
+                    }
+                });
+        
+                tutorialStartButton.addEventListener('click', () => {
+                    // チュートリアルを非表示にする
+                    tutorialModal.style.display = 'none';
+                    
+                    // チュートリアルが完了したことを記録
+                    localStorage.setItem('qube_tutorial_completed', 'true');
+        
+                    // チュートリアルが終わったら、利用規約モーダルを表示
+                    tosModal.classList.add('show');
+                });
 
             init();
         });
