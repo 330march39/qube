@@ -3222,84 +3222,77 @@ async function updateUIAfterFileUpload() {
             // 既存の init() 関数を、以下の内容で完全に置き換えてください
 
             function init() {
-                const splashScreen = document.getElementById('splashScreen');
-                
-                // 最初にデータの読み込みと各種設定の適用を行う
-                loadState();
-                const { settings } = appState;
-                setDarkMode(settings.darkMode);
-                darkModeToggle.checked = settings.darkMode;
-                themeColorCircles.forEach(c => c.classList.remove('selected'));
-                document.querySelector(`.color-circle[data-theme="${settings.themeColor}"]`)?.classList.add('selected');
-                soundVolumeSlider.value = settings.soundVolume;
-                updateVolume(settings.soundVolume);
-                questionCountSelect.value = settings.questionCount;
-                shuffleQuestionsToggle.checked = settings.shuffleQuestions;
-                showProgressToggle.checked = settings.showProgress;
-                masteryModeToggle.checked = settings.masteryMode;
-            
-                const lastActiveProjectId = localStorage.getItem('qube_lastActiveProjectId');
-                const projectExists = appState.projects.some(p => p.id === lastActiveProjectId);
-                if (lastActiveProjectId && projectExists) {
-                    setActiveProject(lastActiveProjectId);
-                } else if (appState.projects.length > 0) {
-                    setActiveProject(appState.projects[0].id);
-                } else {
-                    switchScreen('welcome');
-                }
-                renderProjectList();
-                setupSpeechRecognition();
-                
-                // スプラッシュスクリーンが消えるアニメーションを開始
-                setTimeout(() => {
-                    splashScreen.classList.add('hidden');
-                    
-                    // アニメーション完了後（transitionend）にモーダル表示判定を一度だけ行う
-                    splashScreen.addEventListener('transitionend', () => {
-                        splashScreen.style.display = 'none';
-            
-                        // console.logで現在の状態を確認
-                        console.log('Tutorial completed:', localStorage.getItem('qube_tutorial_completed'));
-                        console.log('TOS agreed:', localStorage.getItem('qube_tos_agreed'));
-            
-                        // チュートリアルが未完了かチェック
-                        if (!localStorage.getItem('qube_tutorial_completed')) {
-                            console.log('Starting tutorial...');
-                            startTutorial(); // チュートリアルを開始
-                        } 
-                        // チュートリアルは完了済みで、利用規約が未同意かチェック
-                        else if (!localStorage.getItem('qube_tos_agreed')) {
-                            console.log('Showing TOS modal...');
-                            tosModal.classList.add('show');
-                        } else {
-                            console.log('Tutorial and TOS are already done.');
-                        }
-                        
-                    }, { once: true }); // イベントリスナーを一度きりにする
-                }, 1500); // 1.5秒後にスプラッシュスクリーンのアニメーションを開始
-            
-                // PWA関連のポップアップ表示ロジック (これは元のままでOK)
-                const isIOS = /iPad|iPhone|iPod/.test(navigator.userAgent) && !window.MSStream;
-                const isInStandaloneMode = window.matchMedia('(display-mode: standalone)').matches || window.navigator.standalone;
-            
-                if (isIOS && !isInStandaloneMode && !localStorage.getItem('qube_add_to_home_screen_dismissed')) {
-                    const iosShareIconContainer = document.getElementById('iosShareIconContainer');
-                    iosShareIconContainer.innerHTML = `<svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-8l-4-4m0 0L8 8m4-4v12" /></svg>`;
-                    setTimeout(() => {
-                        addToHomeScreenPopup.style.display = 'block';
-                    }, 5000);
-                }
-                
-                if ('serviceWorker' in navigator) {
-                    window.addEventListener('load', () => {
-                        navigator.serviceWorker.register('/sw.js').then(registration => {
-                            console.log('ServiceWorker registration successful with scope: ', registration.scope);
-                        }).catch(error => {
-                            console.log('ServiceWorker registration failed: ', error);
-                        });
-                    });
-                }
-            }
+                const splashScreen = document.getElementById('splashScreen');
+                
+                // 最初にデータの読み込みと各種設定の適用を行う
+                loadState();
+                const { settings } = appState;
+                setDarkMode(settings.darkMode);
+                darkModeToggle.checked = settings.darkMode;
+                themeColorCircles.forEach(c => c.classList.remove('selected'));
+                document.querySelector(`.color-circle[data-theme="${settings.themeColor}"]`)?.classList.add('selected');
+                soundVolumeSlider.value = settings.soundVolume;
+                updateVolume(settings.soundVolume);
+                questionCountSelect.value = settings.questionCount;
+                shuffleQuestionsToggle.checked = settings.shuffleQuestions;
+                showProgressToggle.checked = settings.showProgress;
+                masteryModeToggle.checked = settings.masteryMode;
+            
+                const lastActiveProjectId = localStorage.getItem('qube_lastActiveProjectId');
+                const projectExists = appState.projects.some(p => p.id === lastActiveProjectId);
+                if (lastActiveProjectId && projectExists) {
+                    setActiveProject(lastActiveProjectId);
+                } else if (appState.projects.length > 0) {
+                    setActiveProject(appState.projects[0].id);
+                } else {
+                    switchScreen('welcome');
+                }
+                renderProjectList();
+                setupSpeechRecognition();
+                
+                // スプラッシュスクリーンが消えるアニメーションを開始
+                setTimeout(() => {
+                    splashScreen.classList.add('hidden');
+                    
+                    // ★★★ここが重要★★★
+                    // アニメーション完了後（transitionend）にモーダル表示判定を一度だけ行う
+                    splashScreen.addEventListener('transitionend', () => {
+                        splashScreen.style.display = 'none';
+            
+                        // チュートリアルが未完了かチェック
+                        if (!localStorage.getItem('qube_tutorial_completed')) {
+                            startTutorial(); // チュートリアルを開始
+                        } 
+                        // チュートリアルは完了済みで、利用規約が未同意かチェック
+                        else if (!localStorage.getItem('qube_tos_agreed')) {
+                            tosModal.classList.add('show');
+                        }
+                        
+                    }, { once: true }); // イベントリスナーを一度きりにする
+                }, 1500); // 1.5秒後にスプラッシュスクリーンのアニメーションを開始
+            
+                // PWA関連のポップアップ表示ロジック
+                const isIOS = /iPad|iPhone|iPod/.test(navigator.userAgent) && !window.MSStream;
+                const isInStandaloneMode = window.matchMedia('(display-mode: standalone)').matches || window.navigator.standalone;
+            
+                if (isIOS && !isInStandaloneMode && !localStorage.getItem('qube_add_to_home_screen_dismissed')) {
+                    const iosShareIconContainer = document.getElementById('iosShareIconContainer');
+                    iosShareIconContainer.innerHTML = `<svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-8l-4-4m0 0L8 8m4-4v12" /></svg>`;
+                    setTimeout(() => {
+                        addToHomeScreenPopup.style.display = 'block';
+                    }, 5000);
+                }
+                
+                if ('serviceWorker' in navigator) {
+                    window.addEventListener('load', () => {
+                        navigator.serviceWorker.register('/sw.js').then(registration => {
+                            console.log('ServiceWorker registration successful with scope: ', registration.scope);
+                        }).catch(error => {
+                            console.log('ServiceWorker registration failed: ', error);
+                        });
+                    });
+                }
+            }
             // ★★★ 変更箇所 ★★★ END
 
             // --- Event Listeners ---
