@@ -3209,10 +3209,9 @@ async function updateUIAfterFileUpload() {
             function hideTutorialAndProceed() {
                 tutorialOverlay.style.display = 'none';
                 localStorage.setItem('qube_tutorial_completed', 'true');
-                // チュートリアル完了後、利用規約のチェックに進む
-                if (!localStorage.getItem('qube_tos_agreed')) {
-                    tosModal.classList.add('show');
-                }
+                
+                // アプリ本体の初期化プロセスを再開させる
+                init(); 
             }
 
             function init() {
