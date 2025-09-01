@@ -677,6 +677,16 @@
   0% { transform: rotate(0deg); }
   100% { transform: rotate(360deg); }
 }
+    .pagination-dot {
+    width: 12px;
+    height: 12px;
+    border-radius: 50%;
+    background-color: var(--border-color);
+    transition: background-color 0.3s ease;
+}
+    .pagination-dot.active {
+    background-color: var(--accent-primary);
+}
     </style>
 </head>
 <body>
@@ -699,6 +709,23 @@
         <div class="splash-logo-container">
             <img src="iconsp.png" alt="Qube Logo" onerror="this.style.display='none'; this.nextElementSibling.style.display='block';">
             <h1 class="text-5xl font-bold" style="color: var(--accent-primary);">Qube</h1>
+        </div>
+    </div>
+    
+        <div id="tutorialOverlay" style="display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background-color: var(--bg-primary); z-index: 5000; flex-direction: column; justify-content: center; align-items: center; padding: 20px; box-sizing: border-box;">
+        <div style="flex-grow: 1; display: flex; justify-content: center; align-items: center; max-height: 75vh;">
+            <img id="tutorialImage" src="" alt="チュートリアル画像" style="max-width: 100%; max-height: 100%; object-fit: contain; border-radius: 12px; box-shadow: 0 10px 30px rgba(0,0,0,0.1);">
+        </div>
+        <div id="tutorialPagination" style="display: flex; gap: 10px; margin-top: 20px;">
+            </div>
+        <div style="display: flex; justify-content: space-between; align-items: center; width: 100%; max-width: 400px; padding: 20px 0; min-height: 80px;">
+            <button id="tutorialPrevBtn" class="btn" style="visibility: hidden;">
+                <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7" /></svg>
+            </button>
+            <button id="tutorialNextBtn" class="btn">
+                <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7" /></svg>
+            </button>
+            <button id="tutorialStartBtn" class="btn btn-primary" style="display: none;">始める</button>
         </div>
     </div>
 
@@ -1276,6 +1303,22 @@
             const voiceInputButton = document.getElementById('voiceInputButton');
             const toggleOtherOptionsButton = document.getElementById('toggleOtherOptionsButton');
             const otherOptionsContainer = document.getElementById('otherOptionsContainer');
+            
+            const tutorialOverlay = document.getElementById('tutorialOverlay');
+            const tutorialImage = document.getElementById('tutorialImage');
+            const tutorialPagination = document.getElementById('tutorialPagination');
+            const tutorialPrevBtn = document.getElementById('tutorialPrevBtn');
+            const tutorialNextBtn = document.getElementById('tutorialNextBtn');
+            const tutorialStartBtn = document.getElementById('tutorialStartBtn');
+            
+            const tutorialImages = [
+                'image1.png', // 1枚目の画像のパスに書き換えてください
+                'image2.png', // 2枚目の画像のパスに書き換えてください
+                'image3.png', // 3枚目の画像のパスに書き換えてください
+                'image4.png', // 4枚目の画像のパスに書き換えてください
+                'image5.png'  // 5枚目の画像のパスに書き換えてください
+            ];
+let currentTutorialSlide = 0;
 
             let appState = {
                 projects: [],
@@ -3137,7 +3180,46 @@ async function updateUIAfterFileUpload() {
                 }
             };
 
+            function renderTutorialSlide(index) {
+                currentTutorialSlide = index;
+                tutorialImage.src = tutorialImages[index];
+            
+                // Paginationの更新
+                Array.from(tutorialPagination.children).forEach((dot, idx) => {
+                    dot.classList.toggle('active', idx === index);
+                });
+            
+                // ボタンの表示/非表示を制御
+                tutorialPrevBtn.style.visibility = index === 0 ? 'hidden' : 'visible';
+                tutorialNextBtn.style.display = index === tutorialImages.length - 1 ? 'none' : 'flex';
+                tutorialStartBtn.style.display = index === tutorialImages.length - 1 ? 'flex' : 'none';
+            }
+            
+            function showTutorial() {
+                tutorialPagination.innerHTML = ''; // 中身をクリア
+                tutorialImages.forEach(() => {
+                    const dot = document.createElement('div');
+                    dot.className = 'pagination-dot';
+                    tutorialPagination.appendChild(dot);
+                });
+                renderTutorialSlide(0);
+                tutorialOverlay.style.display = 'flex';
+            }
+            
+            function hideTutorialAndProceed() {
+                tutorialOverlay.style.display = 'none';
+                localStorage.setItem('qube_tutorial_completed', 'true');
+                // チュートリアル完了後、利用規約のチェックに進む
+                if (!localStorage.getItem('qube_tos_agreed')) {
+                    tosModal.classList.add('show');
+                }
+            }
+
             function init() {
+                if (!localStorage.getItem('qube_tutorial_completed')) {
+                    showTutorial();
+                    return; // チュートリアル表示中はここで処理を中断
+                }
                 const splashScreen = document.getElementById('splashScreen');
                 
                 loadState();
@@ -3368,9 +3450,9 @@ async function updateUIAfterFileUpload() {
             });
 
             importProjectButton.addEventListener('click', () => {
-    handleImportProject();
-    importFileInput.value = '';
-});
+                handleImportProject();
+                importFileInput.value = '';
+            });
 
             exportProjectButton.addEventListener('click', () => {
                 if(activeProjectId) {
@@ -3400,6 +3482,20 @@ async function updateUIAfterFileUpload() {
                 const project = appState.projects.find(p => p.id === activeProjectId);
                 updateProjectTitle(project?.name || 'Qube');
             });
+
+            tutorialPrevBtn.addEventListener('click', () => {
+                if (currentTutorialSlide > 0) {
+                    renderTutorialSlide(currentTutorialSlide - 1);
+                }
+            });
+            
+            tutorialNextBtn.addEventListener('click', () => {
+                if (currentTutorialSlide < tutorialImages.length - 1) {
+                    renderTutorialSlide(currentTutorialSlide + 1);
+                }
+            });
+            
+            tutorialStartBtn.addEventListener('click', hideTutorialAndProceed);
 
             init();
         });
