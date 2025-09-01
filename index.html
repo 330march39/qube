@@ -767,10 +767,14 @@
             
             <div id="screenContainer">
                 <div id="welcomeScreen" class="screen active flex-col justify-center items-center text-center p-8 rounded-lg">
-                    <img src="iconsp.png" alt="Qube ロゴ" class="h-25 mb-6 mx-auto">
-                    <p class="text-xl mb-8" style="color: var(--text-secondary);">AIの力で、あなたの学習を次のレベルへ。</p>
-                    <button id="getStartedButton" class="btn btn-primary text-lg px-8 py-3">さっそく始める</button>
-                </div>
+            <img src="iconsp.png" alt="Qube ロゴ" class="h-25 mb-6 mx-auto">
+            <p class="text-xl mb-8" style="color: var(--text-secondary);">AIの力で、あなたの学習を次のレベルへ。</p>
+            
+            <div class="flex flex-col gap-4 w-full items-center">
+                <button id="getStartedButton" class="btn btn-primary text-lg px-8 py-3 w-full max-w-xs">さっそく始める</button>
+                <button id="showTutorialButton" class="btn w-full max-w-xs" style="background-color: var(--button-bg-default); color: var(--button-text-default); border: 1px solid var(--border-color);">チュートリアルを見る</button>
+            </div>
+            </div>
 
                 <div id="projectStartScreen" class="screen">
                     <div class="start-screen-container">
@@ -1175,6 +1179,7 @@
             const sidebarOverlay = document.getElementById('sidebarOverlay');
             const newProjectButton = document.getElementById('newProjectButton');
             const getStartedButton = document.getElementById('getStartedButton');
+            const showTutorialButton = document.getElementById('showTutorialButton'); // ✨ この行を追加
             const projectTitle = document.getElementById('projectTitle');
             const projectSettingsButton = document.getElementById('projectSettingsButton');
             const projectListEl = document.getElementById('projectList');
@@ -3310,6 +3315,7 @@ async function updateUIAfterFileUpload() {
             sidebarOverlay.addEventListener('click', toggleSidebar);
             newProjectButton.addEventListener('click', showNewProjectModal);
             getStartedButton.addEventListener('click', showNewProjectModal);
+            showTutorialButton.addEventListener('click', startTutorial); // ✨ この行を追加
             modalCreateProjectButton.addEventListener('click', handleCreateProject);
             modalCancelProjectButton.addEventListener('click', closeNewProjectModal);
             newProjectModal.addEventListener('click', (e) => { if (e.target === newProjectModal) closeNewProjectModal(); });
