@@ -1880,7 +1880,6 @@
                 let payload;
 
                 try {
-                    // ★★★ START: ファイル変換処理を追加 ★★★
                     const processedFiles = [];
                     if (uploadedFiles.length > 0) {
                         const loadingModal = document.getElementById('loadingModal');
@@ -1901,17 +1900,16 @@
                                     await page.render({ canvasContext: canvas.getContext('2d'), viewport: viewport }).promise;
                                     processedFiles.push({
                                         mimeType: 'image/jpeg',
-                                        content: canvas.toDataURL('image/jpeg', 0.8) // データ量を抑えるため圧縮
+                                        content: canvas.toDataURL('image/jpeg', 0.8)
                                     });
                                 }
                             } else {
-                                processedFiles.push(file); // PDF以外はそのまま追加
+                                processedFiles.push(file);
                             }
                         }
                         loadingModal.classList.remove('show');
                     }
-                    // ★★★ END: ファイル変換処理 ★★★
-                     buttonText.textContent = '生成中...'; // ユーザーへのフィードバックを更新
+                    buttonText.textContent = '生成中...';
 
                     const apiKey = "AIzaSyDBics-IMwGjNoh-2Rqj979DrinKEnyO1A"; 
 
@@ -1919,6 +1917,8 @@
                     const selectedType = questionType.value;
                     const numQuestions = genQuestionCount.value === 'all' ? '可能な限り多く' : `${genQuestionCount.value}問`;
                     
+                    // ★★★ 修正箇所 1: プロンプトの明確化 ★★★
+                    // AIが生成すべきJSONのトップレベルのキーをプロンプト内で明示し、混乱を防ぎます。
                     let basePrompt = `あなたは優秀なクイズ生成AIです。提供されたテキストや画像を分析し、以下の指示に従って質の高いクイズを${numQuestions}作成してください。
      
                     # 指示分析
@@ -1928,30 +1928,33 @@
                     
                     # 基本ルール
                     画像群がPDFの連続したページである可能性も考慮し、全体の文脈を理解して問題を作成してください。`;
-                    if (isAutoGenre) {
-                         basePrompt += `内容を複数のジャンルに分け、各ジャンルごとに問題を作成してください。`;
-                    }
-                     basePrompt += `各問題には、内容に最適な形式("multiple_choice", "multiple_select", "fill_in_the_blank", "sorting")をAIが判断して指定し、必ず詳細な解説を日本語で付けてください。
-                    
-                     # 文章と設問の分離ルール (重要)
-                    - 問題の前提となる長文、対話文、あるいは例文などがある場合は、その文章をlong_contentフィールドに格納してください。
-                    - questionフィールドには、「空欄に最も適切な語句を選びなさい」や「この文章の要点は何ですか？」といった、その文章に対する**設問そのもの**を格納してください。
-                    - このルールは特に、英文の空欄補充問題や読解問題で厳密に守ってください。
 
-                    # 並び替え問題(sorting)の特別ルール (最重要)
-                    - 並び替え問題の場合、"items"フィールドに並び替えるべき単語や句の配列を入れてください。
-                    - "items"フィールドの配列順は、並び替えが完了した後の**正しい語順**でなければなりません。
-                    - 特に英作文の並び替え問題では、英文法として絶対に正しい語順になるようにしてください。例えば、「I love you」という語順は正解ですが、「love I you」のような文法的に誤った語順を正解に設定してはいけません。
-        
-                        # JSON形式の厳守
-                        - "answer"フィールドには、必ず"options"や"items"配列に含まれる選択肢の**テキストそのもの**を、配列形式で正確に格納してください。例: ["東京都"]
-                        - "options"フィールドには、解答の選択肢となる文字列の配列を入れてください。選択肢の前に「A:」のような記号は不要です。`;
+                    if (isAutoGenre) {
+                        basePrompt += `\n内容を複数のジャンルに分け、各ジャンルごとに問題を作成してください。最終的な出力は、必ず'genres'というキーを持つJSONオブジェクトにしてください。`;
+                    } else {
+                        basePrompt += `\n最終的な出力は、必ず'quizzes'というキーを持つJSONオブジェクトにしてください。`;
+                    }
+
+                    basePrompt += `\n各問題には、内容に最適な形式("multiple_choice", "multiple_select", "fill_in_the_blank", "sorting")をAIが判断して指定し、必ず詳細な解説を日本語で付けてください。
                     
-                    // ★★★ ここも修正後のコードを適用 ★★★
+                    # 文章と設問の分離ルール (重要)
+                    - 問題の前提となる長文、対話文、あるいは例文などがある場合は、その文章をlong_contentフィールドに格納してください。
+                    - questionフィールドには、「空欄に最も適切な語句を選びなさい」や「この文章の要点は何ですか？」といった、その文章に対する**設問そのもの**を格納してください。
+                    - このルールは特に、英文の空欄補充問題や読解問題で厳密に守ってください。
+
+                    # 並び替え問題(sorting)の特別ルール (最重要)
+                    - 並び替え問題の場合、"items"フィールドに並び替えるべき単語や句の配列を入れてください。
+                    - "items"フィールドの配列順は、並び替えが完了した後の**正しい語順**でなければなりません。
+                    - 特に英作文の並び替え問題では、英文法として絶対に正しい語順になるようにしてください。例えば、「I love you」という語順は正解ですが、「love I you」のような文法的に誤った語順を正解に設定してはいけません。
+        
+                    # JSON形式の厳守
+                    - "answer"フィールドには、必ず"options"や"items"配列に含まれる選択肢の**テキストそのもの**を、配列形式で正確に格納してください。例: ["東京都"]
+                    - "options"フィールドには、解答の選択肢となる文字列の配列を入れてください。選択肢の前に「A:」のような記号は不要です。`;
+                    
                     if (selectedType !== 'auto_select') {
                         basePrompt += `\n# 問題形式の厳守\n全てのクイズの問題形式(JSONのtypeフィールド)は、必ず「${selectedType}」に統一してください。他の形式は絶対に使用しないでください。`;
                     }
-                     basePrompt += `生成される問題は、提供された情報源と完全に一致し、事実として正確でなければなりません。`;
+                    basePrompt += `\n生成される問題は、提供された情報源と完全に一致し、事実として正確でなければなりません。`;
                     
                     payload = {
                         contents: [{ role: "user", parts: [] }],
@@ -1962,8 +1965,7 @@
                     if (promptText.value.trim()) {
                         parts.push({ text: `\n\n--- テキスト内容 ---\n${promptText.value}` });
                     }
-                     // ★★★ 変換後のファイルリストを使用 ★★★
-                     processedFiles.forEach(file => {
+                    processedFiles.forEach(file => {
                         parts.push({
                             inlineData: {
                                 mimeType: file.mimeType,
@@ -1972,106 +1974,114 @@
                         });
                     });
                     payload.contents[0].parts = parts;
-                    
-                    let itemSchema = {
-                        type: "OBJECT",
-                        properties: {
-                            question: { type: "STRING" },
-                            type: { type: "STRING" },
-                            options: { type: "ARRAY", items: { type: "STRING" } },
-                            items: { type: "ARRAY", items: { type: "STRING" } },
-                            answer: { type: "ARRAY", items: { type: "STRING" } },
-                            explanation: { type: "STRING" },
-                            long_content: { type: "STRING" },
-                            image_source: { type: "BOOLEAN" }
-                        },
-                        required: ["question", "type", "answer", "explanation"]
-                    };
+                    
+                    let itemSchema = {
+                        type: "OBJECT",
+                        properties: {
+                            question: { type: "STRING" },
+                            type: { type: "STRING" },
+                            options: { type: "ARRAY", items: { type: "STRING" } },
+                            items: { type: "ARRAY", items: { type: "STRING" } },
+                            answer: { type: "ARRAY", items: { type: "STRING" } },
+                            explanation: { type: "STRING" },
+                            long_content: { type: "STRING" },
+                            image_source: { type: "BOOLEAN" }
+                        },
+                        required: ["question", "type", "answer", "explanation"]
+                    };
 
-                    if (isAutoGenre) {
-                        payload.generationConfig.responseSchema = {
-                            type: "OBJECT",
-                            properties: {
-                                "genres": {
-                                    type: "ARRAY",
-                                    items: {
-                                        type: "OBJECT",
-                                        properties: {
-                                            "genre_name": { type: "STRING" },
-                                            "quizzes": { type: "ARRAY", items: itemSchema }
-                                        },
-                                        required: ["genre_name", "quizzes"]
-                                    }
-                                }
-                            }
-                        };
-                    } else {
-                        payload.generationConfig.responseSchema = {
-                            type: "OBJECT",
-                            properties: { "quizzes": { "type": "ARRAY", "items": itemSchema } }
-                        };
-                    }
-                    
-                    const apiUrl = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-pro:generateContent?key=${apiKey}`;
-                    
-                    const response = await fetch(apiUrl, {
-                        method: 'POST',
-                        headers: { 'Content-Type': 'application/json' },
-                        body: JSON.stringify(payload)
-                    });
+                    if (isAutoGenre) {
+                        payload.generationConfig.responseSchema = {
+                            type: "OBJECT",
+                            properties: {
+                                "genres": {
+                                    type: "ARRAY",
+                                    items: {
+                                        type: "OBJECT",
+                                        properties: {
+                                            "genre_name": { type: "STRING" },
+                                            "quizzes": { type: "ARRAY", items: itemSchema }
+                                        },
+                                        required: ["genre_name", "quizzes"]
+                                    }
+                                }
+                            }
+                        };
+                    } else {
+                        payload.generationConfig.responseSchema = {
+                            type: "OBJECT",
+                            properties: { "quizzes": { "type": "ARRAY", "items": itemSchema } }
+                        };
+                    }
+                    
+                    const apiUrl = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-pro:generateContent?key=${apiKey}`;
+                    
+                    const response = await fetch(apiUrl, {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify(payload)
+                    });
 
-                    if (!response.ok) {
-                         const errorBody = await response.text();
-                         console.error("API Error Response:", errorBody);
-                         throw new Error(`APIリクエストに失敗しました (ステータス: ${response.status})`);
-                    }
-                    const result = await response.json();
-                    
-                    if (result.candidates?.[0]?.content?.parts?.[0]?.text) {
-                        const generatedData = JSON.parse(result.candidates[0].content.parts[0].text);
-                        
-                        const processQuestions = (questions) => {
-                            return questions.map(q => {
-                                let processed = {...q};
-                                if (!Array.isArray(processed.answer)) {
-                                     processed.answer = [String(processed.answer)];
-                                }
-                                return processed;
-                            });
-                        };
+                    if (!response.ok) {
+                        const errorBody = await response.text();
+                        console.error("API Error Response:", errorBody);
+                        throw new Error(`APIリクエストに失敗しました (ステータス: ${response.status})`);
+                    }
+                    const result = await response.json();
+                    
+                    if (result.candidates?.[0]?.content?.parts?.[0]?.text) {
+                        const generatedData = JSON.parse(result.candidates[0].content.parts[0].text);
+                        
+                        const processQuestions = (questions) => {
+                            return questions.map(q => {
+                                let processed = {...q};
+                                if (!Array.isArray(processed.answer)) {
+                                    processed.answer = [String(processed.answer)];
+                                }
+                                return processed;
+                            });
+                        };
 
-                        if (isAutoGenre && generatedData.genres) {
-                            const processedGenres = generatedData.genres.map(genre => ({
-                                ...genre,
-                                quizzes: processQuestions(genre.quizzes || [])
-                            }));
-                            handleAutoGenreResponse(processedGenres);
-                        } else if (generatedData.quizzes) {
-                            tempGeneratedQuestions = processQuestions(generatedData.quizzes);
-                            tempGeneratedImages = processedFiles.filter(f => f.mimeType && f.mimeType.startsWith('image/'));
-                            showNameQuizModal();
-                        } else {
-                            throw new Error("AIからの応答が期待された形式ではありません。");
-                        }
-                    } else {
-                         console.error("Invalid API response structure:", result);
-                         throw new Error("AIからの応答が無効、または空です。");
-                    }
-                } catch (error) {
-                    console.error("Quiz generation failed:", error);
-                    if(payload) {
-                         console.error("Failed Payload:", JSON.stringify(payload, null, 2));
-                    }
-                    generationError.textContent = `クイズの生成に失敗しました: ${error.message}`;
-                    generationError.classList.remove('hidden');
-                } finally {
-                    clearTimeout(warningTimeout);
-                    generationWarning.classList.add('hidden');
-                    buttonText.textContent = 'クイズを生成する';
-                    spinner.classList.add('hidden');
-                    generateQuizButton.disabled = false;
-                }
-            };
+                        // ★★★ 修正箇所 2: レスポンス処理の堅牢化 ★★★
+                        // `isAutoGenre` の値に基づいて、期待するレスポンスの構造を厳密にチェックします。
+                        if (isAutoGenre) {
+                            if (generatedData.genres && Array.isArray(generatedData.genres)) {
+                                const processedGenres = generatedData.genres.map(genre => ({
+                                    ...genre,
+                                    quizzes: processQuestions(genre.quizzes || [])
+                                }));
+                                handleAutoGenreResponse(processedGenres);
+                            } else {
+                                throw new Error("AIがジャンル分けに失敗しました。期待された'genres'キーが見つからないか、形式が不正です。");
+                            }
+                        } else { // isAutoGenre is false
+                            if (generatedData.quizzes && Array.isArray(generatedData.quizzes)) {
+                                tempGeneratedQuestions = processQuestions(generatedData.quizzes);
+                                tempGeneratedImages = processedFiles.filter(f => f.mimeType && f.mimeType.startsWith('image/'));
+                                showNameQuizModal();
+                            } else {
+                                throw new Error("AIがクイズ生成に失敗しました。期待された'quizzes'キーが見つからないか、形式が不正です。");
+                            }
+                        }
+                    } else {
+                         console.error("Invalid API response structure:", result);
+                         throw new Error("AIからの応答が無効、または空です。");
+                    }
+                } catch (error) {
+                    console.error("Quiz generation failed:", error);
+                    if(payload) {
+                         console.error("Failed Payload:", JSON.stringify(payload, null, 2));
+                    }
+                    generationError.textContent = `クイズの生成に失敗しました: ${error.message}`;
+                    generationError.classList.remove('hidden');
+                } finally {
+                    clearTimeout(warningTimeout);
+                    generationWarning.classList.add('hidden');
+                    buttonText.textContent = 'クイズを生成する';
+                    spinner.classList.add('hidden');
+                    generateQuizButton.disabled = false;
+                }
+            };
             
             function handleAutoGenreResponse(genres) {
                 const project = appState.projects.find(p => p.id === activeProjectId);
