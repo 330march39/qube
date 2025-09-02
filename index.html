@@ -730,12 +730,12 @@
         }
         
         #fullScreenPwaPrompt img {
-            max-width: 90%; /* 画面幅に合わせて画像を調整 */
-            max-height: 60vh; /* 画面の高さの60%までに制限 */
-            height: auto;
-            width: auto;
-            margin-bottom: 2rem;
-            object-fit: contain; /* 画像全体が表示されるように調整 */
+            width: 100%; /* ✨画面の幅いっぱいに広げる */
+            height: 100%; /* ✨画面の高さいっぱいに広げる */
+            max-width: none; /* ✨最大幅の制限を解除 */
+            max-height: none; /* ✨最大高さの制限を解除 */
+            margin-bottom: 0; /* ✨画像下の余白をなくす */
+            object-fit: cover; /* ✨画像をトリミングして画面を埋める */
         }
         
         #fullScreenPwaPrompt .button-container {
@@ -1231,7 +1231,7 @@
 <div id="fullScreenPwaPrompt" class="modal">
         <img id="pwaPromptImage" src="Instagram story - 8.png" alt="アプリをホーム画面に追加" loading="lazy">
         <div class="button-container">
-            <button id="pwaUseWebButton" class="btn btn-primary text-lg px-8 py-3 w-full">Web版で始める</button>
+            <button id="pwaUseWebButton" class="btn btn-primary text-lg px-8 py-3 w-full">ブラウザ版で始める</button>
         </div>
     </div>
 
