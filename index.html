@@ -2341,6 +2341,8 @@
                 showFeedback(isCorrect, question, userAnswer);
             };
 
+            // 既存の showFeedback 関数を、以下のコードでまるごと置き換えてください。
+            
             function showFeedback(isCorrect, question, userAnswer) {
                 optionsGridElement.querySelectorAll('button, input, .sorting-item').forEach(el => {
                     el.disabled = true;
@@ -2348,20 +2350,20 @@
                 submissionArea.innerHTML = '';
                 feedbackMessageElement.style.visibility = 'visible';
                 const project = appState.projects.find(p => p.id === activeProjectId);
-                const originalIndex = currentQuiz.originalIndices[currentQuiz.currentIndex];
+                const originalIndex = currentQuiz.originalIndices[currentQuiz.currentIndex]; // ★ ここで一度だけ宣言します
                 if (!project.mastery[currentQuiz.id]) {
                     project.mastery[currentQuiz.id] = {};
                 }
                 const currentMasteryCount = project.mastery[currentQuiz.id][originalIndex] || 0;
-
-
+            
+            
                 if (isCorrect) {
                     playSound('correct');
                     feedbackResultElement.innerHTML = `<strong>正解！</strong>`;
                     feedbackMessageElement.classList.add('correct-feedback');
                     currentQuiz.score++;
                     project.mastery[currentQuiz.id][originalIndex] = currentMasteryCount + 1;
-
+            
                 } else {
                     playSound('incorrect');
                     let correctAnswerText;
@@ -2376,9 +2378,9 @@
                 }
                 saveState();
                 
-                const originalIndex = currentQuiz.originalIndices[currentQuiz.currentIndex];
+                // ★ 以前のコードにあった重複した宣言をここから削除しました
                 currentQuiz.answeredQuestions.add(originalIndex);
-
+            
                 if (question.type === 'multiple_choice') {
                     optionsGridElement.querySelectorAll('.option-button').forEach(button => {
                         if (button.dataset.option === question.answer[0]) {
@@ -2400,7 +2402,7 @@
                 } else if(question.type === 'fill_in_the_blank') {
                     document.getElementById('fillInBlankInput').classList.add(isCorrect ? 'correct' : 'incorrect');
                 }
-
+            
                 if (question.explanation) {
                     explanationTextElement.textContent = question.explanation;
                     toggleExplanationButton.classList.remove('hidden');
