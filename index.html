@@ -688,11 +688,11 @@
             background-color: var(--accent-primary);
             transform: scale(1.2);
         }
-        .tutorial-page img {
-            display: block; /* imgをブロック要素にしてmargin: autoが効くようにする */
-            margin: 0 auto 1.5rem auto; /* 上下は余白あり、左右は自動で中央揃え */
-            max-width: 100%; /* 親要素からはみ出さないように */
-            height: auto; /* アスペクト比を維持 */
+        #tutorialImage {
+            display: block; /* 画像をブロック要素として扱う */
+            margin-left: auto; /* 左側のマージンを自動調整 */
+            margin-right: auto; /* 右側のマージンを自動調整 */
+            margin-bottom: 1.5rem; /* 画像とボタンの間の余白 */
         }
         /* Qubeロゴのサイズ調整 */
         .qube-logo {
