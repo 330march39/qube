@@ -2319,8 +2319,8 @@
 
             function submitAnswer(userAnswer) {
                 const question = currentQuiz.questions[currentQuiz.currentIndex];
-                if (currentQuiz.answeredQuestions.has(question.question)) return;
-
+                const originalIndex = currentQuiz.originalIndices[currentQuiz.currentIndex];
+                if (currentQuiz.answeredQuestions.has(originalIndex)) return;
                 let isCorrect = false;
 
                 switch(question.type) {
@@ -2376,7 +2376,8 @@
                 }
                 saveState();
                 
-                currentQuiz.answeredQuestions.add(question.question);
+                const originalIndex = currentQuiz.originalIndices[currentQuiz.currentIndex];
+                currentQuiz.answeredQuestions.add(originalIndex);
 
                 if (question.type === 'multiple_choice') {
                     optionsGridElement.querySelectorAll('.option-button').forEach(button => {
@@ -2463,7 +2464,8 @@
                     nextButton.style.display = 'none';
                     return;
                 }
-                const isAnswered = currentQuiz.answeredQuestions.has(question.question);
+                const originalIndex = currentQuiz.originalIndices[currentQuiz.currentIndex];
+                const isAnswered = currentQuiz.answeredQuestions.has(originalIndex);
                 nextButton.style.display = isAnswered ? 'block' : 'none';
                 nextButton.textContent = (currentQuiz.currentIndex === currentQuiz.questions.length - 1) ? '結果を見る' : '次の問題';
             };
