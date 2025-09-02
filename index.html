@@ -711,7 +711,7 @@
             left: 0;
             width: 100%;
             height: 100%;
-            background-color: var(--background-color); /* 背景色をQubeの背景色に合わせる */
+            background-color: var(--bg-primary); /* ✨プライマリ背景色で完全に覆う */
             z-index: 6000; /* 他のモーダルより高いz-indexを設定 */
             display: flex;
             flex-direction: column;
@@ -3363,16 +3363,33 @@ async function updateUIAfterFileUpload() {
 
                     const tutorialCompleted = localStorage.getItem('qube_tutorial_completed');
                     const tosAgreed = localStorage.getItem('qube_tos_agreed');
+                    
+                    // 最優先でPWAプロンプトの表示をチェック
+                    const isIOS = /iPad|iPhone|iPod/.test(navigator.userAgent) && !window.MSStream;
+                    const isInStandaloneMode = window.matchMedia('(display-mode: standalone)').matches || window.navigator.standalone;
+                    const pwaDismissed = localStorage.getItem('qube_add_to_home_screen_dismissed');
 
-                    if (!tutorialCompleted) {
-                        // チュートリアルがまだなら、チュートリアルを開始
-                        startTutorial();
-                    } else if (!tosAgreed) {
-                        // チュートリアル済み、規約がまだなら、規約を表示
-                        tosModal.classList.add('show');
+                    if (isIOS && !isInStandaloneMode && !pwaDismissed) {
+                        // PWAプロンプトを表示し、他のモーダルは表示しない
+                        fullScreenPwaPrompt.classList.add('show');
+                        // PWAプロンプトの「Web版で始める」ボタンが押されたら
+                        pwaUseWebButton.onclick = () => {
+      〠                     fullScreenPwaPrompt.classList.remove('show');
+                            localStorage.setItem('qube_add_to_home_screen_dismissed', 'true');
+                            // PWAプロンプトが閉じたら、通常の起動フローに戻る
+                            if (!tutorialCompleted) {
+                                startTutorial();
+                            } else if (!tosAgreed) {
+                                tosModal.classList.add('show');
+                            }
+                        };
                     } else {
-                        // 全て完了済みなら、PWAポップアップのチェックを行う
-                        checkAndShowPwaPopup();
+                        // PWAプロンプトが不要な場合、通常の起動フロー
+                        if (!tutorialCompleted) {
+                            startTutorial();
+                        } else if (!tosAgreed) {
+                            tosModal.classList.add('show');
+                        }
                     }
                 }, splashVisibleTime + splashDuration);
 
