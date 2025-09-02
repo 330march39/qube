@@ -774,13 +774,16 @@
         <img id="tutorialImage" src="" alt="チュートリアル画像" style="max-width: 100%; height: auto; max-height: 70vh; margin-bottom: 1.5rem; border-radius: 8px; user-select: none;">
         
         <div id="tutorialNavigation" class="flex justify-between items-center w-full">
-            <button id="tutorialPrevButton" class="modal-button cancel">‹ 前へ</button>
-            
-            <div id="tutorialDots" class="flex gap-2"></div>
-    
-            <button id="tutorialNextButton" class="modal-button create">次へ ›</button>
-                    <button id="tutorialStartButton" class="modal-button create" style="display: none;">始める</button>
-        </div>
+            <button id="tutorialPrevButton" class="modal-button cancel">‹ 前へ</button>
+            
+            <div id="tutorialDots" class="flex gap-2"></div>
+
+            <button id="tutorialNextButton" class="modal-button create">次へ ›</button>
+        </div>
+        
+        <button id="tutorialStartButton" class="btn btn-primary btn-lg w-full mt-4" style="display: none;">始める</button>
+    </div>
+</div>
 
     <div id="confettiContainer" class="confetti-container"></div>
     <div class="main-container">
@@ -3250,33 +3253,33 @@ async function updateUIAfterFileUpload() {
                 }
             };
 
-           function showTutorialPage() {
-                // 画像のパスを更新
-                tutorialImage.src = tutorialImages[currentTutorialIndex];
-            
-                // ドットインジケーターを更新
-                tutorialDots.innerHTML = '';
-                tutorialImages.forEach((_, index) => {
-                    const dot = document.createElement('div');
-                    dot.className = 'dot';
-                    if (index === currentTutorialIndex) {
-                        dot.classList.add('active');
-                    }
-                    tutorialDots.appendChild(dot);
-                });
-            
-                // 「前へ」ボタンは最初のページでは非表示
-                tutorialPrevButton.style.visibility = (currentTutorialIndex === 0) ? 'hidden' : 'visible';
-            
-                // 最後のページかどうかでボタンの表示を切り替え
-                if (currentTutorialIndex === tutorialImages.length - 1) {
-                    tutorialNextButton.style.display = 'none'; // 「次へ」ボタンを非表示
-                    tutorialStartButton.style.display = 'block'; // 「始める」ボタンを表示
-                } else {
-                    tutorialNextButton.style.display = 'block'; // 「次へ」ボタンを表示
-                    tutorialStartButton.style.display = 'none'; // 「始める」ボタンを非表示
-                }
-            }
+            function showTutorialPage() {
+                // 画像のパスを更新
+                tutorialImage.src = tutorialImages[currentTutorialIndex];
+            
+                // ドットインジケーターを更新
+                tutorialDots.innerHTML = '';
+                tutorialImages.forEach((_, index) => {
+                    const dot = document.createElement('div');
+                    dot.className = 'dot';
+                    if (index === currentTutorialIndex) {
+                        dot.classList.add('active');
+                    }
+                    tutorialDots.appendChild(dot);
+                });
+            
+                // 「前へ」ボタンは最初のページでは非表示
+                tutorialPrevButton.style.visibility = (currentTutorialIndex === 0) ? 'hidden' : 'visible';
+            
+                // 最後のページかどうかでボタンの表示を切り替え
+                if (currentTutorialIndex === tutorialImages.length - 1) {
+                    tutorialNavigation.style.display = 'none';  // 「前へ」「次へ」「ドット」を非表示
+                    tutorialStartButton.style.display = 'block'; // 「始める」ボタンを表示
+                } else {
+                    tutorialNavigation.style.display = 'flex';   // 「前へ」「次へ」「ドット」を表示
+                    tutorialStartButton.style.display = 'none';  // 「始める」ボタンを非表示
+                }
+            }
             
             /**
              * チュートリアルを開始する関数
