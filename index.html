@@ -713,7 +713,7 @@
         </div>
     </div>
 
-    <div id="tutorialModal" class="modal" style="display: none; background-color: var(--modal-bg); z-index: 5000;">
+    <div id="tutorialModal" class="modal" style="background-color: var(--modal-bg); z-index: 5000;">
     <div class="modal-content" style="max-width: 500px; width: 90%; padding: 1.5rem; text-align: center; background-color: var(--bg-secondary); border-radius: 16px;">
         <img id="tutorialImage" src="" alt="チュートリアル画像" style="max-width: 100%; height: auto; max-height: 70vh; margin-bottom: 1.5rem; border-radius: 8px; user-select: none;">
         
@@ -3219,10 +3219,10 @@ async function updateUIAfterFileUpload() {
              * チュートリアルを開始する関数
              */
             function startTutorial() {
-                currentTutorialIndex = 0;
-                tutorialModal.style.display = 'flex'; // flexで中央寄せ
-                showTutorialPage();
-            }        
+                currentTutorialIndex = 0;
+                tutorialModal.classList.add('show'); // .showクラスを追加して表示
+                showTutorialPage();
+            }   
 
             function checkAndShowPwaPopup() {
                 const isIOS = /iPad|iPhone|iPod/.test(navigator.userAgent) && !window.MSStream;
@@ -3524,15 +3524,15 @@ async function updateUIAfterFileUpload() {
                 });
         
                 tutorialStartButton.addEventListener('click', () => {
-                    // チュートリアルを非表示にする
-                    tutorialModal.style.display = 'none';
-                    
-                    // チュートリアルが完了したことを記録
-                    localStorage.setItem('qube_tutorial_completed', 'true');
-        
-                    // チュートリアルが終わったら、利用規約モーダルを表示
-                    tosModal.classList.add('show');
-                });
+                    // チュートリアルを非表示にする
+                    tutorialModal.classList.remove('show'); // .showクラスを削除して非表示
+                    
+                    // チュートリアルが完了したことを記録
+                    localStorage.setItem('qube_tutorial_completed', 'true');
+        
+                    // チュートリアルが終わったら、利用規約モーダルを表示
+                    tosModal.classList.add('show');
+                });
 
             init();
         });
