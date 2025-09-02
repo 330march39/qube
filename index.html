@@ -688,6 +688,22 @@
             background-color: var(--accent-primary);
             transform: scale(1.2);
         }
+        .tutorial-page img {
+            display: block; /* imgをブロック要素にしてmargin: autoが効くようにする */
+            margin: 0 auto 1.5rem auto; /* 上下は余白あり、左右は自動で中央揃え */
+            max-width: 100%; /* 親要素からはみ出さないように */
+            height: auto; /* アスペクト比を維持 */
+        }
+        /* Qubeロゴのサイズ調整 */
+        .qube-logo {
+            height: 6rem; /* スマートフォンでのデフォルトサイズ */
+        }
+        
+        @media (min-width: 768px) { /* 768px以上の画面幅（タブレット・PC） */
+            .qube-logo {
+                height: 8rem; /* PCでのサイズ */
+            }
+        }
     </style>
 </head>
 <body>
@@ -767,7 +783,7 @@
             
             <div id="screenContainer">
                 <div id="welcomeScreen" class="screen active flex-col justify-center items-center text-center p-8 rounded-lg">
-            <img src="iconsp.png" alt="Qube ロゴ" class="h-25 mb-6 mx-auto">
+            <img src="iconsp.png" alt="Qube ロゴ" class="qube-logo mb-6 mx-auto">
             <p class="text-xl mb-8" style="color: var(--text-secondary);">AIの力で、あなたの学習を次のレベルへ。</p>
             
             <div class="flex flex-col gap-4 w-full items-center">
