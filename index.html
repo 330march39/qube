@@ -3374,7 +3374,7 @@ async function updateUIAfterFileUpload() {
                         fullScreenPwaPrompt.classList.add('show');
                         // PWAプロンプトの「Web版で始める」ボタンが押されたら
                         pwaUseWebButton.onclick = () => {
-      〠                     fullScreenPwaPrompt.classList.remove('show');
+                           fullScreenPwaPrompt.classList.remove('show');
                             localStorage.setItem('qube_add_to_home_screen_dismissed', 'true');
                             // PWAプロンプトが閉じたら、通常の起動フローに戻る
                             if (!tutorialCompleted) {
