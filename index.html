@@ -854,6 +854,18 @@
                             <button id="importTabButton" class="tab-button">外部から読み込む</button>
                         </div>
                         <div id="generateProjectContainer">
+                            
+                            <!-- 　以下 緊急メッセージを追加（2025年10月21日）-->
+                            <div id="generationAlert" class="p-4 mb-6 rounded-lg border-2 border-red-400 bg-red-50 text-red-800 dark:bg-red-900 dark:border-red-600 dark:text-red-100">
+                                <h4 class="font-bold mb-2">🚨 現在、AI生成が出来ない不具合が発生しています(2025年10月) 🚨</h4>
+                                <p class="text-sm mb-3">復旧までお待ち下さい。ご迷惑をおかけして申し訳ございません。</p>
+                                <p class="text-sm mb-3">暫定的な処置として、外部の専用ページからプロンプトを生成し、そのプロンプトをお使いの生成AIに送信し、AIからの生成された回答を専用ページでテキストファイル（.txt）にして、「外部から読み込む」ことでクイズを作成できます。</p>
+                                <a href="https://330march39.github.io/qube_prompt/" target="_blank" class="btn btn-danger w-full mt-3 flex items-center justify-center">
+                                    外部プロンプト生成ページへ移動
+                                </a>
+                            </div> 
+                            <!-- 　以上 緊急メッセージを追加（2025年10月21日）-->
+                            
                              <div class="form-group">
                                 <label>ファイルをアップロード</label>
                                 <div id="fileDropArea" class="w-full p-8 border-2 border-dashed rounded-lg text-center cursor-pointer hover:border-sky-500">
