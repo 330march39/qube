@@ -2026,7 +2026,7 @@
                     if (!response.ok) {
                         const errorBody = await response.text();
                         console.error("API Error Response:", errorBody);
-                        throw new Error(`APIリクエストに失敗しました (ステータス: ${response.status})`);
+                        throw new Error(`【現在、AI生成ができない不具合が発生しております。復旧までしばらくお待ち下さい。暫定的な処置として以下のサイトをご利用ください。https://330march39.github.io/qube_prompt/】APIリクエストに失敗しました (ステータス: ${response.status})`);
                     }
                     const result = await response.json();
                     
