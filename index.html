@@ -1972,7 +1972,7 @@
                     basePrompt += `\n生成される問題は、提供された情報源と完全に一致し、事実として正確でなければなりません。`;
                     
                     payload = {
-                        model: "gemini-1.5-pro", // プロモデルを指定
+                        model: "gemini-2.5-flash", // プロモデルを指定
                         contents: [{ role: "user", parts: [] }],
                         generationConfig: { responseMimeType: "application/json" },
                         safetySettings: [
@@ -3187,7 +3187,7 @@ async function updateUIAfterFileUpload() {
 
                     // ★変更: payloadにmodelとsafetySettingsを含める
                     const payload = { 
-                        model: "gemini-1.5-flash", // フラッシュモデルを指定
+                        model: "gemini-2.5-flash", // フラッシュモデルを指定
                         contents: aiChatHistory,
                         safetySettings: [
                             { category: "HARM_CATEGORY_HARASSMENT", threshold: "BLOCK_NONE" },
