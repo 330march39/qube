@@ -2257,7 +2257,8 @@
 
                 switch(question.type) {
                     case 'multiple_choice':
-                        (appState.settings.shuffleQuestions ? shuffleArray([...question.options]) : [...question.options]).forEach(option => {
+                        // ★ここを変更: 常にシャッフルするようにしました
+                        shuffleArray([...question.options]).forEach(option => {
                             const button = document.createElement('button');
                             button.innerHTML = option;
                             button.classList.add('option-button');
@@ -2267,7 +2268,8 @@
                         });
                         break;
                     case 'multiple_select':
-                        (appState.settings.shuffleQuestions ? shuffleArray([...question.options]) : [...question.options]).forEach(option => {
+                        // ★ここを変更: 常にシャッフルするようにしました
+                        shuffleArray([...question.options]).forEach(option => {
                             const button = document.createElement('button');
                             button.innerHTML = option;
                             button.classList.add('option-button');
